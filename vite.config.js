@@ -304,6 +304,108 @@ function fullstackApiPlugin() {
           }
         }
 
+        // 7. Discounts / Voucher API
+        if (url === '/api/discounts') {
+          if (req.method === 'GET') {
+            const discounts = readJson('discounts.json') || [];
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: discounts }));
+            return;
+          }
+          if (req.method === 'POST') {
+            const body = await readBody();
+            const discounts = readJson('discounts.json') || [];
+            const newDiscount = {
+              id: `dc-${Date.now()}`,
+              code: (body.code || '').trim().toUpperCase(),
+              name: body.name || 'Mã giảm giá mới',
+              type: body.type || 'percentage', // 'percentage' | 'fixed' | 'shipping'
+              value: Number(body.value) || 10,
+              maxDiscount: Number(body.maxDiscount) || 100000,
+              minOrderValue: Number(body.minOrderValue) || 0,
+              usageLimit: Number(body.usageLimit) || 100,
+              usedCount: 0,
+              isActive: true,
+              expiresAt: body.expiresAt || '2026-12-31'
+            };
+            discounts.unshift(newDiscount);
+            writeJson('discounts.json', discounts);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: newDiscount }));
+            return;
+          }
+        }
+
+        if (url === '/api/discounts/validate' && req.method === 'POST') {
+          const body = await readBody();
+          const codeToTest = (body.code || '').trim().toUpperCase();
+          const orderTotal = Number(body.orderTotal || 0);
+          const discounts = readJson('discounts.json') || [];
+          const discount = discounts.find(d => d.code === codeToTest && d.isActive);
+
+          if (!discount) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: false, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn.' }));
+            return;
+          }
+
+          if (orderTotal < (discount.minOrderValue || 0)) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ 
+              success: false, 
+              message: `Mã này chỉ áp dụng cho đơn hàng từ ${Number(discount.minOrderValue).toLocaleString('vi-VN')}đ trở lên.` 
+            }));
+            return;
+          }
+
+          let discountAmount = 0;
+          if (discount.type === 'percentage') {
+            discountAmount = Math.round((orderTotal * discount.value) / 100);
+            if (discount.maxDiscount && discountAmount > discount.maxDiscount) {
+              discountAmount = discount.maxDiscount;
+            }
+          } else if (discount.type === 'fixed') {
+            discountAmount = discount.value;
+          } else if (discount.type === 'shipping') {
+            discountAmount = discount.value || 35000;
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            success: true,
+            discount: {
+              ...discount,
+              discountAmount: Math.min(discountAmount, orderTotal)
+            },
+            message: `🎉 Áp dụng thành công! Giảm ${discountAmount.toLocaleString('vi-VN')}đ`
+          }));
+          return;
+        }
+
+        if (url.startsWith('/api/discounts/')) {
+          const id = url.replace('/api/discounts/', '').split('/')[0];
+          const discounts = readJson('discounts.json') || [];
+          const index = discounts.findIndex(d => d.id === id);
+
+          if (req.method === 'PATCH' && url.endsWith('/toggle') && index !== -1) {
+            discounts[index].isActive = !discounts[index].isActive;
+            writeJson('discounts.json', discounts);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: discounts[index] }));
+            return;
+          }
+
+          if (req.method === 'DELETE' && index !== -1) {
+            const filtered = discounts.filter(d => d.id !== id);
+            writeJson('discounts.json', filtered);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, message: 'Đã xóa mã voucher' }));
+            return;
+          }
+        }
+
         // 7. Telegram Test & ChatID API trong Vite
         if (url === '/api/notifications/telegram-test' && req.method === 'POST') {
           const body = await readBody();

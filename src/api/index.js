@@ -258,9 +258,48 @@ export const saveSettingsApi = async (settingsData) => {
 };
 
 // ----------------------------------------------------
-// 7. HEALTH CHECK API
+// 7. DISCOUNTS / VOUCHER API
+// ----------------------------------------------------
+export const fetchDiscountsApi = async () => {
+  const res = await request('/discounts');
+  return res.data;
+};
+
+export const validateDiscountApi = async (code, orderTotal) => {
+  const res = await request('/discounts/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code, orderTotal })
+  });
+  return res;
+};
+
+export const createDiscountApi = async (discountData) => {
+  const res = await request('/discounts', {
+    method: 'POST',
+    body: JSON.stringify(discountData)
+  });
+  return res.data;
+};
+
+export const toggleDiscountApi = async (discountId) => {
+  const res = await request(`/discounts/${discountId}/toggle`, {
+    method: 'PATCH'
+  });
+  return res.data;
+};
+
+export const deleteDiscountApi = async (discountId) => {
+  const res = await request(`/discounts/${discountId}`, {
+    method: 'DELETE'
+  });
+  return res;
+};
+
+// ----------------------------------------------------
+// 8. HEALTH CHECK API
 // ----------------------------------------------------
 export const checkHealthApi = async () => {
   const res = await request('/health');
   return res;
 };
+

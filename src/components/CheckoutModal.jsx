@@ -16,9 +16,38 @@ import {
 } from 'lucide-react';
 
 export const CheckoutModal = () => {
-  const { isCheckoutOpen, setIsCheckoutOpen, cart, cartTotal, submitOrder } = useShop();
+  const { 
+    isCheckoutOpen, 
+    setIsCheckoutOpen, 
+    cart, 
+    cartTotal, 
+    appliedCoupon,
+    discountAmount,
+    applyCoupon,
+    removeCoupon,
+    submitOrder 
+  } = useShop();
 
   if (!isCheckoutOpen) return null;
+
+  // Coupon state in Checkout
+  const [couponInput, setCouponInput] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    setCouponError('');
+    setIsApplying(true);
+    try {
+      await applyCoupon(couponInput);
+      setCouponInput('');
+    } catch (err) {
+      setCouponError(err.message);
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   // Form State
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
@@ -38,7 +67,7 @@ export const CheckoutModal = () => {
   const [paymentMethod, setPaymentMethod] = useState('qr_transfer'); // 'qr_transfer' | 'momo' | 'card'
 
   const shippingFee = 35000;
-  const grandTotal = cartTotal + shippingFee;
+  const grandTotal = Math.max(0, cartTotal + shippingFee - discountAmount);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -330,6 +359,59 @@ export const CheckoutModal = () => {
                 ))}
               </div>
 
+              {/* Khung Nhập Mã Voucher / Khuyến Mãi */}
+              <div className="bg-white p-3.5 rounded-2xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-gray-700 flex items-center gap-1">
+                    <span>🎟️</span> Mã Giảm Giá / Voucher:
+                  </span>
+                  {appliedCoupon && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                      Đã áp dụng
+                    </span>
+                  )}
+                </div>
+
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      placeholder="Nhập mã (VD: FLORA10)"
+                      className="flex-1 p-2 text-xs uppercase font-mono rounded-xl border border-gray-200 focus:outline-none focus:border-[#1B3B2B]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={isApplying || !couponInput.trim()}
+                      className="bg-[#1B3B2B] hover:bg-[#264A37] disabled:opacity-50 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all"
+                    >
+                      {isApplying ? '...' : 'Áp Dụng'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
+                    <div>
+                      <strong className="font-mono text-[#1B3B2B] block font-bold">{appliedCoupon.code}</strong>
+                      <span className="text-[11px] text-emerald-700">{appliedCoupon.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="text-red-500 hover:text-red-700 font-bold text-xs p-1"
+                      title="Gỡ mã giảm giá"
+                    >
+                      ✕ Gỡ
+                    </button>
+                  </div>
+                )}
+
+                {couponError && (
+                  <p className="text-[11px] text-red-600 italic">{couponError}</p>
+                )}
+              </div>
+
               {/* Chi phí */}
               <div className="space-y-2 text-xs text-gray-600 pt-2 border-t border-gray-200">
                 <div className="flex justify-between">
@@ -340,6 +422,14 @@ export const CheckoutModal = () => {
                   <span>Phí giao hoa tận tay:</span>
                   <span className="font-semibold text-gray-900">{shippingFee.toLocaleString('vi-VN')}đ</span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>Ưu đãi voucher ({appliedCoupon.code}):</span>
+                    <span>-{discountAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-emerald-700">
                   <span>Thiệp in nghệ thuật:</span>
                   <span>Miễn phí (0đ)</span>

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "dc-1",
+    "code": "FLORA10",
+    "name": "Giảm 10% Cho Đơn Hoa Nghệ Thuật",
+    "type": "percentage",
+    "value": 10,
+    "maxDiscount": 100000,
+    "minOrderValue": 500000,
+    "usageLimit": 100,
+    "usedCount": 24,
+    "isActive": true,
+    "expiresAt": "2026-12-31"
+  },
+  {
+    "id": "dc-2",
+    "code": "VALENTINE50K",
+    "name": "Ưu Đãi Yêu Thương 50K",
+    "type": "fixed",
+    "value": 50000,
+    "maxDiscount": 50000,
+    "minOrderValue": 400000,
+    "usageLimit": 50,
+    "usedCount": 18,
+    "isActive": true,
+    "expiresAt": "2026-12-31"
+  },
+  {
+    "id": "dc-3",
+    "code": "FREESHIP",
+    "name": "Miễn Phí Giao Hoa Tận Tay (35K)",
+    "type": "shipping",
+    "value": 35000,
+    "maxDiscount": 35000,
+    "minOrderValue": 300000,
+    "usageLimit": 200,
+    "usedCount": 85,
+    "isActive": true,
+    "expiresAt": "2026-12-31"
+  },
+  {
+    "id": "dc-4",
+    "code": "WELCOME2026",
+    "name": "Chào Mừng Khách Hàng Mới - Giảm 15%",
+    "type": "percentage",
+    "value": 15,
+    "maxDiscount": 150000,
+    "minOrderValue": 600000,
+    "usageLimit": 50,
+    "usedCount": 12,
+    "isActive": true,
+    "expiresAt": "2026-12-31"
+  }
+]

@@ -10,8 +10,30 @@ export const CartDrawer = () => {
     removeFromCart, 
     updateQuantity, 
     cartTotal,
+    appliedCoupon,
+    discountAmount,
+    applyCoupon,
+    removeCoupon,
     setIsCheckoutOpen 
   } = useShop();
+
+  const [couponInput, setCouponInput] = React.useState('');
+  const [couponError, setCouponError] = React.useState('');
+  const [isApplying, setIsApplying] = React.useState(false);
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    setCouponError('');
+    setIsApplying(true);
+    try {
+      await applyCoupon(couponInput);
+      setCouponInput('');
+    } catch (err) {
+      setCouponError(err.message);
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   if (!isCartOpen) return null;
 
@@ -152,11 +174,72 @@ export const CartDrawer = () => {
           {/* Footer Checkout */}
           {cart.length > 0 && (
             <div className="p-5 bg-[#FAF8F5] border-t border-[#E8EFEA] space-y-4">
+              
+              {/* Khung Nhập Mã Giảm Giá Voucher */}
+              <div className="bg-white p-3 rounded-2xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-gray-700 flex items-center gap-1">
+                    <span>🎟️</span> Mã Ưu Đãi / Voucher:
+                  </span>
+                  {appliedCoupon && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                      Đã áp dụng mã
+                    </span>
+                  )}
+                </div>
+
+                {!appliedCoupon ? (
+                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      placeholder="VD: FLORA10, VALENTINE50K"
+                      className="flex-1 p-2 text-xs uppercase font-mono rounded-xl border border-gray-200 focus:outline-none focus:border-[#1B3B2B]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isApplying || !couponInput.trim()}
+                      className="bg-[#1B3B2B] hover:bg-[#264A37] disabled:opacity-50 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all"
+                    >
+                      {isApplying ? '...' : 'Áp Dụng'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
+                    <div>
+                      <strong className="font-mono text-[#1B3B2B] block font-bold">{appliedCoupon.code}</strong>
+                      <span className="text-[11px] text-emerald-700">{appliedCoupon.name}</span>
+                    </div>
+                    <button
+                      onClick={removeCoupon}
+                      className="text-red-500 hover:text-red-700 font-bold text-xs p-1"
+                      title="Gỡ mã giảm giá"
+                    >
+                      ✕ Gỡ
+                    </button>
+                  </div>
+                )}
+
+                {couponError && (
+                  <p className="text-[11px] text-red-600 italic">{couponError}</p>
+                )}
+              </div>
+
+              {/* Chi tiết chi phí */}
               <div className="space-y-1.5 text-xs text-gray-600">
                 <div className="flex justify-between">
                   <span>Tạm tính hoa & phụ kiện:</span>
                   <span className="font-bold text-gray-900">{cartTotal.toLocaleString('vi-VN')}đ</span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>Ưu đãi voucher ({appliedCoupon.code}):</span>
+                    <span>-{discountAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-emerald-700">
                   <span>Miễn phí in thiệp nghệ thuật:</span>
                   <span>0đ</span>
@@ -166,7 +249,7 @@ export const CartDrawer = () => {
               <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-xs font-semibold text-gray-700">Tổng thanh toán:</span>
                 <span className="text-xl font-extrabold text-[#1B3B2B] font-sans">
-                  {cartTotal.toLocaleString('vi-VN')}đ
+                  {Math.max(0, cartTotal - discountAmount).toLocaleString('vi-VN')}đ
                 </span>
               </div>
 

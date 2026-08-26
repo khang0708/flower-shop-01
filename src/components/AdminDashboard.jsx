@@ -61,6 +61,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     updateProduct, 
     deleteProduct, 
     toggleProductAvailability,
+    discounts,
+    addDiscount,
+    toggleDiscount,
+    deleteDiscount,
     shopZaloPhone,
     setShopZaloPhone,
     telegramBotToken,
@@ -75,7 +79,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setLatestNewOrder
   } = useShop();
 
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'zalo_config' | 'inventory'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory'
   const [selectedOrderFilter, setSelectedOrderFilter] = useState('all');
   const [browserNotifStatus, setBrowserNotifStatus] = useState(getBrowserNotificationPermission());
   const [printOrder, setPrintOrder] = useState(null);
@@ -83,6 +87,19 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   // State Modal Thêm/Sửa Mẫu Hoa Mới
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+
+  // State Modal Thêm Voucher
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [discountFormData, setDiscountFormData] = useState({
+    code: '',
+    name: '',
+    type: 'percentage',
+    value: 10,
+    maxDiscount: 100000,
+    minOrderValue: 500000,
+    usageLimit: 100,
+    expiresAt: '2026-12-31'
+  });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -479,6 +496,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           {[
             { id: 'orders', label: 'Quản Lý Đơn Hàng & Cắm Mẫu', icon: ShoppingBag, count: orders.length },
             { id: 'products_cms', label: 'Quản Lý Mẫu Hoa (Storefront CMS)', icon: Flower2, count: products.length },
+            { id: 'discounts', label: '🎟️ Quản Lý Voucher & Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
             { id: 'zalo_config', label: '💬 Cài Đặt Zalo & Telegram Nhận Đơn', icon: Smartphone, badge: 'Đa Kênh' },
             { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length },
           ].map((tab) => {
@@ -716,7 +734,92 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           </div>
         )}
 
-        {/* TAB 3: CÀI ĐẶT ZALO & THÔNG BÁO ĐƠN HÀNG ĐA KÊNH */}
+        {/* TAB 3: QUẢN LÝ MÃ GIẢM GIÁ & VOUCHER */}
+        {activeTab === 'discounts' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-[#1B3B2B]">
+                  Quản Lý Mã Giảm Giá & Voucher Khuyến Mãi
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Thiết lập các mã coupon (% hoặc tiền cố định hoặc miễn phí vận chuyển) để khách hàng áp dụng khi thanh toán.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsDiscountModalOpen(true)}
+                className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-5 py-3 rounded-full shadow-md transition-all flex items-center gap-2 active:scale-95"
+              >
+                <Plus className="w-4 h-4 text-[#F5D6CE]" />
+                <span>+ Tạo Mã Voucher Mới</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {discounts?.map((dc) => (
+                <div key={dc.id} className="bg-white rounded-3xl border border-[#E8EFEA] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-base font-extrabold bg-[#F4F7F5] text-[#1B3B2B] px-3 py-1 rounded-xl border border-[#D1DFD6]">
+                        🎟️ {dc.code}
+                      </span>
+                      <button
+                        onClick={() => toggleDiscount(dc.id)}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-all ${
+                          dc.isActive !== false
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                        }`}
+                      >
+                        {dc.isActive !== false ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                        <span>{dc.isActive !== false ? 'Đang Hoạt Động' : 'Tạm Dừng'}</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <h4 className="font-serif text-sm font-bold text-[#1B3B2B]">{dc.name}</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {dc.type === 'percentage' && `Giảm ${dc.value}% (Tối đa ${Number(dc.maxDiscount || 0).toLocaleString('vi-VN')}đ)`}
+                        {dc.type === 'fixed' && `Giảm trực tiếp ${Number(dc.value).toLocaleString('vi-VN')}đ`}
+                        {dc.type === 'shipping' && `Miễn phí giao hoa (${Number(dc.value || 35000).toLocaleString('vi-VN')}đ)`}
+                      </p>
+                    </div>
+
+                    <div className="bg-[#FAF8F5] p-3 rounded-xl border border-gray-100 text-[11px] text-gray-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Đơn tối thiểu:</span>
+                        <strong className="text-gray-900">{Number(dc.minOrderValue || 0).toLocaleString('vi-VN')}đ</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Đã sử dụng:</span>
+                        <span className="font-mono text-emerald-800 font-bold">{dc.usedCount || 0} / {dc.usageLimit || '∞'} lượt</span>
+                      </div>
+                      <div className="flex justify-between text-gray-400">
+                        <span>Hạn dùng:</span>
+                        <span>{dc.expiresAt || 'Không giới hạn'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-[10px] text-gray-400">ID: {dc.id}</span>
+                    <button
+                      onClick={() => deleteDiscount(dc.id)}
+                      className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1 text-xs"
+                      title="Xóa mã voucher này"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa Mã</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: CÀI ĐẶT ZALO & THÔNG BÁO ĐƠN HÀNG ĐA KÊNH */}
         {activeTab === 'zalo_config' && (
           <div className="space-y-6">
             
@@ -1049,6 +1152,158 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
+                  className="px-5 border border-gray-300 text-gray-600 rounded-full"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TẠO MÃ GIẢM GIÁ / VOUCHER */}
+      {isDiscountModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto">
+            <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-serif text-lg font-bold">🎟️ Tạo Mã Giảm Giá Mới</h3>
+              <button onClick={() => setIsDiscountModalOpen(false)} className="text-white/80 hover:text-white text-lg">✕</button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addDiscount({
+                  ...discountFormData,
+                  value: Number(discountFormData.value),
+                  maxDiscount: Number(discountFormData.maxDiscount),
+                  minOrderValue: Number(discountFormData.minOrderValue),
+                  usageLimit: Number(discountFormData.usageLimit)
+                });
+                setIsDiscountModalOpen(false);
+              }}
+              className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs"
+            >
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Mã Giảm Giá (Code) *</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={discountFormData.code}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, code: e.target.value.toUpperCase() })}
+                    placeholder="VD: FLORA2026"
+                    className="flex-1 p-2.5 rounded-xl border border-gray-300 focus:outline-none uppercase font-mono font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomCode = `FLORA${Math.floor(10 + Math.random() * 90)}`;
+                      setDiscountFormData({ ...discountFormData, code: randomCode });
+                    }}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium"
+                  >
+                    🎲 Tự Sinh
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Tên chương trình ưu đãi *</label>
+                <input
+                  type="text"
+                  required
+                  value={discountFormData.name}
+                  onChange={(e) => setDiscountFormData({ ...discountFormData, name: e.target.value })}
+                  placeholder="VD: Tri ân khách hàng thân thiết"
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Loại giảm giá</label>
+                  <select
+                    value={discountFormData.type}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, type: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white font-semibold"
+                  >
+                    <option value="percentage">Phần trăm (%)</option>
+                    <option value="fixed">Số tiền cố định (đ)</option>
+                    <option value="shipping">Miễn phí ship (35k)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    {discountFormData.type === 'percentage' ? 'Mức giảm (%) *' : 'Số tiền giảm (đ) *'}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={discountFormData.value}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, value: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-bold"
+                  />
+                </div>
+              </div>
+
+              {discountFormData.type === 'percentage' && (
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Mức giảm tối đa (VNĐ)</label>
+                  <input
+                    type="number"
+                    value={discountFormData.maxDiscount}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, maxDiscount: e.target.value })}
+                    placeholder="VD: 100000"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Đơn tối thiểu (VNĐ)</label>
+                  <input
+                    type="number"
+                    value={discountFormData.minOrderValue}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, minOrderValue: e.target.value })}
+                    placeholder="VD: 400000"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Giới hạn số lượt</label>
+                  <input
+                    type="number"
+                    value={discountFormData.usageLimit}
+                    onChange={(e) => setDiscountFormData({ ...discountFormData, usageLimit: e.target.value })}
+                    placeholder="VD: 100"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Hạn sử dụng</label>
+                <input
+                  type="date"
+                  value={discountFormData.expiresAt}
+                  onChange={(e) => setDiscountFormData({ ...discountFormData, expiresAt: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-gray-200 flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md"
+                >
+                  + Phát Hành Mã Voucher
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDiscountModalOpen(false)}
                   className="px-5 border border-gray-300 text-gray-600 rounded-full"
                 >
                   Hủy

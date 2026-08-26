@@ -14,7 +14,12 @@ import {
   checkHealthApi,
   sendTelegramTestApi,
   fetchSettingsApi,
-  saveSettingsApi
+  saveSettingsApi,
+  fetchDiscountsApi,
+  validateDiscountApi,
+  createDiscountApi,
+  toggleDiscountApi,
+  deleteDiscountApi
 } from '../api';
 import { playNewOrderChime } from '../services/soundService';
 import { 
@@ -200,6 +205,51 @@ export const ShopProvider = ({ children }) => {
     showBrowserOrderNotification(order);
   }, [isSoundEnabled]);
 
+  // 8. Quản lý Mã Giảm Giá & Voucher
+  const [discounts, setDiscounts] = useState([
+    {
+      id: 'dc-1',
+      code: 'FLORA10',
+      name: 'Giảm 10% Cho Đơn Hoa Nghệ Thuật',
+      type: 'percentage',
+      value: 10,
+      maxDiscount: 100000,
+      minOrderValue: 500000,
+      usageLimit: 100,
+      usedCount: 24,
+      isActive: true,
+      expiresAt: '2026-12-31'
+    },
+    {
+      id: 'dc-2',
+      code: 'VALENTINE50K',
+      name: 'Ưu Đãi Yêu Thương 50K',
+      type: 'fixed',
+      value: 50000,
+      maxDiscount: 50000,
+      minOrderValue: 400000,
+      usageLimit: 50,
+      usedCount: 18,
+      isActive: true,
+      expiresAt: '2026-12-31'
+    },
+    {
+      id: 'dc-3',
+      code: 'FREESHIP',
+      name: 'Miễn Phí Giao Hoa Tận Tay (35K)',
+      type: 'shipping',
+      value: 35000,
+      maxDiscount: 35000,
+      minOrderValue: 300000,
+      usageLimit: 200,
+      usedCount: 85,
+      isActive: true,
+      expiresAt: '2026-12-31'
+    }
+  ]);
+
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
   // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel
   useEffect(() => {
     const initDataFromApi = async () => {
@@ -207,10 +257,11 @@ export const ShopProvider = ({ children }) => {
         const health = await checkHealthApi();
         if (health.status === 'ONLINE') {
           setIsApiConnected(true);
-          const [apiProducts, apiOrders, apiInventory, apiSettings] = await Promise.all([
+          const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiSettings] = await Promise.all([
             fetchProductsApi(),
             fetchOrdersApi(),
             fetchInventoryApi(),
+            fetchDiscountsApi().catch(() => null),
             fetchSettingsApi().catch(() => null)
           ]);
           if (apiProducts?.length > 0) setProducts(apiProducts);
@@ -219,6 +270,7 @@ export const ShopProvider = ({ children }) => {
             setActiveOrder(apiOrders[0]);
           }
           if (apiInventory?.length > 0) setInventory(apiInventory);
+          if (apiDiscounts?.length > 0) setDiscounts(apiDiscounts);
           if (apiSettings) {
             if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
             if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
@@ -359,6 +411,75 @@ export const ShopProvider = ({ children }) => {
     return total + ((item.price + addOnsTotal) * item.quantity);
   }, 0);
 
+  // Tính số tiền giảm giá thực tế dựa trên giỏ hàng hiện tại
+  const discountAmount = React.useMemo(() => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.type === 'percentage') {
+      const calculated = Math.round((cartTotal * appliedCoupon.value) / 100);
+      return appliedCoupon.maxDiscount ? Math.min(calculated, appliedCoupon.maxDiscount) : calculated;
+    }
+    if (appliedCoupon.type === 'fixed') {
+      return Math.min(appliedCoupon.value, cartTotal);
+    }
+    if (appliedCoupon.type === 'shipping') {
+      return 35000;
+    }
+    return appliedCoupon.discountAmount || 0;
+  }, [appliedCoupon, cartTotal]);
+
+  const applyCoupon = async (code) => {
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!cleanCode) throw new Error('Vui lòng nhập mã giảm giá.');
+
+    try {
+      const res = await validateDiscountApi(cleanCode, cartTotal);
+      if (res.success && res.discount) {
+        setAppliedCoupon(res.discount);
+        return res;
+      }
+      throw new Error(res.message || 'Mã giảm giá không hợp lệ');
+    } catch (err) {
+      // Fallback local validation
+      const localMatch = discounts.find(d => d.code === cleanCode && d.isActive);
+      if (!localMatch) throw new Error(err.message || 'Mã giảm giá không tồn tại hoặc đã hết hạn.');
+      if (cartTotal < (localMatch.minOrderValue || 0)) {
+        throw new Error(`Đơn hàng cần tối thiểu ${Number(localMatch.minOrderValue).toLocaleString('vi-VN')}đ để dùng mã này.`);
+      }
+      setAppliedCoupon(localMatch);
+      return { success: true, discount: localMatch, message: 'Áp dụng mã thành công!' };
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+  };
+
+  const addDiscount = async (discountData) => {
+    try {
+      const saved = await createDiscountApi(discountData);
+      setDiscounts(prev => [saved, ...prev]);
+    } catch (e) {
+      const newD = { ...discountData, id: `dc-${Date.now()}`, usedCount: 0, isActive: true };
+      setDiscounts(prev => [newD, ...prev]);
+    }
+  };
+
+  const toggleDiscount = async (discountId) => {
+    try {
+      const saved = await toggleDiscountApi(discountId);
+      setDiscounts(prev => prev.map(d => d.id === discountId ? saved : d));
+    } catch (e) {
+      setDiscounts(prev => prev.map(d => d.id === discountId ? { ...d, isActive: !d.isActive } : d));
+    }
+  };
+
+  const deleteDiscount = async (discountId) => {
+    try {
+      await deleteDiscountApi(discountId);
+    } catch (e) {}
+    setDiscounts(prev => prev.filter(d => d.id !== discountId));
+  };
+
   // Khách tạo đơn hàng mới -> Lưu API & Kích hoạt thông báo đa kênh
   const submitOrder = async (orderData) => {
     const token = telegramBotToken || localStorage.getItem('flora_tg_token');
@@ -386,6 +507,7 @@ export const ShopProvider = ({ children }) => {
 
     const mainCardMessage = orderData.cardMessage || cart[0]?.cardMessage || 'Gửi gắm yêu thương!';
     const mainSenderSign = orderData.senderSign || cart[0]?.senderSign || orderData.senderName || 'Người gửi';
+    const finalTotalAmount = Math.max(0, cartTotal + 35000 - discountAmount);
 
     const orderPayload = {
       customerName: orderData.senderName || 'Khách hàng',
@@ -398,7 +520,9 @@ export const ShopProvider = ({ children }) => {
       cardMessage: mainCardMessage,
       senderSign: mainSenderSign,
       deliverySlot: orderData.deliverySlot || 'Hỏa tốc 90 phút',
-      totalAmount: cartTotal + 35000,
+      totalAmount: finalTotalAmount,
+      discountCode: appliedCoupon?.code || null,
+      discountAmount: discountAmount,
       proofPhotoUrl: cart[0]?.image || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       items: formattedItems,
       telegramBotToken: token,
@@ -539,6 +663,14 @@ export const ShopProvider = ({ children }) => {
         orders,
         activeOrder,
         inventory,
+        discounts,
+        appliedCoupon,
+        discountAmount,
+        applyCoupon,
+        removeCoupon,
+        addDiscount,
+        toggleDiscount,
+        deleteDiscount,
         addToCart,
         removeFromCart,
         updateQuantity,
