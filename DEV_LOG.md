@@ -68,24 +68,17 @@
 
 ---
 
-### 📊 Tính Năng Nâng Cấp: Xuất Báo Cáo Excel Định Dạng Cao Cấp (.xls)
+### 📈 Tính Năng Nâng Cấp: Báo Cáo Doanh Thu & Biểu Đồ Số Liệu Thật 100% (Không Mock Data)
 * **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
 * **Chi tiết nâng cấp:**
-  1. **Cấu trúc Bảng Tính Hoàn Chỉnh (HTML XML Spreadsheet):**
-     * Hỗ trợ mở trực tiếp trên Microsoft Excel, Google Sheets, Apple Numbers với đầy đủ màu sắc, border và phông chữ Segoe UI/Arial.
-  2. **Banner Tiêu Đề & Thông Tin Quản Trị:**
-     * Header Banner thương hiệu xanh đậm `#1B3B2B` sang trọng.
-     * Dấu mốc thời gian xuất và người lập báo cáo.
-  3. **Khung Dashboard KPI Tổng Quan Tích Hợp:**
-     * Tổng doanh thu đã lọc (VNĐ), Tổng số đơn, Giá trị đơn trung bình, Tỷ lệ duyệt ảnh thật, và Chi tiết bộ lọc đang áp dụng.
-  4. **Bảng Dữ Liệu 20 Cột Định Dạng Chuẩn:**
-     * Căn chỉnh hợp lý (STT, Mã đơn, SĐT, Thời gian căn giữa; Tên khách, Mẫu hoa, Địa chỉ căn trái; Tiền tệ căn phải).
-     * Số điện thoại gán `mso-number-format: "\@"` (không bị mất số `0` đầu).
-     * Tiền tệ gán `mso-number-format: "\#\,\#\#0"` chuẩn số học để tính toán được công thức trong Excel.
-     * Kẻ sọc Zebra (`#F8FAF8` & `#FFFFFF`) chống mỏi mắt khi đọc bảng dài.
-     * Badge trạng thái đơn hàng và duyệt ảnh có màu sắc phân biệt rõ ràng.
-     * Dòng **TỔNG CỘNG DOANH THU** ở chân trang với gạch chân kép và nổi bật số tiền.
-* **Commit:** `3ad5e14`
+  1. **Loại bỏ toàn bộ Mock Data tĩnh:**
+     * Không sử dụng mảng số liệu gán cứng cho 7 ngày hoặc tỷ lệ % dịp tặng giả lập.
+  2. **Thuật toán tổng hợp từ 100% đơn hàng thực tế:**
+     * **Biểu đồ 7 ngày gần nhất:** Tự động quét và gom nhóm chính xác theo ngày tạo (`createdAt`) và khung giờ hẹn của các đơn hàng có thật trong hệ thống; tính đúng doanh thu và số lượng đơn theo từng ngày.
+     * **Phân bổ Dịp Tặng Hoa:** Phân tích ngữ nghĩa tự nhiên từ lời chúc thiệp (`cardMessage`), tên mẫu hoa (`productName`) và người gửi để phân loại chính xác số đơn và % (Tình yêu, Sinh nhật, Khai trương, Lời cảm ơn).
+     * **Top Sản Phẩm Bán Chạy:** Xếp hạng mẫu hoa theo đúng số lượng bán và doanh thu thực tế.
+     * **Gợi Ý Chiến Lược Động:** Tự động sinh nhận xét kinh doanh dựa trên sản phẩm bán chạy nhất và chủ đề hoa chiếm ưu thế trong tệp dữ liệu đã lọc.
+* **Commit:** `09b985f`
 
 ---
 
