@@ -8,6 +8,7 @@
     "server": "node server/server.js",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
+    "test": "node tests/unit-test.js && node tests/security-test.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },

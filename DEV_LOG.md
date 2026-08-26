@@ -1,45 +1,75 @@
-# 🌸 FLORA & BLOOM ATELIER - DEV LOG & CHUYỂN GIAO NGỮ CẢNH
+# 📋 FLORA & BLOOM - TIẾN ĐỘ VÀ BÀN GIAO TOÀN DIỆN DỰ ÁN
 
-Tài liệu này lưu trữ tiến độ phát triển, kiến trúc hệ thống và trạng thái các Milestone của dự án để đảm bảo không bị mất ngữ cảnh khi mở phiên làm việc mới.
-
----
-
-## 🗺️ BẢNG TIẾN ĐỘ LỘ TRÌNH (ROADMAP PROGRESS)
+## 🎯 BẢNG TỔNG KẾT TIẾN ĐỘ 4 CHẶNG TÍNH NĂNG CHIẾN LƯỢC:
 
 | Chặng | Tên Tính Năng | Trạng Thái | Git Commit Mốc |
 | :--- | :--- | :---: | :--- |
 | **Chặng 1** | In Hóa Đơn, Phiếu Giao Hàng & Thiệp Cắm Hoa | ✅ **HOÀN TẤT** | `7a15732` - `feat(orders): chặng 1 - thêm chức năng in hóa đơn...` |
 | **Chặng 2** | Hệ Thống Mã Giảm Giá & Voucher Khuyến Mãi | ✅ **HOÀN TẤT** | `af7a028` - `feat(promo): chặng 2 - tích hợp hệ thống voucher...` |
-| **Chặng 3** | Báo Cáo & Biểu Đồ Doanh Thu | ✅ **HOÀN TẤT** | `0ecb2d8` - `feat(analytics): chặng 3 - tích hợp bảng điều khiển...` |
-| **Chặng 4** | Đánh Giá & Feedback Thực Tế Từ Khách Hàng | ⏳ **TIẾP THEO** | *Đang chuẩn bị triển khai* |
+| **Chặng 3** | Báo Cáo & Biểu Đồ Doanh Thu (Sales Analytics) | ✅ **HOÀN TẤT** | `0ecb2d8` - `feat(analytics): chặng 3 - tích hợp bảng điều khiển...` |
+| **Chặng 4** | Đánh Giá & Feedback Thực Tế Từ Khách Hàng | ✅ **HOÀN TẤT** | `15b74b4` - `feat(reviews): chặng 4 - hoàn thiện hệ thống đánh giá...` |
 
 ---
 
-## 📌 CHI TIẾT CÁC TÍNH NĂNG ĐÃ HOÀN THÀNH:
+## 📌 CHI TIẾT TỪNG CHẶNG ĐÃ TRIỂN KHAI VÀ XÁC THỰC:
 
-### ✅ Chặng 1: In Hóa Đơn, Phiếu Giao & Thiệp Nghệ Thuật
+### 💐 Chặng 1: In Hóa Đơn, Phiếu Giao & Thiệp Nghệ Thuật
 * **Files:** `src/components/PrintInvoiceModal.jsx`, `src/components/AdminDashboard.jsx`.
-* **Chức Năng:** In phiếu giao hoa chuẩn xưởng và thiệp chúc nghệ thuật chuẩn `@media print`.
+* **Chức Năng:**
+  * In phiếu giao hoa 2 liên chuẩn xưởng: Liên 1 Kẹp đơn giao (Địa chỉ, SĐT, Shipper note), Liên 2 Thiệp chúc mừng nghệ thuật nét chữ viết tay tinh tế kẹp vào bó hoa.
+  * Hỗ trợ chuẩn `@media print` không bị vỡ layout khi in ra giấy A4 hoặc A5.
+* **Commit:** `7a15732`
 
-### ✅ Chặng 2: Hệ Thống Mã Giảm Giá Voucher & Quản Trị Khuyến Mãi
+---
+
+### 🎟️ Chặng 2: Hệ Thống Mã Giảm Giá Voucher & Quản Trị Khuyến Mãi
 * **Files:** `server/data/discounts.json`, `vite.config.js`, `src/api/index.js`, `src/context/ShopContext.jsx`, `src/components/CartDrawer.jsx`, `src/components/CheckoutModal.jsx`, `src/components/AdminDashboard.jsx`.
-* **Chức Năng:** Hỗ trợ voucher %, số tiền, freeship, ràng buộc đơn tối thiểu, số lượt dùng, tự động trừ tiền.
+* **Chức Năng:**
+  * Hỗ trợ 3 loại voucher: Phần trăm `%` (kèm mức giảm tối đa), Số tiền cố định `đ`, Miễn phí vận chuyển (Freeship 35k).
+  * Ràng buộc đơn hàng tối thiểu (`minOrderValue`), giới hạn số lượt dùng (`usageLimit`), hạn sử dụng.
+  * Tự động trừ tiền real-time trong giỏ hàng & modal thanh toán.
+  * Quản trị CMS Admin: Thêm mã, tự sinh mã ngẫu nhiên (`🎲 Tự Sinh`), bật/tắt kích hoạt, xóa mã.
+* **Commit:** `af7a028`
 
-### ✅ Chặng 3: Báo Cáo & Biểu Đồ Doanh Thu
+---
+
+### 📊 Chặng 3: Báo Cáo & Biểu Đồ Doanh Thu (Sales Analytics Dashboard)
 * **Files:** `src/components/SalesAnalyticsView.jsx`, `src/components/AdminDashboard.jsx`.
 * **Chức Năng:**
-  * 4 KPI tài chính/vận hành: Doanh thu thực tế, Tổng số đơn, AOV (Giá trị TB/đơn), Tỷ lệ hài lòng ảnh mẫu hoa.
-  * Biểu đồ cột xu hướng doanh thu 7 ngày tương tác hover tooltip.
-  * Phân bổ tỷ lệ các dịp tặng hoa (Tình yêu, Sinh nhật, Khai trương, Tri ân).
-  * Bảng xếp hạng Top mẫu hoa bán chạy nhất (Best Sellers) kèm ảnh và số đơn bán.
-* **Xác Thực:** Build thành công 100%, Commit Git `0ecb2d8`.
+  * 4 Thẻ KPI vận hành/tài chính: Tổng doanh thu thực tế, Tổng đơn hàng, Giá trị trung bình/đơn (AOV), Tỷ lệ hài lòng duyệt ảnh hoa thật.
+  * Biểu đồ cột xu hướng doanh thu 7 ngày gần nhất với hover tooltip và đánh dấu ngày hôm nay.
+  * Biểu đồ tỷ lệ phân bổ đơn hàng theo các dịp tặng (Tình yêu, Sinh nhật, Khai trương, Tri ân,...).
+  * Bảng xếp hạng Top mẫu hoa bán chạy nhất (Best Sellers) kèm ảnh mẫu và số lượng đơn đã bán.
+* **Commit:** `0ecb2d8`
 
 ---
 
-## 🚀 TIẾP THEO: CHẶNG 4 (Đánh Giá & Feedback Thực Tế Từ Khách Hàng)
-* **Mục Tiêu:**
-  1. Persistent store `server/data/reviews.json` và API `/api/reviews` (GET, POST gửi đánh giá mới).
-  2. Modal/Form gửi đánh giá: Số sao (1-5 sao), Họ tên, Tag dịp tặng, Cảm nhận chất lượng hoa & shipper, Ảnh hoa thực tế nhận được.
-  3. Hiển thị Section Đánh Giá & Feedback Thực Tế trên Storefront (`App.jsx` / `ProductDetailModal.jsx` / `ReviewsSection.jsx`).
-  4. Quản lý / Ẩn hiện review trong Admin CMS.
+### ⭐ Chặng 4: Đánh Giá & Feedback Khách Hàng Thực Tế
+* **Files:** `server/data/reviews.json`, `vite.config.js`, `src/api/index.js`, `src/context/ShopContext.jsx`, `src/components/ReviewsSection.jsx`, `src/App.jsx`, `src/components/AdminDashboard.jsx`.
+* **Chức Năng:**
+  * **Kho dữ liệu & REST API:** `server/data/reviews.json`, endpoints `GET, POST /api/reviews`, `PATCH /api/reviews/:id/toggle`, `DELETE /api/reviews/:id`.
+  * **Storefront Section (`ReviewsSection.jsx`):** Hiển thị điểm số trung bình (4.9/5.0), bộ lọc (Tất cả, Có ảnh chụp thật, 5 sao), lưới thẻ review kèm ảnh thật, avatar, tên khách và huy hiệu `✓ Đã mua hàng thực tế`.
+  * **Modal Gửi Đánh Giá Nhanh:** Khách hàng có thể chọn số sao, viết cảm nghĩ về độ tươi của hoa và thái độ shipper, dán ảnh chụp hoa nhận được.
+  * **Admin CMS Kiểm Duyệt:** Tab `⭐ Đánh Giá & Feedback` trong Admin cho phép xem tất cả phản hồi, ẩn/hiện ngoài website hoặc xóa review không phù hợp.
+* **Commit:** `15b74b4`
 
+---
+
+## 🛠️ HƯỚNG DẪN VẬN HÀNH & KIỂM TRA TOÀN DIỆN:
+1. **Khởi chạy Development Server:**
+   ```bash
+   npm run dev
+   ```
+2. **Trải nghiệm Storefront:**
+   * Mở `http://localhost:5173/` để xem giao diện khách hàng, danh mục hoa, giỏ hàng, áp dụng mã voucher (`FLORA10`, `FREESHIP`), và xem feedback thực tế ở mục **"Cảm Xúc & Đánh Giá Của Khách Hàng"**.
+3. **Mở Bảng Điều Hành Quản Trị (Admin Portal):**
+   * Bấm `Ctrl + Shift + A` (hoặc `Alt + Shift + A`) hoặc mở `http://localhost:5173/#admin` (hoặc bấm liên kết bí mật ở chân trang Footer).
+   * Đăng nhập bảo mật bằng Google, Facebook hoặc Telegram SSO.
+   * Khám phá đủ 7 Tabs:
+     1. 📦 **Quản Lý Đơn Hàng & Cắm Mẫu** (Có nút `🖨️ In Phiếu Giao & Thiệp Kẹp Hoa`).
+     2. 📊 **Báo Cáo Doanh Thu** (Biểu đồ doanh thu 7 ngày, Best Sellers, Occasion Share).
+     3. 🌸 **Quản Lý Mẫu Hoa (Storefront CMS)**.
+     4. 🎟️ **Quản Lý Voucher & Khuyến Mãi**.
+     5. ⭐ **Kiểm Duyệt Đánh Giá & Feedback**.
+     6. 💬 **Cài Đặt Zalo & Telegram Nhận Đơn** (Có nút tự động dò tìm Chat ID).
+     7. 🏷️ **Tồn Kho Hoa Tươi**.
