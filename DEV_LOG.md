@@ -68,6 +68,17 @@
 
 ---
 
+### 🌸 Tính Năng Bổ Sung: Import / Upload Ảnh Mẫu Hoa Trực Tiếp (Product Image Uploader)
+* **File:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx)
+* **Chi tiết nâng cấp:**
+  1. **Tải tệp từ máy tính (File Upload / Kéo thả):** Hỗ trợ chọn tệp ảnh từ máy tính (JPG, PNG, WEBP, HEIC) tự động đọc qua `FileReader` thành Data URL Base64 và lưu trữ/hiển thị tức thì.
+  2. **Thư viện mẫu xưởng (Curated Florist Library):** Cung cấp 6 mẫu ảnh chụp studio hoa thật đẹp có sẵn để chọn nhanh 1-click.
+  3. **Nhập link URL trực tiếp:** Giữ lại tùy chọn dán link ảnh Web khi cần.
+  4. **Live Preview Box:** Khung xem trước ảnh trực quan kèm nút gỡ/thay ảnh.
+* **Commit:** `bcda358`
+
+---
+
 ## 🛠️ HƯỚNG DẪN VẬN HÀNH & KIỂM TRA TOÀN DIỆN:
 1. **Khởi chạy Development Server:**
    ```bash
