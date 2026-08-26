@@ -68,19 +68,20 @@
 
 ---
 
-### 🚚 Tính Năng Bổ Sung: Tùy Chỉnh Phí Giao Hoa & Chính Sách Freeship (Shipping Settings)
-* **Files:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx), [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`server/data/settings.json`](file:///Users/macbook/dev-learning/flora-bloom-shop/server/data/settings.json)
+### 📸 Tính Năng Bổ Sung: Chụp & Tải Ảnh Hoa Thật Tại Xưởng Cập Nhật Realtime
+* **Files:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx), [`src/components/OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`src/services/notificationService.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/services/notificationService.js)
 * **Chi tiết nâng cấp:**
-  1. **Tab Quản Trị Phí Giao Hoa & Freeship:**
-     * Tùy chỉnh **Phí giao tiêu chuẩn theo khung giờ hẹn** (Mặc định 35.000đ, hỗ trợ quick chips chọn nhanh: 0đ, 25k, 30k, 35k, 40k).
-     * Tùy chỉnh **Phí giao hỏa tốc 60 - 90 phút** (Mặc định 60.000đ, quick chips: 45k, 50k, 60k, 70k, 80k).
-     * Bật/Tắt **Chính sách Freeship tự động** theo giá trị đơn hàng (Mặc định đơn từ 1.000.000đ $\rightarrow$ 0đ ship).
-     * Khung **Live Customer Simulation Preview** mô phỏng giao diện khách hàng thời gian thực.
-  2. **Giao Diện Thanh Toán (Checkout Modal):**
-     * Tự động tính cước động theo lựa chọn của khách (Khung giờ vs Hỏa tốc).
-     * Hiển thị Huy hiệu & Lời nhắc Freeship tự động khi giỏ hàng đạt ngưỡng.
-     * Lưu trữ cấu hình bền vững vào REST API Backend (`/api/settings`) và LocalStorage.
-* **Commit:** `381c60d`
+  1. **Khởi tạo đơn hàng chân thực:** Khi khách tạo đơn, `proofPhotoUrl` khởi tạo là `null` (không giả lập ảnh catalog làm ảnh thật).
+  2. **Modal Studio Chụp & Tải Ảnh Hoa Thật (Admin CMS):**
+     * Hỗ trợ **Chụp trực tiếp từ Camera / Tải file từ máy** (JPG, PNG, WEBP, HEIC qua FileReader Data URL).
+     * Hỗ trợ chọn nhanh từ thư viện xưởng hoa studio có sẵn.
+     * Thêm lời nhắn / ghi chú cắm hoa riêng của nghệ nhân gửi cho người mua.
+     * Khung **Live Photo Preview** xem trước kích thước và dấu thời gian.
+  3. **Giao Diện Người Mua (Order Tracking Realtime):**
+     * Khi chưa có ảnh: Hiển thị trạng thái chờ cắm hoa chân thực (*"🎨 Nghệ nhân đang tỉ mỉ cắm hoa... Ảnh hoa thật sẽ xuất hiện ngay khi cắm xong"*).
+     * Khi nghệ nhân bấm Lưu ảnh: Đẩy sự kiện SSE và BroadcastChannel đa tab ngay lập tức $\rightarrow$ Người mua thấy ảnh hoa thật xuất hiện tức thì mà không cần load lại trang.
+     * Người mua bấm **"👍 Tôi Duyệt Ảnh Hoa Này - Cho Phép Giao Ngay"** để thông báo cho shipper lên đường.
+* **Commit:** `9fe7ac1`
 
 ---
 
