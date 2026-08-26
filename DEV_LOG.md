@@ -68,20 +68,24 @@
 
 ---
 
-### 📸 Tính Năng Bổ Sung: Chụp & Tải Ảnh Hoa Thật Tại Xưởng Cập Nhật Realtime
-* **Files:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx), [`src/components/OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`src/services/notificationService.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/services/notificationService.js)
+### 📊 Tính Năng Nâng Cấp: Xuất Báo Cáo Excel Định Dạng Cao Cấp (.xls)
+* **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
 * **Chi tiết nâng cấp:**
-  1. **Khởi tạo đơn hàng chân thực:** Khi khách tạo đơn, `proofPhotoUrl` khởi tạo là `null` (không giả lập ảnh catalog làm ảnh thật).
-  2. **Modal Studio Chụp & Tải Ảnh Hoa Thật (Admin CMS):**
-     * Hỗ trợ **Chụp trực tiếp từ Camera / Tải file từ máy** (JPG, PNG, WEBP, HEIC qua FileReader Data URL).
-     * Hỗ trợ chọn nhanh từ thư viện xưởng hoa studio có sẵn.
-     * Thêm lời nhắn / ghi chú cắm hoa riêng của nghệ nhân gửi cho người mua.
-     * Khung **Live Photo Preview** xem trước kích thước và dấu thời gian.
-  3. **Giao Diện Người Mua (Order Tracking Realtime):**
-     * Khi chưa có ảnh: Hiển thị trạng thái chờ cắm hoa chân thực (*"🎨 Nghệ nhân đang tỉ mỉ cắm hoa... Ảnh hoa thật sẽ xuất hiện ngay khi cắm xong"*).
-     * Khi nghệ nhân bấm Lưu ảnh: Đẩy sự kiện SSE và BroadcastChannel đa tab ngay lập tức $\rightarrow$ Người mua thấy ảnh hoa thật xuất hiện tức thì mà không cần load lại trang.
-     * Người mua bấm **"👍 Tôi Duyệt Ảnh Hoa Này - Cho Phép Giao Ngay"** để thông báo cho shipper lên đường.
-* **Commit:** `9fe7ac1`
+  1. **Cấu trúc Bảng Tính Hoàn Chỉnh (HTML XML Spreadsheet):**
+     * Hỗ trợ mở trực tiếp trên Microsoft Excel, Google Sheets, Apple Numbers với đầy đủ màu sắc, border và phông chữ Segoe UI/Arial.
+  2. **Banner Tiêu Đề & Thông Tin Quản Trị:**
+     * Header Banner thương hiệu xanh đậm `#1B3B2B` sang trọng.
+     * Dấu mốc thời gian xuất và người lập báo cáo.
+  3. **Khung Dashboard KPI Tổng Quan Tích Hợp:**
+     * Tổng doanh thu đã lọc (VNĐ), Tổng số đơn, Giá trị đơn trung bình, Tỷ lệ duyệt ảnh thật, và Chi tiết bộ lọc đang áp dụng.
+  4. **Bảng Dữ Liệu 20 Cột Định Dạng Chuẩn:**
+     * Căn chỉnh hợp lý (STT, Mã đơn, SĐT, Thời gian căn giữa; Tên khách, Mẫu hoa, Địa chỉ căn trái; Tiền tệ căn phải).
+     * Số điện thoại gán `mso-number-format: "\@"` (không bị mất số `0` đầu).
+     * Tiền tệ gán `mso-number-format: "\#\,\#\#0"` chuẩn số học để tính toán được công thức trong Excel.
+     * Kẻ sọc Zebra (`#F8FAF8` & `#FFFFFF`) chống mỏi mắt khi đọc bảng dài.
+     * Badge trạng thái đơn hàng và duyệt ảnh có màu sắc phân biệt rõ ràng.
+     * Dòng **TỔNG CỘNG DOANH THU** ở chân trang với gạch chân kép và nổi bật số tiền.
+* **Commit:** `3ad5e14`
 
 ---
 
