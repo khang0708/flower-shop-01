@@ -141,6 +141,7 @@ export const ShopProvider = ({ children }) => {
   const [selectedOccasion, setSelectedOccasion] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price_asc' | 'price_desc' | 'rating_desc' | 'newest' | 'name_asc'
   
   // 5. Modals & Drawers
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -733,6 +734,8 @@ export const ShopProvider = ({ children }) => {
         setSelectedColor,
         searchQuery,
         setSearchQuery,
+        sortBy,
+        setSortBy,
         isCartOpen,
         setIsCartOpen,
         isCheckoutOpen,
