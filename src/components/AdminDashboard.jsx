@@ -54,7 +54,8 @@ import {
   MessageSquareHeart,
   Star,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Truck
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -82,13 +83,15 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setTelegramChatId,
     isSoundEnabled,
     setIsSoundEnabled,
+    shippingSettings,
+    updateShippingSettings,
     unreadOrdersCount,
     resetUnreadOrdersCount,
     latestNewOrder,
     setLatestNewOrder
   } = useShop();
 
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory' | 'shipping_config'
   const [selectedOrderFilter, setSelectedOrderFilter] = useState('all');
   const [browserNotifStatus, setBrowserNotifStatus] = useState(getBrowserNotificationPermission());
   const [printOrder, setPrintOrder] = useState(null);
@@ -97,6 +100,41 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [imageImportMode, setImageImportMode] = useState('upload'); // 'upload' | 'library' | 'url'
+
+  // State Cấu hình Phí Giao Hoa & Freeship
+  const [shippingForm, setShippingForm] = useState({
+    standardFee: shippingSettings?.standardFee ?? 35000,
+    expressFee: shippingSettings?.expressFee ?? 60000,
+    freeShippingThreshold: shippingSettings?.freeShippingThreshold ?? 1000000,
+    isFreeShippingEnabled: shippingSettings?.isFreeShippingEnabled ?? true,
+    freeShippingNote: shippingSettings?.freeShippingNote ?? 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+  });
+  const [isShippingSaved, setIsShippingSaved] = useState(false);
+
+  useEffect(() => {
+    if (shippingSettings) {
+      setShippingForm({
+        standardFee: shippingSettings.standardFee ?? 35000,
+        expressFee: shippingSettings.expressFee ?? 60000,
+        freeShippingThreshold: shippingSettings.freeShippingThreshold ?? 1000000,
+        isFreeShippingEnabled: shippingSettings.isFreeShippingEnabled ?? true,
+        freeShippingNote: shippingSettings.freeShippingNote ?? 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+      });
+    }
+  }, [shippingSettings]);
+
+  const handleSaveShippingSettings = (e) => {
+    e.preventDefault();
+    updateShippingSettings({
+      standardFee: Number(shippingForm.standardFee) || 0,
+      expressFee: Number(shippingForm.expressFee) || 0,
+      freeShippingThreshold: Number(shippingForm.freeShippingThreshold) || 0,
+      isFreeShippingEnabled: Boolean(shippingForm.isFreeShippingEnabled),
+      freeShippingNote: shippingForm.freeShippingNote || ''
+    });
+    setIsShippingSaved(true);
+    setTimeout(() => setIsShippingSaved(false), 3500);
+  };
 
   const PRESET_FLOWER_PHOTOS = [
     { name: 'Bó Juliet Cam Pastel', url: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80' },
@@ -534,6 +572,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
             { id: 'analytics', label: '📊 Báo Cáo Doanh Thu', icon: BarChart3 },
             { id: 'products_cms', label: 'Quản Lý Mẫu Hoa (Storefront CMS)', icon: Flower2, count: products.length },
             { id: 'discounts', label: '🎟️ Quản Lý Voucher & Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
+            { id: 'shipping_config', label: '🚚 Phí Giao Hoa & Freeship', icon: Truck, badge: 'Tùy Chỉnh' },
             { id: 'reviews', label: '⭐ Đánh Giá & Feedback', icon: MessageSquareHeart, count: reviews?.length || 0 },
             { id: 'zalo_config', label: '💬 Cài Đặt Zalo & Telegram Nhận Đơn', icon: Smartphone, badge: 'Đa Kênh' },
             { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length },
@@ -858,6 +897,308 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB TÙY CHỈNH PHÍ GIAO HOA & FREESHIP */}
+        {activeTab === 'shipping_config' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Tab */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <span>🚚 Tùy Chỉnh Phí Giao Hoa & Chính Sách Vận Chuyển</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Thiết lập giá cước vận chuyển tiêu chuẩn, phí giao hỏa tốc ưu tiên và định mức miễn phí giao hoa (Freeship) cho toàn hệ thống.
+                </p>
+              </div>
+
+              {isShippingSaved && (
+                <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Đã lưu & áp dụng phí giao mới thành công!</span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* CỘT TRÁI: FORM THIẾT LẬP PHÍ SHIP (7 Cột) */}
+              <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-6">
+                <form onSubmit={handleSaveShippingSettings} className="space-y-6 text-xs">
+                  
+                  {/* 1. Phí Giao Tiêu Chuẩn */}
+                  <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-gray-900 text-sm block">
+                          📅 Phí Giao Tiêu Chuẩn (Theo khung giờ hẹn)
+                        </label>
+                        <p className="text-gray-500 text-[11px] mt-0.5">
+                          Áp dụng cho các đơn giao đúng khung giờ hẹn (08:00 - 10:00, 14:00 - 16:00,...)
+                        </p>
+                      </div>
+                      <span className="font-mono text-base font-extrabold text-[#1B3B2B]">
+                        {Number(shippingForm.standardFee || 0).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={shippingForm.standardFee}
+                      onChange={(e) => setShippingForm({ ...shippingForm, standardFee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[#1B3B2B] font-mono text-sm font-bold text-gray-900"
+                    />
+
+                    {/* Quick chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-gray-400">Chọn nhanh:</span>
+                      {[
+                        { label: 'Miễn phí (0đ)', val: 0 },
+                        { label: '25.000đ', val: 25000 },
+                        { label: '30.000đ', val: 30000 },
+                        { label: '35.000đ (Mặc định)', val: 35000 },
+                        { label: '40.000đ', val: 40000 },
+                      ].map((chip) => (
+                        <button
+                          key={chip.val}
+                          type="button"
+                          onClick={() => setShippingForm({ ...shippingForm, standardFee: chip.val })}
+                          className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                            Number(shippingForm.standardFee) === chip.val
+                              ? 'bg-[#1B3B2B] text-white border-[#1B3B2B]'
+                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Phí Giao Hỏa Tốc */}
+                  <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-gray-900 text-sm block">
+                          ⚡ Phí Giao Hỏa Tốc (60 - 90 phút)
+                        </label>
+                        <p className="text-gray-500 text-[11px] mt-0.5">
+                          Áp dụng khi khách yêu cầu cắm gấp ưu tiên và giao xe máy chuyên dụng cấp tốc
+                        </p>
+                      </div>
+                      <span className="font-mono text-base font-extrabold text-[#C4685A]">
+                        {Number(shippingForm.expressFee || 0).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={shippingForm.expressFee}
+                      onChange={(e) => setShippingForm({ ...shippingForm, expressFee: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[#1B3B2B] font-mono text-sm font-bold text-gray-900"
+                    />
+
+                    {/* Quick chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-gray-400">Chọn nhanh:</span>
+                      {[
+                        { label: '45.000đ', val: 45000 },
+                        { label: '50.000đ', val: 50000 },
+                        { label: '60.000đ (Chuẩn)', val: 60000 },
+                        { label: '70.000đ', val: 70000 },
+                        { label: '80.000đ', val: 80000 },
+                      ].map((chip) => (
+                        <button
+                          key={chip.val}
+                          type="button"
+                          onClick={() => setShippingForm({ ...shippingForm, expressFee: chip.val })}
+                          className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                            Number(shippingForm.expressFee) === chip.val
+                              ? 'bg-[#C4685A] text-white border-[#C4685A]'
+                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Chính Sách Freeship Theo Giá Trị Đơn Hàng */}
+                  <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-gray-900 text-sm block">
+                          🎁 Miễn Phí Vận Chuyển Tự Động (Freeship)
+                        </label>
+                        <p className="text-gray-500 text-[11px] mt-0.5">
+                          Tự động giảm 100% phí giao tiêu chuẩn khi đơn hàng đạt mức thanh toán tối thiểu
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={shippingForm.isFreeShippingEnabled}
+                          onChange={(e) => setShippingForm({ ...shippingForm, isFreeShippingEnabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1B3B2B]"></div>
+                      </label>
+                    </div>
+
+                    {shippingForm.isFreeShippingEnabled && (
+                      <div className="space-y-3 pt-2 border-t border-gray-200">
+                        <div>
+                          <label className="font-semibold text-gray-700 block mb-1">
+                            Ngưỡng đơn hàng tối thiểu được Freeship (VNĐ):
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="50000"
+                            value={shippingForm.freeShippingThreshold}
+                            onChange={(e) => setShippingForm({ ...shippingForm, freeShippingThreshold: e.target.value })}
+                            className="w-full p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[#1B3B2B] font-mono text-sm font-bold text-gray-900"
+                          />
+                        </div>
+
+                        {/* Quick chips */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] text-gray-400">Chọn nhanh:</span>
+                          {[
+                            { label: '500.000đ', val: 500000 },
+                            { label: '800.000đ', val: 800000 },
+                            { label: '1.000.000đ', val: 1000000 },
+                            { label: '1.500.000đ', val: 1500000 },
+                          ].map((chip) => (
+                            <button
+                              key={chip.val}
+                              type="button"
+                              onClick={() => setShippingForm({ ...shippingForm, freeShippingThreshold: chip.val })}
+                              className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                                Number(shippingForm.freeShippingThreshold) === chip.val
+                                  ? 'bg-emerald-800 text-white border-emerald-800'
+                                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                              }`}
+                            >
+                              {chip.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div>
+                          <label className="font-semibold text-gray-700 block mb-1">
+                            Lời nhắn thông báo cho khách hàng:
+                          </label>
+                          <input
+                            type="text"
+                            value={shippingForm.freeShippingNote}
+                            onChange={(e) => setShippingForm({ ...shippingForm, freeShippingNote: e.target.value })}
+                            placeholder="VD: Miễn phí giao hoa tiêu chuẩn cho đơn từ 1.000.000đ"
+                            className="w-full p-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[#1B3B2B]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nút Lưu Cấu Hình */}
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4 text-emerald-300" />
+                      <span>Lưu Cấu Hình Phí Giao Hoa</span>
+                    </button>
+                  </div>
+
+                </form>
+              </div>
+
+              {/* CỘT PHẢI: LIVE CUSTOMER PREVIEW (5 Cột) */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-[#FAF8F5] p-6 rounded-3xl border border-[#E8EFEA] space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#C4685A]" />
+                    <h4 className="font-serif text-base font-bold text-[#1B3B2B]">
+                      Mô Phỏng Trực Quan (Giao Diện Khách Hàng)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Khách hàng khi đặt hoa tại Checkout sẽ nhìn thấy bảng giá giao hoa và thông báo freeship như sau:
+                  </p>
+
+                  {/* Demo Khung Checkout */}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3 text-xs">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <span className="font-bold text-gray-800">Thời Gian & Khung Giờ Giao</span>
+                      {shippingForm.isFreeShippingEnabled && (
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                          Freeship đơn từ {Number(shippingForm.freeShippingThreshold || 0).toLocaleString('vi-VN')}đ
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Option 1: Tiêu chuẩn */}
+                    <div className="p-3 rounded-xl border border-[#1B3B2B] bg-[#F4F7F5] space-y-1">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-[#1B3B2B]">📅 Khung giờ chọn trước</span>
+                        <span className="font-mono text-[#1B3B2B]">
+                          {Number(shippingForm.standardFee) === 0 ? 'Freeship (0đ)' : `${Number(shippingForm.standardFee).toLocaleString('vi-VN')}đ`}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-500">Giao đúng giờ hẹn bất ngờ</p>
+                    </div>
+
+                    {/* Option 2: Hỏa tốc */}
+                    <div className="p-3 rounded-xl border border-gray-200 bg-white space-y-1">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-gray-800">⚡ Hỏa tốc 60 - 90 phút</span>
+                        <span className="font-mono text-[#C4685A]">
+                          {Number(shippingForm.expressFee).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-500">Ưu tiên cắm ngay & giao gấp</p>
+                    </div>
+
+                    {/* Breakdown Demo */}
+                    <div className="pt-2 border-t border-gray-100 space-y-1.5 text-[11px] text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Tiền hoa (Ví dụ):</span>
+                        <span className="font-mono font-bold text-gray-900">850.000đ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Phí giao hoa tận tay:</span>
+                        <span className="font-mono font-bold text-gray-900">
+                          {Number(shippingForm.standardFee).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold text-[#1B3B2B] text-xs pt-1 border-t border-gray-100">
+                        <span>Tổng thanh toán:</span>
+                        <span className="font-mono font-extrabold text-sm text-[#1B3B2B]">
+                          {(850000 + Number(shippingForm.standardFee)).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 space-y-1">
+                    <strong>💡 Lời khuyên định giá xưởng hoa:</strong>
+                    <p>
+                      Mức phí tiêu chuẩn 35.000đ và Freeship từ 1.000.000đ giúp tăng giá trị trung bình đơn hàng (AOV) lên 24%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         )}

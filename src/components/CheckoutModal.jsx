@@ -25,6 +25,8 @@ export const CheckoutModal = () => {
     discountAmount,
     applyCoupon,
     removeCoupon,
+    shippingSettings,
+    getShippingFee,
     submitOrder 
   } = useShop();
 
@@ -66,8 +68,10 @@ export const CheckoutModal = () => {
   // Payment
   const [paymentMethod, setPaymentMethod] = useState('qr_transfer'); // 'qr_transfer' | 'momo' | 'card'
 
-  const shippingFee = 35000;
+  // Tính toán phí ship động dựa trên cấu hình xưởng hoa
+  const shippingFee = getShippingFee(deliveryType, cartTotal);
   const grandTotal = Math.max(0, cartTotal + shippingFee - discountAmount);
+  const isFreeshipEligible = shippingSettings?.isFreeShippingEnabled && cartTotal >= (shippingSettings?.freeShippingThreshold || 1000000);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -78,6 +82,8 @@ export const CheckoutModal = () => {
       receiverPhone,
       receiverAddress,
       isAnonymous,
+      deliveryType,
+      shippingFee,
       deliverySlot: deliveryType === 'express' ? '⚡ Hỏa tốc 60 - 90 phút' : `${deliveryDate} (${selectedSlot})`,
       paymentMethod,
     });
@@ -214,10 +220,22 @@ export const CheckoutModal = () => {
 
             {/* 3. Thời gian giao hoa */}
             <div className="bg-[#FAF8F5] p-5 rounded-2xl border border-[#E8EFEA] space-y-3">
-              <h3 className="font-serif text-base font-bold text-[#1B3B2B] flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#1B3B2B] text-white text-[11px] flex items-center justify-center font-sans">3</span>
-                Thời Gian & Khung Giờ Giao
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-base font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#1B3B2B] text-white text-[11px] flex items-center justify-center font-sans">3</span>
+                  Thời Gian & Khung Giờ Giao
+                </h3>
+                {isFreeshipEligible ? (
+                  <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    <span>Đạt Miễn Phí Giao</span>
+                  </span>
+                ) : shippingSettings?.isFreeShippingEnabled && (
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    Freeship từ {Number(shippingSettings.freeShippingThreshold || 1000000).toLocaleString('vi-VN')}đ
+                  </span>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
@@ -229,8 +247,13 @@ export const CheckoutModal = () => {
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <span className="block font-bold">📅 Khung giờ chọn trước</span>
-                  <span className="text-[11px] text-gray-500">Đúng giờ hẹn bất ngờ</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold">📅 Khung giờ chọn trước</span>
+                    <span className={`text-[11px] font-mono font-bold ${isFreeshipEligible ? 'text-emerald-700' : 'text-gray-700'}`}>
+                      {getShippingFee('timeslot', cartTotal) === 0 ? 'Freeship (0đ)' : `${getShippingFee('timeslot', cartTotal).toLocaleString('vi-VN')}đ`}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-500 block mt-0.5">Giao đúng giờ hẹn bất ngờ</span>
                 </button>
 
                 <button
@@ -242,8 +265,13 @@ export const CheckoutModal = () => {
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <span className="block font-bold">⚡ Giao hỏa tốc 60 - 90 phút</span>
-                  <span className="text-[11px] text-gray-500">Ưu tiên cắm ngay lập tức</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold">⚡ Hỏa tốc 60 - 90 phút</span>
+                    <span className="text-[11px] font-mono font-bold text-[#C4685A]">
+                      {getShippingFee('express', cartTotal).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-500 block mt-0.5">Ưu tiên cắm ngay & giao gấp</span>
                 </button>
               </div>
 

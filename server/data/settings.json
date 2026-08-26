@@ -3,5 +3,12 @@
   "telegramBotToken": "8879386786:AAEavHnm4SCLNtc8cOFofnbtRsV6zVK_nks",
   "telegramChatId": "5686726439",
   "isSoundEnabled": true,
-  "updatedAt": "2026-08-26T08:15:27.667Z"
+  "shippingSettings": {
+    "standardFee": 35000,
+    "expressFee": 60000,
+    "freeShippingThreshold": 1000000,
+    "isFreeShippingEnabled": true,
+    "freeShippingNote": "Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ"
+  },
+  "updatedAt": "2026-08-26T09:12:00.000Z"
 }

@@ -132,6 +132,47 @@ export const ShopProvider = ({ children }) => {
     saveSettingsApi({ isSoundEnabled: val }).catch(() => {});
   };
 
+  // 3.1. Cấu hình Phí Giao Hoa & Freeship
+  const [shippingSettings, setShippingSettingsState] = useState(() => {
+    try {
+      const cached = localStorage.getItem('flora_shipping_settings');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return {
+      standardFee: 35000,
+      expressFee: 60000,
+      freeShippingThreshold: 1000000,
+      isFreeShippingEnabled: true,
+      freeShippingNote: 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+    };
+  });
+
+  const updateShippingSettings = (newSettings) => {
+    setShippingSettingsState(prev => {
+      const merged = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('flora_shipping_settings', JSON.stringify(merged));
+      } catch (e) {}
+      saveSettingsApi({ shippingSettings: merged }).catch(() => {});
+      return merged;
+    });
+  };
+
+  const getShippingFee = useCallback((type = 'timeslot', subtotal = 0) => {
+    const { standardFee = 35000, expressFee = 60000, freeShippingThreshold = 1000000, isFreeShippingEnabled = true } = shippingSettings;
+    const isFreeship = isFreeShippingEnabled && subtotal >= freeShippingThreshold;
+
+    if (type === 'express') {
+      if (isFreeship) {
+        return Math.max(0, Number(expressFee) - Number(standardFee));
+      }
+      return Number(expressFee);
+    }
+
+    if (isFreeship) return 0;
+    return Number(standardFee);
+  }, [shippingSettings]);
+
   const [unreadOrdersCount, setUnreadOrdersCount] = useState(0);
   const [latestNewOrder, setLatestNewOrder] = useState(null);
 
@@ -315,6 +356,7 @@ export const ShopProvider = ({ children }) => {
             if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
             if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
             if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
+            if (apiSettings.shippingSettings) setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
           }
         }
       } catch (err) {
@@ -583,7 +625,10 @@ export const ShopProvider = ({ children }) => {
 
     const mainCardMessage = orderData.cardMessage || cart[0]?.cardMessage || 'Gửi gắm yêu thương!';
     const mainSenderSign = orderData.senderSign || cart[0]?.senderSign || orderData.senderName || 'Người gửi';
-    const finalTotalAmount = Math.max(0, cartTotal + 35000 - discountAmount);
+    const effectiveShippingFee = orderData.shippingFee !== undefined 
+      ? Number(orderData.shippingFee) 
+      : getShippingFee(orderData.deliveryType || 'timeslot', cartTotal);
+    const finalTotalAmount = Math.max(0, cartTotal + effectiveShippingFee - discountAmount);
 
     const orderPayload = {
       customerName: orderData.senderName || 'Khách hàng',
@@ -596,6 +641,7 @@ export const ShopProvider = ({ children }) => {
       cardMessage: mainCardMessage,
       senderSign: mainSenderSign,
       deliverySlot: orderData.deliverySlot || 'Hỏa tốc 90 phút',
+      shippingFee: effectiveShippingFee,
       totalAmount: finalTotalAmount,
       discountCode: appliedCoupon?.code || null,
       discountAmount: discountAmount,
@@ -720,6 +766,9 @@ export const ShopProvider = ({ children }) => {
         setTelegramChatId,
         isSoundEnabled,
         setIsSoundEnabled,
+        shippingSettings,
+        updateShippingSettings,
+        getShippingFee,
         unreadOrdersCount,
         resetUnreadOrdersCount,
         latestNewOrder,
