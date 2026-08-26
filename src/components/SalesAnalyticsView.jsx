@@ -67,6 +67,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
   }, [orders, statusFilter, searchKeyword, minPrice, maxPrice]);
 
   // 2. TÍNH TOÁN SỐ LIỆU THỐNG KÊ DỰA TRÊN ĐƠN ĐÃ LỌC
+  // 2. TÍNH TOÁN SỐ LIỆU THỐNG KÊ DỰA TRÊN 100% ĐƠN HÀNG THẬT
   const analyticsData = useMemo(() => {
     const totalOrdersCount = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
@@ -74,7 +75,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     const approvedPhotosCount = filteredOrders.filter(o => o.isApproved || o.status === 'DELIVERING' || o.status === 'COMPLETED').length;
     const approvalRate = totalOrdersCount > 0 ? Math.round((approvedPhotosCount / totalOrdersCount) * 100) : 100;
 
-    // Top mẫu hoa bán chạy
+    // 1. Top mẫu hoa bán chạy từ dữ liệu thật
     const productSalesMap = {};
     filteredOrders.forEach(order => {
       const pName = order.productName?.split('(')[0]?.trim() || 'Bó Hoa Nghệ Thuật';
@@ -83,7 +84,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
           name: pName,
           count: 0,
           revenue: 0,
-          image: order.proofPhotoUrl || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=400&q=80'
+          image: order.proofPhotoUrl || order.catalogSamplePhoto || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=400&q=80'
         };
       }
       productSalesMap[pName].count += 1;
@@ -91,29 +92,95 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     });
 
     const topSellingProducts = Object.values(productSalesMap)
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => b.count - a.count || b.revenue - a.revenue)
       .slice(0, 5);
 
-    // Biểu đồ doanh thu 7 ngày gần nhất
-    const daysData = [
-      { day: 'T2 (20/08)', revenue: 2450000, orders: 3 },
-      { day: 'T3 (21/08)', revenue: 3890000, orders: 4 },
-      { day: 'T4 (22/08)', revenue: 1850000, orders: 2 },
-      { day: 'T5 (23/08)', revenue: 4200000, orders: 5 },
-      { day: 'T6 (24/08)', revenue: 5600000, orders: 6 },
-      { day: 'T7 (25/08)', revenue: 6850000, orders: 8 },
-      { day: 'CN (Hôm nay)', revenue: totalRevenue > 0 ? totalRevenue : 3200000, orders: totalOrdersCount > 0 ? totalOrdersCount : 4 },
-    ];
+    // 2. Biểu đồ doanh thu 7 ngày thực tế (Tính đúng theo ngày tạo & khung giờ đơn)
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const now = new Date();
+    const daysData = [];
 
-    const maxDayRevenue = Math.max(...daysData.map(d => d.revenue));
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dayOfWeek = dayNames[d.getDay()];
+      const dayNum = String(d.getDate()).padStart(2, '0');
+      const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+      const dateStr = `${dayNum}/${monthNum}`;
+      const isToday = i === 0;
+      const dayLabel = isToday ? `Hôm nay (${dateStr})` : `${dayOfWeek} (${dateStr})`;
 
-    // Thống kê theo dịp tặng
+      // Lọc các đơn thật thuộc ngày này
+      const matchedOrders = filteredOrders.filter(order => {
+        const cTime = order.createdAt || '';
+        const dSlot = order.deliverySlot || '';
+        
+        // Nếu đơn tạo hôm nay hoặc có định dạng giờ HH:mm
+        if (isToday) {
+          if (cTime.includes(dateStr) || /^\d{1,2}:\d{2}/.test(cTime) || cTime === 'Hôm nay') {
+            return true;
+          }
+        } else {
+          if (cTime.includes(dateStr) || dSlot.includes(dateStr)) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      const dayRevenue = matchedOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+      const dayOrdersCount = matchedOrders.length;
+
+      daysData.push({
+        day: dayLabel,
+        shortDay: isToday ? 'Hôm nay' : dayOfWeek,
+        dateFormatted: dateStr,
+        revenue: dayRevenue,
+        orders: dayOrdersCount
+      });
+    }
+
+    // Nếu các ngày trước chưa có đơn lẻ (do tạo test hôm nay), hiển thị chính xác ngày hôm nay với doanh thu thật
+    const maxDayRevenue = Math.max(...daysData.map(d => d.revenue), 1);
+    const peakDay = daysData.reduce((max, d) => (d.revenue > max.revenue ? d : max), daysData[daysData.length - 1]);
+    const peakDayLabel = peakDay && peakDay.revenue > 0 
+      ? `Cao điểm: ${peakDay.shortDay} (${peakDay.revenue.toLocaleString('vi-VN')}đ)`
+      : `Ghi nhận ${totalOrdersCount} đơn thực tế`;
+
+    // 3. Phân bổ Dịp Tặng Hoa 100% dựa trên nội dung thiệp & tên sản phẩm thật
+    let loveCount = 0;
+    let birthdayCount = 0;
+    let openingCount = 0;
+    let otherCount = 0;
+
+    filteredOrders.forEach(o => {
+      const text = `${o.cardMessage || ''} ${o.productName || ''} ${o.senderSign || ''}`.toLowerCase();
+      if (/yêu|em|anh|bà xã|người yêu|kỷ niệm|valentine|juliet|forever|thương|hôn|vợ yêu/.test(text)) {
+        loveCount++;
+      } else if (/sinh nhật|tuổi mới|sn|hpbd|birthday|chúc mừng sinh nhật|tuổi/.test(text)) {
+        birthdayCount++;
+      } else if (/khai trương|hồng phát|thành công|phát tài|tấn tài|thịnh vượng|chúc mừng|doanh nghiệp/.test(text)) {
+        openingCount++;
+      } else {
+        otherCount++;
+      }
+    });
+
+    const divisor = totalOrdersCount > 0 ? totalOrdersCount : 1;
     const occasionsData = [
-      { label: 'Tình Yêu & Kỷ Niệm', percent: 45, color: '#C4685A' },
-      { label: 'Sinh Nhật Rạng Rỡ', percent: 30, color: '#E8998D' },
-      { label: 'Khai Trương Hồng Phát', percent: 15, color: '#1B3B2B' },
-      { label: 'Lời Cảm Ơn / Khác', percent: 10, color: '#5C8A70' },
+      { label: 'Tình Yêu & Kỷ Niệm', count: loveCount, percent: Math.round((loveCount / divisor) * 100), color: '#C4685A' },
+      { label: 'Sinh Nhật Rạng Rỡ', count: birthdayCount, percent: Math.round((birthdayCount / divisor) * 100), color: '#E8998D' },
+      { label: 'Khai Trương Hồng Phát', count: openingCount, percent: Math.round((openingCount / divisor) * 100), color: '#1B3B2B' },
+      { label: 'Lời Cảm Ơn / Khác', count: otherCount, percent: Math.round((otherCount / divisor) * 100), color: '#5C8A70' },
     ];
+
+    // Gợi ý chiến lược thật dựa trên số liệu thực tế
+    const topOccasion = [...occasionsData].sort((a, b) => b.count - a.count)[0];
+    const topProduct = topSellingProducts[0];
+    let strategyAdvice = 'Chưa có dữ liệu đơn hàng thỏa mãn bộ lọc.';
+    if (totalOrdersCount > 0 && topOccasion && topProduct) {
+      strategyAdvice = `Dịp "${topOccasion.label}" đang chiếm ${topOccasion.percent}% với ${topOccasion.count} đơn hàng. Mẫu "${topProduct.name}" bán chạy nhất, mang về ${(topProduct.revenue || 0).toLocaleString('vi-VN')}đ doanh thu thực tế.`;
+    }
 
     return {
       totalRevenue,
@@ -123,7 +190,9 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
       topSellingProducts,
       daysData,
       maxDayRevenue,
-      occasionsData
+      peakDayLabel,
+      occasionsData,
+      strategyAdvice
     };
   }, [filteredOrders]);
 
@@ -676,25 +745,25 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
               <h4 className="font-serif text-lg font-bold text-[#1B3B2B]">
                 Xu Hướng Doanh Thu 7 Ngày Gần Nhất
               </h4>
-              <p className="text-xs text-gray-500">Biểu đồ thể hiện doanh thu và số lượng đơn theo ngày</p>
+              <p className="text-xs text-gray-500">Biểu đồ thể hiện doanh thu và số lượng đơn hàng thực tế theo từng ngày</p>
             </div>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full">
-              Cao điểm: Cuối tuần
+            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              {analyticsData.peakDayLabel}
             </span>
           </div>
 
           {/* Bar Chart Bars */}
           <div className="h-56 flex items-end justify-between gap-3 pt-6 pb-2 border-b border-gray-100">
             {analyticsData.daysData.map((d, idx) => {
-              const heightPercent = Math.max(15, Math.round((d.revenue / analyticsData.maxDayRevenue) * 100));
+              const heightPercent = Math.max(12, Math.round((d.revenue / analyticsData.maxDayRevenue) * 100));
               const isToday = idx === analyticsData.daysData.length - 1;
 
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
                   {/* Tooltip on hover */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#1B3B2B] text-white text-[10px] p-1.5 rounded-lg whitespace-nowrap shadow-md mb-1 pointer-events-none">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#1B3B2B] text-white text-[10px] p-1.5 rounded-lg whitespace-nowrap shadow-md mb-1 pointer-events-none z-10">
                     <p className="font-bold">{d.revenue.toLocaleString('vi-VN')}đ</p>
-                    <p className="text-emerald-200">{d.orders} đơn hoa</p>
+                    <p className="text-emerald-200">{d.orders} đơn thực tế</p>
                   </div>
 
                   {/* The Bar */}
@@ -711,7 +780,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
                   <span className={`text-[10px] font-medium truncate w-full text-center ${
                     isToday ? 'font-bold text-[#1B3B2B]' : 'text-gray-500'
                   }`}>
-                    {d.day.split(' ')[0]}
+                    {d.shortDay}
                   </span>
                 </div>
               );
@@ -734,16 +803,16 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
           <div>
             <h4 className="font-serif text-lg font-bold text-[#1B3B2B] flex items-center gap-2">
               <PieChart className="w-4 h-4 text-[#C4685A]" />
-              Phân Bổ Theo Dịp Tặng Hoa
+              Phân Bổ Theo Dịp Tặng Hoa Thực Tế
             </h4>
-            <p className="text-xs text-gray-500">Tỷ lệ các chủ đề được khách đặt nhiều nhất</p>
+            <p className="text-xs text-gray-500">Thống kê từ nội dung thiệp &amp; mẫu hoa của các đơn hàng thật</p>
           </div>
 
           <div className="space-y-3.5 pt-2">
             {analyticsData.occasionsData.map((occ, idx) => (
               <div key={idx} className="space-y-1.5">
                 <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-gray-800">{occ.label}</span>
+                  <span className="text-gray-800">{occ.label} <span className="text-gray-400 font-normal">({occ.count} đơn)</span></span>
                   <span className="font-mono font-bold text-[#1B3B2B]">{occ.percent}%</span>
                 </div>
                 <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
@@ -758,7 +827,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
 
           <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100 text-xs space-y-1.5 text-gray-600">
             <strong className="text-[#1B3B2B] block">💡 Gợi ý chiến lược cho Tiệm Hoa:</strong>
-            <p>Hoa tình yêu và sinh nhật chiếm 75% doanh số. Hãy chuẩn bị sẵn nhiều hoa Hồng Juliet và Mẫu Đơn vào các ngày cuối tuần.</p>
+            <p className="leading-relaxed">{analyticsData.strategyAdvice}</p>
           </div>
         </div>
 
@@ -780,7 +849,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
             className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Tải File Excel (.CSV)</span>
+            <span>Tải Báo Cáo Excel (.xls)</span>
           </button>
         </div>
 
