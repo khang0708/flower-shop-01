@@ -1,0 +1,563 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
+import { FLOWERS_DATA } from '../data/flowers';
+import { 
+  fetchProductsApi, 
+  createProductApi, 
+  updateProductApi, 
+  deleteProductApi, 
+  toggleProductApi,
+  fetchOrdersApi,
+  createOrderApi,
+  updateOrderStatusApi,
+  fetchInventoryApi,
+  checkHealthApi,
+  sendTelegramTestApi,
+  fetchSettingsApi,
+  saveSettingsApi
+} from '../api';
+import { playNewOrderChime } from '../services/soundService';
+import { 
+  showBrowserOrderNotification, 
+  broadcastNewOrderToTabs, 
+  listenToCrossTabOrders 
+} from '../services/notificationService';
+
+const ShopContext = createContext();
+
+const INITIAL_ORDERS = [
+  {
+    id: 'FB-89241',
+    orderCode: 'FB-89241',
+    customerName: 'Nguyễn Hoàng Nam',
+    customerPhone: '0909 123 456',
+    receiverName: 'Trần Ngọc Bích',
+    receiverPhone: '0988 765 432',
+    receiverAddress: 'Phòng 402, Bitexco, 2 Hải Triều, Q.1, TP.HCM',
+    isAnonymous: true,
+    productName: 'Bó Hoa "Juliet Nắng Ban Mai" (Size Tiêu Chuẩn)',
+    cardMessage: 'Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸',
+    senderSign: 'Người thương em',
+    deliverySlot: '14:00 - 16:00 Hôm nay',
+    totalAmount: 1000000,
+    status: 'PHOTO_READY',
+    florist: 'Thợ cắm hoa Minh Thư',
+    floristAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    proofPhotoUrl: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+    isApproved: false,
+    createdAt: '09:30',
+    items: [
+      { name: 'Bó Hoa "Juliet Nắng Ban Mai" (Size Tiêu Chuẩn)', price: 850000 },
+      { name: 'Nến Thơm Tinh Dầu Organic', price: 150000 }
+    ]
+  },
+  {
+    id: 'FB-89242',
+    orderCode: 'FB-89242',
+    customerName: 'Lê Thu Trang',
+    customerPhone: '0912 345 678',
+    receiverName: 'Công ty CP Công Nghệ Nova',
+    receiverPhone: '028 3822 9999',
+    receiverAddress: 'Lầu 8, Vincom Center, 72 Lê Thánh Tôn, Q.1',
+    isAnonymous: false,
+    productName: 'Giỏ Hoa "Ánh Kim Khai Vận" (Size Deluxe)',
+    cardMessage: 'Kính chúc Quý Công ty khai trương hồng phát, vạn sự hanh thông!',
+    senderSign: 'Tập thể Nova',
+    deliverySlot: '⚡ Hỏa tốc 90 phút',
+    totalAmount: 1687000,
+    status: 'ARRANGING',
+    florist: 'Nghệ nhân Hoàng Nam',
+    floristAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    proofPhotoUrl: null,
+    isApproved: false,
+    createdAt: '10:05',
+    items: [{ name: 'Giỏ Hoa "Ánh Kim Khai Vận"', price: 1687000 }]
+  }
+];
+
+export const ShopProvider = ({ children }) => {
+  // 1. Quản lý danh mục mẫu hoa
+  const [products, setProducts] = useState(FLOWERS_DATA);
+  const [isApiConnected, setIsApiConnected] = useState(false);
+
+  // 2. Cài đặt kết nối Zalo Cá Nhân / Telegram (Lưu bền vững vào LocalStorage & Backend Settings)
+  const [shopZaloPhone, setShopZaloPhoneState] = useState(() => {
+    return localStorage.getItem('flora_shop_zalo_phone') || '0909123456';
+  });
+  const [zaloModeType, setZaloModeType] = useState('personal');
+
+  const [telegramBotToken, setTelegramBotTokenState] = useState(() => {
+    return localStorage.getItem('flora_tg_token') || '';
+  });
+  const [telegramChatId, setTelegramChatIdState] = useState(() => {
+    return localStorage.getItem('flora_tg_chat_id') || '';
+  });
+
+  const setShopZaloPhone = (val) => {
+    setShopZaloPhoneState(val);
+    localStorage.setItem('flora_shop_zalo_phone', val);
+    saveSettingsApi({ shopZaloPhone: val }).catch(() => {});
+  };
+
+  const setTelegramBotToken = (val) => {
+    setTelegramBotTokenState(val);
+    localStorage.setItem('flora_tg_token', val);
+    saveSettingsApi({ telegramBotToken: val }).catch(() => {});
+  };
+
+  const setTelegramChatId = (val) => {
+    setTelegramChatIdState(val);
+    localStorage.setItem('flora_tg_chat_id', val);
+    saveSettingsApi({ telegramChatId: val }).catch(() => {});
+  };
+
+  // 3. Quản lý thông báo Admin Real-time
+  const [isSoundEnabled, setIsSoundEnabledState] = useState(() => {
+    return localStorage.getItem('flora_sound_enabled') !== 'false';
+  });
+
+  const setIsSoundEnabled = (val) => {
+    setIsSoundEnabledState(val);
+    localStorage.setItem('flora_sound_enabled', String(val));
+    saveSettingsApi({ isSoundEnabled: val }).catch(() => {});
+  };
+
+  const [unreadOrdersCount, setUnreadOrdersCount] = useState(0);
+  const [latestNewOrder, setLatestNewOrder] = useState(null);
+
+  // 4. Giỏ hàng & Sản phẩm
+  const [cart, setCart] = useState([
+    {
+      id: 'fl-01',
+      name: 'Bó Hoa "Juliet Nắng Ban Mai"',
+      price: 850000,
+      image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+      size: { id: 'standard', name: 'Tiêu Chuẩn (12 - 15 cành)', priceMultiplier: 1.0 },
+      wrapper: { id: 'sage', name: 'Giấy Giản Dị Xanh Sage' },
+      cardMessage: 'Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸',
+      senderSign: 'Từ một người luôn dõi theo em',
+      addOns: [{ id: 'candle', name: 'Nến Thơm Tinh Dầu Organic', price: 150000 }],
+      quantity: 1,
+    }
+  ]);
+
+  const [wishlist, setWishlist] = useState(['fl-01', 'fl-03']);
+  const [selectedOccasion, setSelectedOccasion] = useState('all');
+  const [selectedColor, setSelectedColor] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // 5. Modals & Drawers
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isAIFloristOpen, setIsAIFloristOpen] = useState(false);
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [isZaloMode, setIsZaloMode] = useState(false);
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
+
+  // 6. Danh sách đơn hàng (Lưu LocalStorage + REST API đồng bộ)
+  const [orders, setOrdersState] = useState(() => {
+    try {
+      const cached = localStorage.getItem('flora_orders');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return INITIAL_ORDERS;
+  });
+
+  const setOrders = (updater) => {
+    setOrdersState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        localStorage.setItem('flora_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const [activeOrder, setActiveOrder] = useState(orders[0]);
+
+  // 7. Kho hoa tươi
+  const [inventory, setInventory] = useState([
+    { name: 'Hoa Hồng Juliet (Ecuador)', total: 120, used: 75, remain: 45, unit: 'cành', status: 'normal' },
+    { name: 'Hoa Hồng Đỏ Ruby (Đà Lạt)', total: 200, used: 160, remain: 40, unit: 'cành', status: 'warning' },
+    { name: 'Hoa Mẫu Đơn Trắng Nhập', total: 50, used: 42, remain: 8, unit: 'bông', status: 'danger' },
+    { name: 'Hoa Baby Hà Lan (Trắng)', total: 30, used: 12, remain: 18, unit: 'bó lớn', status: 'normal' },
+    { name: 'Hoa Hướng Dương Lùn', total: 80, used: 35, remain: 45, unit: 'bông', status: 'normal' },
+    { name: 'Cẩm Tú Cầu Xanh Lam', total: 40, used: 25, remain: 15, unit: 'bông', status: 'normal' },
+  ]);
+
+  // Hàm phát thông báo âm thanh & giao diện khi có đơn hàng mới (Chuông + Popup + Push)
+  const triggerAdminOrderAlert = useCallback((order) => {
+    // 1. Cập nhật state đơn mới & popup toast
+    setLatestNewOrder(order);
+    setUnreadOrdersCount(prev => prev + 1);
+
+    // 2. Phát chuông Web Audio API nếu bật âm thanh
+    if (isSoundEnabled) {
+      playNewOrderChime();
+    }
+
+    // 3. Đẩy Browser Push Notification ra màn hình Desktop/Mobile
+    showBrowserOrderNotification(order);
+  }, [isSoundEnabled]);
+
+  // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel
+  useEffect(() => {
+    const initDataFromApi = async () => {
+      try {
+        const health = await checkHealthApi();
+        if (health.status === 'ONLINE') {
+          setIsApiConnected(true);
+          const [apiProducts, apiOrders, apiInventory, apiSettings] = await Promise.all([
+            fetchProductsApi(),
+            fetchOrdersApi(),
+            fetchInventoryApi(),
+            fetchSettingsApi().catch(() => null)
+          ]);
+          if (apiProducts?.length > 0) setProducts(apiProducts);
+          if (apiOrders?.length > 0) {
+            setOrders(apiOrders);
+            setActiveOrder(apiOrders[0]);
+          }
+          if (apiInventory?.length > 0) setInventory(apiInventory);
+          if (apiSettings) {
+            if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
+            if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
+            if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
+          }
+        }
+      } catch (err) {
+        console.log('API Server running in local fallback state mode');
+      }
+    };
+
+    initDataFromApi();
+
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
+    let eventSource = null;
+    try {
+      eventSource = new EventSource('/api/admin/events');
+      eventSource.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload.type === 'NEW_ORDER' && payload.order) {
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === payload.order.id);
+              if (exists) return prev;
+              return [payload.order, ...prev];
+            });
+            triggerAdminOrderAlert(payload.order);
+          }
+        } catch (err) {}
+      };
+    } catch (err) {}
+
+    // Lắng nghe sự kiện đa tab qua BroadcastChannel
+    const cleanupTabListener = listenToCrossTabOrders((incomingOrder) => {
+      setOrders(prev => {
+        const exists = prev.some(o => o.id === incomingOrder.id);
+        if (exists) return prev;
+        return [incomingOrder, ...prev];
+      });
+      triggerAdminOrderAlert(incomingOrder);
+    });
+
+    return () => {
+      if (eventSource) eventSource.close();
+      cleanupTabListener();
+    };
+  }, [triggerAdminOrderAlert]);
+
+  // CRUD SẢN PHẨM MẪU HOA
+  const addProduct = async (newProduct) => {
+    try {
+      const saved = await createProductApi(newProduct);
+      setProducts(prev => [saved, ...prev]);
+    } catch (e) {
+      const id = `fl-${Date.now()}`;
+      const productToAdd = { ...newProduct, id, rating: 5.0, reviewsCount: 0, isAvailable: true };
+      setProducts(prev => [productToAdd, ...prev]);
+    }
+  };
+
+  const updateProduct = async (productId, updatedFields) => {
+    try {
+      const saved = await updateProductApi(productId, updatedFields);
+      setProducts(prev => prev.map(p => p.id === productId ? saved : p));
+    } catch (e) {
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updatedFields } : p));
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      await deleteProductApi(productId);
+    } catch (e) {}
+    setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const toggleProductAvailability = async (productId) => {
+    try {
+      const saved = await toggleProductApi(productId);
+      setProducts(prev => prev.map(p => p.id === productId ? saved : p));
+    } catch (e) {
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, isAvailable: !p.isAvailable } : p));
+    }
+  };
+
+  // GIỎ HÀNG
+  const addToCart = (product, customOptions = {}) => {
+    const size = customOptions.size || { id: 'standard', name: 'Tiêu Chuẩn', priceMultiplier: 1.0 };
+    const wrapper = customOptions.wrapper || { id: 'sage', name: 'Giấy Giản Dị Xanh Sage' };
+    const cardMessage = customOptions.cardMessage || 'Gửi gắm yêu thương!';
+    const senderSign = customOptions.senderSign || 'Người gửi';
+    const addOns = customOptions.addOns || [];
+    
+    const unitPrice = Math.round(product.price * size.priceMultiplier);
+    
+    const newItem = {
+      cartItemId: `${product.id}-${Date.now()}`,
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: unitPrice,
+      size,
+      wrapper,
+      cardMessage,
+      senderSign,
+      addOns,
+      quantity: 1,
+    };
+
+    setCart(prev => [newItem, ...prev]);
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (cartItemId) => {
+    setCart(prev => prev.filter(item => (item.cartItemId || item.id) !== cartItemId));
+  };
+
+  const updateQuantity = (cartItemId, delta) => {
+    setCart(prev => prev.map(item => {
+      if ((item.cartItemId || item.id) === cartItemId) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  };
+
+  const toggleWishlist = (productId) => {
+    setWishlist(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const cartTotal = cart.reduce((total, item) => {
+    const addOnsTotal = (item.addOns || []).reduce((sum, a) => sum + a.price, 0);
+    return total + ((item.price + addOnsTotal) * item.quantity);
+  }, 0);
+
+  // Khách tạo đơn hàng mới -> Lưu API & Kích hoạt thông báo đa kênh
+  const submitOrder = async (orderData) => {
+    const token = telegramBotToken || localStorage.getItem('flora_tg_token');
+    const chatId = telegramChatId || localStorage.getItem('flora_tg_chat_id');
+
+    // Tạo danh sách items chi tiết bao gồm size, wrapper, add-ons
+    const formattedItems = cart.map(i => {
+      const sizeText = i.size?.name ? ` [Size: ${i.size.name}]` : '';
+      const wrapperText = i.wrapper?.name ? ` [Gói: ${i.wrapper.name}]` : '';
+      const addOnsText = (i.addOns && i.addOns.length > 0) 
+        ? ` + Quà: ${i.addOns.map(a => a.name).join(', ')}` 
+        : '';
+      const itemUnitPrice = i.price + (i.addOns || []).reduce((sum, a) => sum + a.price, 0);
+      const itemTotalPrice = itemUnitPrice * (i.quantity || 1);
+
+      return {
+        name: `${i.name}${sizeText}${wrapperText}${addOnsText} ×${i.quantity || 1}`,
+        price: itemTotalPrice
+      };
+    });
+
+    const mainProductName = cart.length === 1
+      ? `${cart[0].name} (${cart[0].size?.name || 'Tiêu chuẩn'})`
+      : `${cart[0]?.name || 'Bó hoa tươi'} và ${cart.length - 1} món khác`;
+
+    const mainCardMessage = orderData.cardMessage || cart[0]?.cardMessage || 'Gửi gắm yêu thương!';
+    const mainSenderSign = orderData.senderSign || cart[0]?.senderSign || orderData.senderName || 'Người gửi';
+
+    const orderPayload = {
+      customerName: orderData.senderName || 'Khách hàng',
+      customerPhone: orderData.senderPhone || '0901 234 567',
+      receiverName: orderData.receiverName || 'Người nhận hoa',
+      receiverPhone: orderData.receiverPhone || '0988 765 432',
+      receiverAddress: orderData.receiverAddress || 'Quận 1, TP.HCM',
+      isAnonymous: Boolean(orderData.isAnonymous),
+      productName: mainProductName,
+      cardMessage: mainCardMessage,
+      senderSign: mainSenderSign,
+      deliverySlot: orderData.deliverySlot || 'Hỏa tốc 90 phút',
+      totalAmount: cartTotal + 35000,
+      proofPhotoUrl: cart[0]?.image || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+      items: formattedItems,
+      telegramBotToken: token,
+      telegramChatId: chatId
+    };
+
+    let newOrder = null;
+    try {
+      newOrder = await createOrderApi(orderPayload);
+    } catch (e) {
+      const newOrderCode = `FB-${Math.floor(10000 + Math.random() * 90000)}`;
+      newOrder = {
+        ...orderPayload,
+        id: newOrderCode,
+        orderCode: newOrderCode,
+        status: 'ARRANGING',
+        florist: 'Thợ cắm hoa Minh Thư',
+        floristAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+        createdAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        isApproved: false
+      };
+    }
+
+    setOrders(prev => {
+      const exists = prev.some(o => o.id === newOrder.id || o.orderCode === newOrder.orderCode);
+      if (exists) return prev;
+      return [newOrder, ...prev];
+    });
+    setActiveOrder(newOrder);
+    setCart([]);
+    setIsCheckoutOpen(false);
+    setIsTrackingOpen(true);
+
+    // Phát sự kiện đa tab & kích hoạt âm thanh chuông báo
+    broadcastNewOrderToTabs(newOrder);
+    triggerAdminOrderAlert(newOrder);
+
+    confetti({
+      particleCount: 120,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#1B3B2B', '#E8998D', '#F5D6CE', '#5C8A70']
+    });
+  };
+
+  const approvePhotoProof = async () => {
+    if (!activeOrder) return;
+    try {
+      await updateOrderStatusApi(activeOrder.id, { isApproved: true, status: 'DELIVERING' });
+    } catch (e) {}
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === activeOrder.id) {
+        return { ...o, isApproved: true, status: 'DELIVERING' };
+      }
+      return o;
+    }));
+
+    setActiveOrder(prev => ({
+      ...prev,
+      isApproved: true,
+      status: 'DELIVERING'
+    }));
+
+    confetti({
+      particleCount: 60,
+      spread: 60,
+      origin: { y: 0.5 },
+      colors: ['#5C8A70', '#E8998D']
+    });
+  };
+
+  const updateOrderByAdmin = async (orderId, updates) => {
+    try {
+      await updateOrderStatusApi(orderId, updates);
+    } catch (e) {}
+
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        const updatedOrder = { ...o, ...updates };
+        if (activeOrder && activeOrder.id === orderId) {
+          setActiveOrder(updatedOrder);
+        }
+        return updatedOrder;
+      }
+      return o;
+    }));
+  };
+
+  const resetUnreadOrdersCount = () => {
+    setUnreadOrdersCount(0);
+  };
+
+  return (
+    <ShopContext.Provider
+      value={{
+        products,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        toggleProductAvailability,
+        shopZaloPhone,
+        setShopZaloPhone,
+        zaloModeType,
+        setZaloModeType,
+        telegramBotToken,
+        setTelegramBotToken,
+        telegramChatId,
+        setTelegramChatId,
+        isSoundEnabled,
+        setIsSoundEnabled,
+        unreadOrdersCount,
+        resetUnreadOrdersCount,
+        latestNewOrder,
+        setLatestNewOrder,
+        triggerAdminOrderAlert,
+        isApiConnected,
+        cart,
+        wishlist,
+        selectedOccasion,
+        setSelectedOccasion,
+        selectedColor,
+        setSelectedColor,
+        searchQuery,
+        setSearchQuery,
+        isCartOpen,
+        setIsCartOpen,
+        isCheckoutOpen,
+        setIsCheckoutOpen,
+        isAIFloristOpen,
+        setIsAIFloristOpen,
+        isTrackingOpen,
+        setIsTrackingOpen,
+        isZaloMode,
+        setIsZaloMode,
+        quickViewProduct,
+        setQuickViewProduct,
+        orders,
+        activeOrder,
+        inventory,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        toggleWishlist,
+        cartTotal,
+        submitOrder,
+        approvePhotoProof,
+        updateOrderByAdmin
+      }}
+    >
+      {children}
+    </ShopContext.Provider>
+  );
+};
+
+export const useShop = () => {
+  const context = useContext(ShopContext);
+  if (!context) {
+    throw new Error('useShop must be used within a ShopProvider');
+  }
+  return context;
+};

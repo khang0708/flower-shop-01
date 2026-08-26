@@ -1,0 +1,8 @@
+[
+  { "name": "Hoa Hồng Juliet (Ecuador)", "total": 120, "used": 75, "remain": 45, "unit": "cành", "status": "normal" },
+  { "name": "Hoa Hồng Đỏ Ruby (Đà Lạt)", "total": 200, "used": 160, "remain": 40, "unit": "cành", "status": "warning" },
+  { "name": "Hoa Mẫu Đơn Trắng Nhập", "total": 50, "used": 42, "remain": 8, "unit": "bông", "status": "danger" },
+  { "name": "Hoa Baby Hà Lan (Trắng)", "total": 30, "used": 12, "remain": 18, "unit": "bó lớn", "status": "normal" },
+  { "name": "Hoa Hướng Dương Lùn", "total": 80, "used": 35, "remain": 45, "unit": "bông", "status": "normal" },
+  { "name": "Cẩm Tú Cầu Xanh Lam", "total": 40, "used": 25, "remain": 15, "unit": "bông", "status": "normal" }
+]

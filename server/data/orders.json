@@ -1,0 +1,225 @@
+[
+  {
+    "id": "FB-64283",
+    "orderCode": "FB-64283",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM",
+    "isAnonymous": false,
+    "productName": "Bình Hoa \"Lavender Twilight\" (Tiêu Chuẩn (12 - 15 cành))",
+    "cardMessage": "Chúc em một ngày luôn rực rỡ và xinh đẹp như những đóa hoa này! 🌸",
+    "senderSign": "Người thương em",
+    "deliverySlot": "Hôm nay (25/08) (14:00 - 16:00 Hôm nay)",
+    "totalAmount": 2780000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "14:36",
+    "items": [
+      {
+        "name": "Bình Hoa \"Lavender Twilight\" (Tiêu Chuẩn (12 - 15 cành))",
+        "price": 1100000
+      },
+      {
+        "name": "Bình Hoa \"Lavender Twilight\" (Tiêu Chuẩn)",
+        "price": 1100000
+      }
+    ]
+  },
+  {
+    "id": "FB-60624",
+    "orderCode": "FB-60624",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM",
+    "isAnonymous": false,
+    "productName": "Bó Hoa \"Juliet Nắng Ban Mai\" (Tiêu Chuẩn)",
+    "cardMessage": "Gửi gắm yêu thương!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hôm nay (25/08) (14:00 - 16:00 Hôm nay)",
+    "totalAmount": 885000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "14:30",
+    "items": [
+      {
+        "name": "Bó Hoa \"Juliet Nắng Ban Mai\" (Tiêu Chuẩn)",
+        "price": 850000
+      }
+    ]
+  },
+  {
+    "id": "FB-93761",
+    "orderCode": "FB-93761",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM",
+    "isAnonymous": false,
+    "productName": "Hộp Hoa \"Pastel Dream Sonata\" (Tiêu Chuẩn)",
+    "cardMessage": "Gửi gắm yêu thương!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hôm nay (25/08) (14:00 - 16:00 Hôm nay)",
+    "totalAmount": 955000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "14:29",
+    "items": [
+      {
+        "name": "Hộp Hoa \"Pastel Dream Sonata\" (Tiêu Chuẩn)",
+        "price": 920000
+      }
+    ]
+  },
+  {
+    "id": "FB-22686",
+    "orderCode": "FB-22686",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM",
+    "isAnonymous": false,
+    "productName": "Bó Hoa \"Ruby Velvet Passion\" (Tiêu Chuẩn)",
+    "cardMessage": "Gửi gắm yêu thương!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hôm nay (25/08) (14:00 - 16:00 Hôm nay)",
+    "totalAmount": 1685000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "14:04",
+    "items": [
+      {
+        "name": "Bó Hoa \"Ruby Velvet Passion\" (Tiêu Chuẩn)",
+        "price": 1650000
+      }
+    ]
+  },
+  {
+    "id": "FB-25997",
+    "orderCode": "FB-25997",
+    "customerName": "Khách Hàng Test VIP",
+    "customerPhone": "0908889999",
+    "receiverName": "Chị Mai Lan",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "72 Lê Thánh Tôn, Q.1",
+    "isAnonymous": false,
+    "productName": "Bó Hoa Juliet Nắng Ban Mai",
+    "cardMessage": "Chúc mừng khai trương đại hồng phát!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hỏa tốc 90 phút",
+    "totalAmount": 950000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": null,
+    "isApproved": false,
+    "createdAt": "14:02",
+    "items": []
+  },
+  {
+    "id": "FB-32862",
+    "orderCode": "FB-32862",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM",
+    "isAnonymous": false,
+    "productName": "Hộp Hoa \"Pastel Dream Sonata\" (Tiêu Chuẩn)",
+    "cardMessage": "Gửi gắm yêu thương!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hôm nay (25/08) (14:00 - 16:00 Hôm nay)",
+    "totalAmount": 1955000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "14:00",
+    "items": [
+      {
+        "name": "Hộp Hoa \"Pastel Dream Sonata\" (Tiêu Chuẩn)",
+        "price": 920000
+      },
+      {
+        "name": "Bó Hoa \"Juliet Nắng Ban Mai\" (Tiêu Chuẩn (12 - 15 cành))",
+        "price": 850000
+      }
+    ]
+  },
+  {
+    "id": "FB-89241",
+    "orderCode": "FB-89241",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "Phòng 402, Bitexco, 2 Hải Triều, Q.1, TP.HCM",
+    "isAnonymous": true,
+    "productName": "Bó Hoa \"Juliet Nắng Ban Mai\" (Size Tiêu Chuẩn)",
+    "cardMessage": "Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸",
+    "senderSign": "Người thương em",
+    "deliverySlot": "14:00 - 16:00 Hôm nay",
+    "totalAmount": 1000000,
+    "status": "PHOTO_READY",
+    "florist": "Thợ cắm hoa Minh Thư",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80",
+    "isApproved": false,
+    "createdAt": "09:30",
+    "items": [
+      {
+        "name": "Bó Hoa \"Juliet Nắng Ban Mai\" (Size Tiêu Chuẩn)",
+        "price": 850000
+      },
+      {
+        "name": "Nến Thơm Tinh Dầu Organic",
+        "price": 150000
+      }
+    ]
+  },
+  {
+    "id": "FB-89242",
+    "orderCode": "FB-89242",
+    "customerName": "Lê Thu Trang",
+    "customerPhone": "0912 345 678",
+    "receiverName": "Công ty CP Công Nghệ Nova",
+    "receiverPhone": "028 3822 9999",
+    "receiverAddress": "Lầu 8, Vincom Center, 72 Lê Thánh Tôn, Q.1",
+    "isAnonymous": false,
+    "productName": "Giỏ Hoa \"Ánh Kim Khai Vận\" (Size Deluxe)",
+    "cardMessage": "Kính chúc Quý Công ty khai trương hồng phát, vạn sự hanh thông!",
+    "senderSign": "Tập thể Nova",
+    "deliverySlot": "⚡ Hỏa tốc 90 phút",
+    "totalAmount": 1687000,
+    "status": "ARRANGING",
+    "florist": "Nghệ nhân Hoàng Nam",
+    "floristAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": null,
+    "isApproved": false,
+    "createdAt": "10:05",
+    "items": [
+      {
+        "name": "Giỏ Hoa \"Ánh Kim Khai Vận\"",
+        "price": 1687000
+      }
+    ]
+  }
+]
