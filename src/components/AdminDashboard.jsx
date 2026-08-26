@@ -12,6 +12,7 @@ import {
 } from '../services/notificationService';
 import { sendTelegramTestApi, getTelegramChatIdAutoApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
+import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { 
   ShoppingBag, 
   Flower2, 
@@ -48,7 +49,8 @@ import {
   Search,
   CheckCheck,
   LogOut,
-  Printer
+  Printer,
+  BarChart3
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -495,6 +497,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2">
           {[
             { id: 'orders', label: 'Quản Lý Đơn Hàng & Cắm Mẫu', icon: ShoppingBag, count: orders.length },
+            { id: 'analytics', label: '📊 Báo Cáo Doanh Thu', icon: BarChart3 },
             { id: 'products_cms', label: 'Quản Lý Mẫu Hoa (Storefront CMS)', icon: Flower2, count: products.length },
             { id: 'discounts', label: '🎟️ Quản Lý Voucher & Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
             { id: 'zalo_config', label: '💬 Cài Đặt Zalo & Telegram Nhận Đơn', icon: Smartphone, badge: 'Đa Kênh' },
@@ -658,7 +661,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           </div>
         )}
 
-        {/* TAB 2: QUẢN LÝ SẢN PHẨM (CMS) */}
+        {/* TAB 2: BÁO CÁO DOANH THU & PHÂN TÍCH */}
+        {activeTab === 'analytics' && (
+          <SalesAnalyticsView orders={orders} products={products} />
+        )}
+
+        {/* TAB 3: QUẢN LÝ SẢN PHẨM (CMS) */}
         {activeTab === 'products_cms' && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
