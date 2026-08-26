@@ -296,7 +296,37 @@ export const deleteDiscountApi = async (discountId) => {
 };
 
 // ----------------------------------------------------
-// 8. HEALTH CHECK API
+// 8. REVIEWS & CUSTOMER FEEDBACK API
+// ----------------------------------------------------
+export const fetchReviewsApi = async () => {
+  const res = await request('/reviews');
+  return res.data;
+};
+
+export const createReviewApi = async (reviewData) => {
+  const res = await request('/reviews', {
+    method: 'POST',
+    body: JSON.stringify(reviewData)
+  });
+  return res.data;
+};
+
+export const toggleReviewApi = async (reviewId) => {
+  const res = await request(`/reviews/${reviewId}/toggle`, {
+    method: 'PATCH'
+  });
+  return res.data;
+};
+
+export const deleteReviewApi = async (reviewId) => {
+  const res = await request(`/reviews/${reviewId}`, {
+    method: 'DELETE'
+  });
+  return res;
+};
+
+// ----------------------------------------------------
+// 9. HEALTH CHECK API
 // ----------------------------------------------------
 export const checkHealthApi = async () => {
   const res = await request('/health');

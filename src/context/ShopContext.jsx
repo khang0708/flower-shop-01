@@ -19,7 +19,11 @@ import {
   validateDiscountApi,
   createDiscountApi,
   toggleDiscountApi,
-  deleteDiscountApi
+  deleteDiscountApi,
+  fetchReviewsApi,
+  createReviewApi,
+  toggleReviewApi,
+  deleteReviewApi
 } from '../api';
 import { playNewOrderChime } from '../services/soundService';
 import { 
@@ -250,6 +254,52 @@ export const ShopProvider = ({ children }) => {
 
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
+  // 9. Quản lý Đánh Giá & Feedback Khách Hàng Thực Tế
+  const [reviews, setReviews] = useState([
+    {
+      id: 'REV-101',
+      customerName: 'Chị Thanh Hằng',
+      customerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      productName: 'Bó Hoa Juliet Nắng Ban Mai',
+      rating: 5,
+      occasion: 'Kỷ Niệm Ngày Cưới',
+      comment: 'Hoa bên ngoài đẹp hơn cả ảnh mẫu trên web! Shop có gửi ảnh hoa thực tế qua Zalo cho mình duyệt trước khi giao nên cực kỳ an tâm. Shipper giao đúng boong 14h chiều, bạn nhận xúc động suýt khóc. Sẽ ủng hộ Flora & Bloom dài dài!',
+      proofImage: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+      verified: true,
+      createdAt: '2026-08-25',
+      isVisible: true,
+      likes: 24
+    },
+    {
+      id: 'REV-102',
+      customerName: 'Anh Minh Hoàng',
+      customerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+      productName: 'Lẵng Mẫu Đơn Hoàng Gia Peony Blush',
+      rating: 5,
+      occasion: 'Sinh Nhật Người Yêu',
+      comment: 'Mình chọn tính năng giao hoa ẩn danh giấu tên người gửi. Người yêu nhận được bất ngờ tột cùng. Thiệp in chữ viết tay nắn nót rất nghệ thuật, hoa tươi roi rói thơm ngát cả phòng!',
+      proofImage: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80',
+      verified: true,
+      createdAt: '2026-08-24',
+      isVisible: true,
+      likes: 19
+    },
+    {
+      id: 'REV-103',
+      customerName: 'Chị Bích Ngọc',
+      customerAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+      productName: 'Bình Hoa Tulip Hà Lan Tinh Khôi',
+      rating: 5,
+      occasion: 'Chúc Mừng Khai Trương',
+      comment: 'Form dáng cắm cực kỳ sang trọng và hiện đại, không bị sến như các shop hoa truyền thống. Bình tulip để ở quầy lễ tân công ty đối tác ai cũng khen nức nở.',
+      proofImage: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80',
+      verified: true,
+      createdAt: '2026-08-23',
+      isVisible: true,
+      likes: 15
+    }
+  ]);
+
   // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel
   useEffect(() => {
     const initDataFromApi = async () => {
@@ -257,11 +307,12 @@ export const ShopProvider = ({ children }) => {
         const health = await checkHealthApi();
         if (health.status === 'ONLINE') {
           setIsApiConnected(true);
-          const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiSettings] = await Promise.all([
+          const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiReviews, apiSettings] = await Promise.all([
             fetchProductsApi(),
             fetchOrdersApi(),
             fetchInventoryApi(),
             fetchDiscountsApi().catch(() => null),
+            fetchReviewsApi().catch(() => null),
             fetchSettingsApi().catch(() => null)
           ]);
           if (apiProducts?.length > 0) setProducts(apiProducts);
@@ -271,6 +322,7 @@ export const ShopProvider = ({ children }) => {
           }
           if (apiInventory?.length > 0) setInventory(apiInventory);
           if (apiDiscounts?.length > 0) setDiscounts(apiDiscounts);
+          if (apiReviews?.length > 0) setReviews(apiReviews);
           if (apiSettings) {
             if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
             if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
@@ -480,6 +532,42 @@ export const ShopProvider = ({ children }) => {
     setDiscounts(prev => prev.filter(d => d.id !== discountId));
   };
 
+  // CRUD ĐÁNH GIÁ FEEDBACK KHÁCH HÀNG
+  const addReview = async (reviewData) => {
+    try {
+      const saved = await createReviewApi(reviewData);
+      setReviews(prev => [saved, ...prev]);
+      return saved;
+    } catch (e) {
+      const fallbackRev = {
+        ...reviewData,
+        id: `REV-${Date.now()}`,
+        verified: true,
+        createdAt: new Date().toISOString().split('T')[0],
+        isVisible: true,
+        likes: 1
+      };
+      setReviews(prev => [fallbackRev, ...prev]);
+      return fallbackRev;
+    }
+  };
+
+  const toggleReview = async (reviewId) => {
+    try {
+      const saved = await toggleReviewApi(reviewId);
+      setReviews(prev => prev.map(r => r.id === reviewId ? saved : r));
+    } catch (e) {
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, isVisible: !r.isVisible } : r));
+    }
+  };
+
+  const deleteReview = async (reviewId) => {
+    try {
+      await deleteReviewApi(reviewId);
+    } catch (e) {}
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+  };
+
   // Khách tạo đơn hàng mới -> Lưu API & Kích hoạt thông báo đa kênh
   const submitOrder = async (orderData) => {
     const token = telegramBotToken || localStorage.getItem('flora_tg_token');
@@ -671,6 +759,10 @@ export const ShopProvider = ({ children }) => {
         addDiscount,
         toggleDiscount,
         deleteDiscount,
+        reviews,
+        addReview,
+        toggleReview,
+        deleteReview,
         addToCart,
         removeFromCart,
         updateQuantity,

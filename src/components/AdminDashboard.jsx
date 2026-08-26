@@ -50,7 +50,9 @@ import {
   CheckCheck,
   LogOut,
   Printer,
-  BarChart3
+  BarChart3,
+  MessageSquareHeart,
+  Star
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -67,6 +69,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     addDiscount,
     toggleDiscount,
     deleteDiscount,
+    reviews,
+    toggleReview,
+    deleteReview,
     shopZaloPhone,
     setShopZaloPhone,
     telegramBotToken,
@@ -500,6 +505,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
             { id: 'analytics', label: '📊 Báo Cáo Doanh Thu', icon: BarChart3 },
             { id: 'products_cms', label: 'Quản Lý Mẫu Hoa (Storefront CMS)', icon: Flower2, count: products.length },
             { id: 'discounts', label: '🎟️ Quản Lý Voucher & Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
+            { id: 'reviews', label: '⭐ Đánh Giá & Feedback', icon: MessageSquareHeart, count: reviews?.length || 0 },
             { id: 'zalo_config', label: '💬 Cài Đặt Zalo & Telegram Nhận Đơn', icon: Smartphone, badge: 'Đa Kênh' },
             { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length },
           ].map((tab) => {
@@ -827,7 +833,111 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           </div>
         )}
 
-        {/* TAB 4: CÀI ĐẶT ZALO & THÔNG BÁO ĐƠN HÀNG ĐA KÊNH */}
+        {/* TAB 5: QUẢN LÝ ĐÁNH GIÁ & FEEDBACK KHÁCH HÀNG */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <span>⭐ Kiểm Duyệt Đánh Giá & Phản Hồi Khách Hàng</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Xem toàn bộ cảm nghĩ và ảnh chụp hoa thật từ khách hàng gửi về. Bạn có thể duyệt, ẩn hoặc xóa đánh giá không phù hợp.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF8F5] px-4 py-2 rounded-2xl border border-gray-200 text-xs flex items-center gap-3">
+                <span className="font-bold text-[#1B3B2B]">Tổng feedback: <strong>{reviews?.length || 0}</strong></span>
+                <span className="text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                  Đang hiển thị: {reviews?.filter(r => r.isVisible !== false).length || 0}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews?.map((rev) => (
+                <div 
+                  key={rev.id} 
+                  className={`bg-white rounded-3xl border p-5 shadow-xs transition-all flex flex-col justify-between space-y-4 ${
+                    rev.isVisible === false ? 'border-red-200 bg-red-50/20 opacity-75' : 'border-[#E8EFEA]'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <img 
+                          src={rev.customerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'} 
+                          alt={rev.customerName}
+                          className="w-9 h-9 rounded-full object-cover border border-emerald-100" 
+                        />
+                        <div>
+                          <strong className="text-xs font-bold text-[#1B3B2B] block">{rev.customerName}</strong>
+                          <span className="text-[10px] text-gray-400">{rev.createdAt}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex text-amber-400 text-xs">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mẫu hoa */}
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[10px] bg-[#FAF4F0] text-[#C4685A] font-bold px-2 py-0.5 rounded-md">
+                        💐 {rev.productName}
+                      </span>
+                      {rev.occasion && (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded-md">
+                          {rev.occasion}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Lời bình luận */}
+                    <p className="text-xs text-gray-700 italic bg-[#FAF8F5] p-3 rounded-2xl border border-gray-100">
+                      "{rev.comment}"
+                    </p>
+
+                    {/* Ảnh hoa đính kèm nếu có */}
+                    {rev.proofImage && (
+                      <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-gray-200">
+                        <img src={rev.proofImage} alt="Feedback" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      onClick={() => toggleReview(rev.id)}
+                      className={`text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all ${
+                        rev.isVisible !== false
+                          ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
+                          : 'bg-amber-100 hover:bg-amber-200 text-amber-900'
+                      }`}
+                    >
+                      {rev.isVisible !== false ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                      <span>{rev.isVisible !== false ? 'Hiển Thị Ngoài Web' : 'Đang Bị Ẩn'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => deleteReview(rev.id)}
+                      className="text-red-500 hover:text-red-700 p-2 rounded-xl hover:bg-red-50 transition-colors"
+                      title="Xóa đánh giá này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: CÀI ĐẶT ZALO & THÔNG BÁO ĐƠN HÀNG ĐA KÊNH */}
         {activeTab === 'zalo_config' && (
           <div className="space-y-6">
             

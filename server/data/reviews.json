@@ -1,0 +1,58 @@
+[
+  {
+    "id": "REV-101",
+    "customerName": "Chị Thanh Hằng",
+    "customerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+    "productName": "Bó Hoa Juliet Nắng Ban Mai",
+    "rating": 5,
+    "occasion": "Kỷ Niệm Ngày Cưới",
+    "comment": "Hoa bên ngoài đẹp hơn cả ảnh mẫu trên web! Shop có gửi ảnh hoa thực tế qua Zalo cho mình duyệt trước khi giao nên cực kỳ an tâm. Shipper giao đúng boong 14h chiều, bạn nhận xúc động suýt khóc. Sẽ ủng hộ Flora & Bloom dài dài!",
+    "proofImage": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80",
+    "verified": true,
+    "createdAt": "2026-08-25",
+    "isVisible": true,
+    "likes": 24
+  },
+  {
+    "id": "REV-102",
+    "customerName": "Anh Minh Hoàng",
+    "customerAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+    "productName": "Lẵng Mẫu Đơn Hoàng Gia Peony Blush",
+    "rating": 5,
+    "occasion": "Sinh Nhật Người Yêu",
+    "comment": "Mình chọn tính năng giao hoa ẩn danh giấu tên người gửi. Người yêu nhận được bất ngờ tột cùng. Thiệp in chữ viết tay nắn nót rất nghệ thuật, hoa tươi roi rói thơm ngát cả phòng!",
+    "proofImage": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80",
+    "verified": true,
+    "createdAt": "2026-08-24",
+    "isVisible": true,
+    "likes": 19
+  },
+  {
+    "id": "REV-103",
+    "customerName": "Chị Bích Ngọc",
+    "customerAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
+    "productName": "Bình Hoa Tulip Hà Lan Tinh Khôi",
+    "rating": 5,
+    "occasion": "Chúc Mừng Khai Trương",
+    "comment": "Form dáng cắm cực kỳ sang trọng và hiện đại, không bị sến như các shop hoa truyền thống. Bình tulip để ở quầy lễ tân công ty đối tác ai cũng khen nức nở.",
+    "proofImage": "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80",
+    "verified": true,
+    "createdAt": "2026-08-23",
+    "isVisible": true,
+    "likes": 15
+  },
+  {
+    "id": "REV-104",
+    "customerName": "Anh Quốc Bảo",
+    "customerAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+    "productName": "Hộp Hoa Gỗ Vintage Garden",
+    "rating": 5,
+    "occasion": "Tặng Mẹ 8/3",
+    "comment": "Mẹ mình thích lắm, hoa cắm xốp giữ nước tươi được gần 1 tuần lễ. Dịch vụ chăm sóc khách hàng 10/10.",
+    "proofImage": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80",
+    "verified": true,
+    "createdAt": "2026-08-22",
+    "isVisible": true,
+    "likes": 11
+  }
+]

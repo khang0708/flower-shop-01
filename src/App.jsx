@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { OccasionFilter } from './components/OccasionFilter';
 import { FlowerGrid } from './components/FlowerGrid';
+import { ReviewsSection } from './components/ReviewsSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
@@ -106,6 +107,7 @@ function AppContent() {
         <HeroSection />
         <OccasionFilter />
         <FlowerGrid />
+        <ReviewsSection />
       </main>
 
       {/* Floating Real Zalo Chat Button */}

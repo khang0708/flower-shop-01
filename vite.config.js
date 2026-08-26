@@ -406,7 +406,63 @@ function fullstackApiPlugin() {
           }
         }
 
-        // 7. Telegram Test & ChatID API trong Vite
+        // 8. Reviews & Customer Feedback API
+        if (url === '/api/reviews') {
+          if (req.method === 'GET') {
+            const reviews = readJson('reviews.json') || [];
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: reviews }));
+            return;
+          }
+          if (req.method === 'POST') {
+            const body = await readBody();
+            const reviews = readJson('reviews.json') || [];
+            const newReview = {
+              id: `REV-${Date.now()}`,
+              customerName: body.customerName || 'Khách hàng Flora',
+              customerAvatar: body.customerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+              productName: body.productName || 'Bó Hoa Tươi Nghệ Thuật',
+              rating: Number(body.rating) || 5,
+              occasion: body.occasion || 'Gửi Tặng Yêu Thương',
+              comment: body.comment || 'Hoa rất tươi và đẹp, giao hàng đúng giờ!',
+              proofImage: body.proofImage || null,
+              verified: true,
+              createdAt: new Date().toISOString().split('T')[0],
+              isVisible: true,
+              likes: 1
+            };
+            reviews.unshift(newReview);
+            writeJson('reviews.json', reviews);
+            broadcastAdminEvent({ type: 'NEW_REVIEW', review: newReview });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: newReview, message: 'Cảm ơn bạn đã đánh giá!' }));
+            return;
+          }
+        }
+
+        if (url.startsWith('/api/reviews/')) {
+          const id = url.replace('/api/reviews/', '').split('/')[0];
+          const reviews = readJson('reviews.json') || [];
+          const index = reviews.findIndex(r => r.id === id);
+
+          if (req.method === 'PATCH' && url.endsWith('/toggle') && index !== -1) {
+            reviews[index].isVisible = !reviews[index].isVisible;
+            writeJson('reviews.json', reviews);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, data: reviews[index] }));
+            return;
+          }
+
+          if (req.method === 'DELETE' && index !== -1) {
+            const filtered = reviews.filter(r => r.id !== id);
+            writeJson('reviews.json', filtered);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, message: 'Đã xóa đánh giá' }));
+            return;
+          }
+        }
+
+        // 9. Telegram Test & ChatID API trong Vite
         if (url === '/api/notifications/telegram-test' && req.method === 'POST') {
           const body = await readBody();
           const token = (body.botToken || '').trim().replace(/^bot/i, '');
