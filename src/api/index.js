@@ -130,6 +130,70 @@ export const sendZaloZnsApi = async (payload) => {
   return res;
 };
 
+export const escapeTelegramHtml = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+
+export const sendTelegramOrderNotificationApi = async (botToken, chatId, order) => {
+  const token = (botToken || '').trim().replace(/^bot/i, '');
+  const targetChatId = String(chatId || '').trim();
+
+  if (!token || !targetChatId || !order) {
+    return { success: false, reason: 'Missing token or chatId' };
+  }
+
+  let itemsListText = '';
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    itemsListText = '\n📋 <b>Chi tiết sản phẩm & quà kèm:</b>\n' +
+      order.items.map((it, idx) => `  ${idx + 1}. ${escapeTelegramHtml(it.name)} (<b>${Number(it.price || 0).toLocaleString('vi-VN')}đ</b>)`).join('\n') + '\n';
+  }
+
+  const anonymousNotice = order.isAnonymous ? ' <i>(🕵️ Đơn gửi ẩn danh bí mật)</i>' : '';
+
+  const htmlMessage = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(order.orderCode || order.id)})\n\n` +
+    `👤 <b>Người đặt:</b> ${escapeTelegramHtml(order.customerName || 'Khách hàng')}${anonymousNotice}\n` +
+    `📞 <b>SĐT khách:</b> ${escapeTelegramHtml(order.customerPhone || 'Chưa cung cấp')}\n` +
+    `💐 <b>Mẫu hoa chính:</b> ${escapeTelegramHtml(order.productName || 'Bó hoa tươi nghệ thuật')}\n` +
+    itemsListText +
+    `💰 <b>Tổng thanh toán:</b> <b>${Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ</b>\n` +
+    `⏱️ <b>Khung giờ hẹn:</b> ${escapeTelegramHtml(order.deliverySlot || 'Trong ngày')}\n` +
+    `📍 <b>Người nhận:</b> ${escapeTelegramHtml(order.receiverName || '')} (${escapeTelegramHtml(order.receiverPhone || '')})\n` +
+    `🏠 <b>Địa chỉ:</b> ${escapeTelegramHtml(order.receiverAddress || 'Chưa cung cấp')}\n` +
+    `💌 <b>Lời chúc thiệp:</b> <i>"${escapeTelegramHtml(order.cardMessage || 'Gửi gắm yêu thương!')}"</i>\n` +
+    `✍️ <b>Ký tên:</b> <i>"${escapeTelegramHtml(order.senderSign || order.customerName || 'Người gửi')}"</i>\n\n` +
+    `👉 <i>Flora & Bloom Studio: Hãy mở Admin để cắm mẫu và gửi ảnh duyệt nhé!</i>`;
+
+  try {
+    const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    const res = await fetch(tgUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: targetChatId,
+        text: htmlMessage,
+        parse_mode: 'HTML'
+      })
+    });
+    const data = await res.json();
+    return { success: Boolean(data && data.ok), data: data?.result };
+  } catch (err) {
+    console.warn('Browser direct Telegram failed, attempting proxy fallback:', err.message);
+    try {
+      return await request('/notifications/telegram-test', {
+        method: 'POST',
+        body: JSON.stringify({ botToken: token, chatId: targetChatId, testOrder: order })
+      });
+    } catch (proxyErr) {
+      return { success: false, error: err.message };
+    }
+  }
+};
+
 export const sendTelegramTestApi = async (botToken, chatId, testOrder) => {
   const token = (botToken || '').trim().replace(/^bot/i, '');
   const targetChatId = String(chatId || '').trim();
@@ -148,12 +212,12 @@ export const sendTelegramTestApi = async (botToken, chatId, testOrder) => {
     receiverAddress: 'Bitexco, Q.1'
   };
 
-  const htmlMessage = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${order.orderCode})\n\n` +
-    `👤 <b>Khách đặt:</b> ${order.customerName}\n` +
-    `💐 <b>Mẫu hoa:</b> ${order.productName}\n` +
+  const htmlMessage = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(order.orderCode)})\n\n` +
+    `👤 <b>Khách đặt:</b> ${escapeTelegramHtml(order.customerName)}\n` +
+    `💐 <b>Mẫu hoa:</b> ${escapeTelegramHtml(order.productName)}\n` +
     `💰 <b>Tổng tiền:</b> ${Number(order.totalAmount).toLocaleString('vi-VN')}đ\n` +
-    `⏱️ <b>Khung giờ:</b> ${order.deliverySlot}\n` +
-    `📍 <b>Giao tới:</b> ${order.receiverAddress}\n\n` +
+    `⏱️ <b>Khung giờ:</b> ${escapeTelegramHtml(order.deliverySlot)}\n` +
+    `📍 <b>Giao tới:</b> ${escapeTelegramHtml(order.receiverAddress)}\n\n` +
     `👉 <i>Flora & Bloom Studio đã sẵn sàng cắm hoa!</i>`;
 
   try {

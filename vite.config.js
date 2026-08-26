@@ -39,6 +39,16 @@ const broadcastAdminEvent = (payload) => {
   });
 };
 
+// Helper mã hóa an toàn các ký tự đặc biệt cho Telegram HTML parse_mode
+function escapeTelegramHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Helper gửi tin nhắn trực tiếp qua Telegram API
 async function sendTelegramMessage(botToken, chatId, order) {
   if (!botToken || !chatId) return false;
@@ -49,22 +59,22 @@ async function sendTelegramMessage(botToken, chatId, order) {
   let itemsListText = '';
   if (Array.isArray(order.items) && order.items.length > 0) {
     itemsListText = '\n📋 <b>Chi tiết sản phẩm & quà kèm:</b>\n' +
-      order.items.map((it, idx) => `  ${idx + 1}. ${it.name} (<b>${Number(it.price || 0).toLocaleString('vi-VN')}đ</b>)`).join('\n') + '\n';
+      order.items.map((it, idx) => `  ${idx + 1}. ${escapeTelegramHtml(it.name)} (<b>${Number(it.price || 0).toLocaleString('vi-VN')}đ</b>)`).join('\n') + '\n';
   }
 
   const anonymousNotice = order.isAnonymous ? ' <i>(🕵️ Đơn gửi ẩn danh bí mật)</i>' : '';
 
-  const htmlMessage = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${order.orderCode || order.id})\n\n` +
-    `👤 <b>Người đặt:</b> ${order.customerName || 'Khách hàng'}${anonymousNotice}\n` +
-    `📞 <b>SĐT khách:</b> ${order.customerPhone || 'Chưa cung cấp'}\n` +
-    `💐 <b>Mẫu hoa chính:</b> ${order.productName || 'Bó hoa tươi nghệ thuật'}\n` +
+  const htmlMessage = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(order.orderCode || order.id)})\n\n` +
+    `👤 <b>Người đặt:</b> ${escapeTelegramHtml(order.customerName || 'Khách hàng')}${anonymousNotice}\n` +
+    `📞 <b>SĐT khách:</b> ${escapeTelegramHtml(order.customerPhone || 'Chưa cung cấp')}\n` +
+    `💐 <b>Mẫu hoa chính:</b> ${escapeTelegramHtml(order.productName || 'Bó hoa tươi nghệ thuật')}\n` +
     itemsListText +
     `💰 <b>Tổng thanh toán:</b> <b>${Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ</b>\n` +
-    `⏱️ <b>Khung giờ hẹn:</b> ${order.deliverySlot || 'Trong ngày'}\n` +
-    `📍 <b>Người nhận:</b> ${order.receiverName || ''} (${order.receiverPhone || ''})\n` +
-    `🏠 <b>Địa chỉ:</b> ${order.receiverAddress || 'Chưa cung cấp'}\n` +
-    `💌 <b>Lời chúc thiệp:</b> <i>"${order.cardMessage || 'Gửi gắm yêu thương!'}"</i>\n` +
-    `✍️ <b>Ký tên:</b> <i>"${order.senderSign || order.customerName || 'Người gửi'}"</i>\n\n` +
+    `⏱️ <b>Khung giờ hẹn:</b> ${escapeTelegramHtml(order.deliverySlot || 'Trong ngày')}\n` +
+    `📍 <b>Người nhận:</b> ${escapeTelegramHtml(order.receiverName || '')} (${escapeTelegramHtml(order.receiverPhone || '')})\n` +
+    `🏠 <b>Địa chỉ:</b> ${escapeTelegramHtml(order.receiverAddress || 'Chưa cung cấp')}\n` +
+    `💌 <b>Lời chúc thiệp:</b> <i>"${escapeTelegramHtml(order.cardMessage || 'Gửi gắm yêu thương!')}"</i>\n` +
+    `✍️ <b>Ký tên:</b> <i>"${escapeTelegramHtml(order.senderSign || order.customerName || 'Người gửi')}"</i>\n\n` +
     `👉 <i>Flora & Bloom Studio: Hãy mở Admin để cắm mẫu và gửi ảnh duyệt nhé!</i>`;
 
   try {
@@ -79,7 +89,7 @@ async function sendTelegramMessage(botToken, chatId, order) {
       })
     });
     const data = await res.json();
-    return data.ok;
+    return Boolean(data && data.ok);
   } catch (err) {
     console.warn('Lỗi server gửi Telegram:', err.message);
     return false;
@@ -262,12 +272,17 @@ function fullstackApiPlugin() {
             const settings = readJson('settings.json') || {};
             const botToken = body.telegramBotToken || settings.telegramBotToken;
             const chatId = body.telegramChatId || settings.telegramChatId;
+            let telegramSent = false;
             if (botToken && chatId) {
-              sendTelegramMessage(botToken, chatId, newOrder).catch(() => {});
+              try {
+                telegramSent = await sendTelegramMessage(botToken, chatId, newOrder);
+              } catch (e) {
+                telegramSent = false;
+              }
             }
 
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: true, data: newOrder }));
+            res.end(JSON.stringify({ success: true, data: newOrder, telegramSent }));
             return;
           }
         }

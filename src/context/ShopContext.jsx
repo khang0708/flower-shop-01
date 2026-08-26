@@ -13,6 +13,7 @@ import {
   fetchInventoryApi,
   checkHealthApi,
   sendTelegramTestApi,
+  sendTelegramOrderNotificationApi,
   fetchSettingsApi,
   saveSettingsApi,
   fetchDiscountsApi,
@@ -604,8 +605,11 @@ export const ShopProvider = ({ children }) => {
     };
 
     let newOrder = null;
+    let serverSentTelegram = false;
     try {
-      newOrder = await createOrderApi(orderPayload);
+      const res = await createOrderApi(orderPayload);
+      newOrder = res?.data || res;
+      serverSentTelegram = Boolean(res?.telegramSent);
     } catch (e) {
       const newOrderCode = `FB-${Math.floor(10000 + Math.random() * 90000)}`;
       newOrder = {
@@ -618,6 +622,13 @@ export const ShopProvider = ({ children }) => {
         createdAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         isApproved: false
       };
+    }
+
+    // Cơ chế Hybrid: Nếu Server Node.js không gửi được (DNS/Proxy/Offline), Trình duyệt Client tự động gửi trực tiếp
+    if (!serverSentTelegram && token && chatId) {
+      sendTelegramOrderNotificationApi(token, chatId, newOrder).catch((err) => {
+        console.warn('Client Telegram notification attempt:', err.message);
+      });
     }
 
     setOrders(prev => {
