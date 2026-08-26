@@ -68,17 +68,16 @@
 
 ---
 
-### 📈 Tính Năng Nâng Cấp: Báo Cáo Doanh Thu & Biểu Đồ Số Liệu Thật 100% (Không Mock Data)
+### 🛠️ Khắc Phục Lỗi Cảnh Báo Excel: Định Dạng CSV UTF-8 BOM Chuẩn (Không Bị Extension Mismatch)
 * **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
-* **Chi tiết nâng cấp:**
-  1. **Loại bỏ toàn bộ Mock Data tĩnh:**
-     * Không sử dụng mảng số liệu gán cứng cho 7 ngày hoặc tỷ lệ % dịp tặng giả lập.
-  2. **Thuật toán tổng hợp từ 100% đơn hàng thực tế:**
-     * **Biểu đồ 7 ngày gần nhất:** Tự động quét và gom nhóm chính xác theo ngày tạo (`createdAt`) và khung giờ hẹn của các đơn hàng có thật trong hệ thống; tính đúng doanh thu và số lượng đơn theo từng ngày.
-     * **Phân bổ Dịp Tặng Hoa:** Phân tích ngữ nghĩa tự nhiên từ lời chúc thiệp (`cardMessage`), tên mẫu hoa (`productName`) và người gửi để phân loại chính xác số đơn và % (Tình yêu, Sinh nhật, Khai trương, Lời cảm ơn).
-     * **Top Sản Phẩm Bán Chạy:** Xếp hạng mẫu hoa theo đúng số lượng bán và doanh thu thực tế.
-     * **Gợi Ý Chiến Lược Động:** Tự động sinh nhận xét kinh doanh dựa trên sản phẩm bán chạy nhất và chủ đề hoa chiếm ưu thế trong tệp dữ liệu đã lọc.
-* **Commit:** `09b985f`
+* **Nguyên nhân lỗi trước đó:** 
+  * Khi xuất file nội dung HTML dưới đuôi `.xls`, Microsoft Excel kích hoạt cơ chế bảo vệ *"Extension Hardening"* và hiển thị popup cảnh báo: *"The file format and extension of ... don't match"*.
+* **Giải pháp khắc phục triệt để:**
+  1. Chuyển đổi định dạng file tải về sang chuẩn **`.csv` với UTF-8 BOM (`\uFEFF`)**.
+  2. **Bảo toàn số `0` đầu của Số điện thoại:** Sử dụng cú pháp `="0901234567"` giúp Excel không bị hiểu nhầm thành số nguyên và không bao giờ bị cắt mất số 0 đầu.
+  3. **Mở trực tiếp 100% trơn tru:** Nhấp đúp mở file trên Excel ngay lập tức mà **không xuất hiện bất kỳ hộp thoại cảnh báo nào**, font tiếng Việt có dấu hiển thị sắc nét 100%.
+  4. Đầy đủ các phần: Tiêu đề banner, Tóm tắt KPI (Doanh thu, Số đơn, AOV, Tỷ lệ duyệt ảnh), Bảng kê 20 cột và Dòng tổng cộng doanh thu.
+* **Commit:** `82b908e`
 
 ---
 
