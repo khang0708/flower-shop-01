@@ -30,6 +30,7 @@ import { playNewOrderChime } from '../services/soundService';
 import { 
   showBrowserOrderNotification, 
   broadcastNewOrderToTabs, 
+  broadcastOrderUpdateToTabs,
   listenToCrossTabOrders 
 } from '../services/notificationService';
 
@@ -381,19 +382,29 @@ export const ShopProvider = ({ children }) => {
             });
             triggerAdminOrderAlert(payload.order);
           }
+          if (payload.type === 'ORDER_STATUS_CHANGED' && payload.order) {
+            setOrders(prev => prev.map(o => (o.id === payload.order.id ? payload.order : o)));
+            setActiveOrder(prev => (prev && prev.id === payload.order.id ? payload.order : prev));
+          }
         } catch (err) {}
       };
     } catch (err) {}
 
-    // Lắng nghe sự kiện đa tab qua BroadcastChannel
-    const cleanupTabListener = listenToCrossTabOrders((incomingOrder) => {
-      setOrders(prev => {
-        const exists = prev.some(o => o.id === incomingOrder.id);
-        if (exists) return prev;
-        return [incomingOrder, ...prev];
-      });
-      triggerAdminOrderAlert(incomingOrder);
-    });
+    // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới & Cập nhật ảnh thật)
+    const cleanupTabListener = listenToCrossTabOrders(
+      (incomingOrder) => {
+        setOrders(prev => {
+          const exists = prev.some(o => o.id === incomingOrder.id);
+          if (exists) return prev;
+          return [incomingOrder, ...prev];
+        });
+        triggerAdminOrderAlert(incomingOrder);
+      },
+      (orderId, updates) => {
+        setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, ...updates } : o)));
+        setActiveOrder(prev => (prev && prev.id === orderId ? { ...prev, ...updates } : prev));
+      }
+    );
 
     return () => {
       if (eventSource) eventSource.close();
@@ -645,7 +656,8 @@ export const ShopProvider = ({ children }) => {
       totalAmount: finalTotalAmount,
       discountCode: appliedCoupon?.code || null,
       discountAmount: discountAmount,
-      proofPhotoUrl: cart[0]?.image || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+      proofPhotoUrl: null,
+      catalogSamplePhoto: cart[0]?.image || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       items: formattedItems,
       telegramBotToken: token,
       telegramChatId: chatId
@@ -742,6 +754,9 @@ export const ShopProvider = ({ children }) => {
       }
       return o;
     }));
+
+    // Phát sự kiện cập nhật đơn hàng sang các tab khác realtime
+    broadcastOrderUpdateToTabs(orderId, updates);
   };
 
   const resetUnreadOrdersCount = () => {

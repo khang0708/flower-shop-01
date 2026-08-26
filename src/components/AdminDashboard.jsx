@@ -101,6 +101,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [editingProductId, setEditingProductId] = useState(null);
   const [imageImportMode, setImageImportMode] = useState('upload'); // 'upload' | 'library' | 'url'
 
+  // State Modal Chụp / Upload Ảnh Thật Tại Xưởng
+  const [proofModalOrder, setProofModalOrder] = useState(null);
+  const [proofPhotoInput, setProofPhotoInput] = useState('');
+  const [proofNoteInput, setProofNoteInput] = useState('');
+  const [proofTabMode, setProofTabMode] = useState('upload'); // 'upload' | 'preset' | 'url'
+
   // State Cấu hình Phí Giao Hoa & Freeship
   const [shippingForm, setShippingForm] = useState({
     standardFee: shippingSettings?.standardFee ?? 35000,
@@ -336,12 +342,47 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setTimeout(() => setCopyToast(''), 4000);
   };
 
-  const handleUploadProofPhoto = (orderId) => {
-    const sampleProof = 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80';
-    updateOrderByAdmin(orderId, {
-      proofPhotoUrl: sampleProof,
-      status: 'PHOTO_READY'
+  const handleOpenProofModal = (order) => {
+    setProofModalOrder(order);
+    setProofPhotoInput(order.proofPhotoUrl || '');
+    setProofNoteInput(order.proofNote || 'Đã cắm hoàn tất theo yêu cầu, hoa tươi 100%');
+    setProofTabMode('upload');
+  };
+
+  const handleProofFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một file hình ảnh hợp lệ (JPG, PNG, WEBP, HEIC)!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setProofPhotoInput(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProofPhoto = (e) => {
+    e.preventDefault();
+    if (!proofModalOrder) return;
+    if (!proofPhotoInput.trim()) {
+      alert('Vui lòng chọn hoặc tải lên một tấm ảnh hoa thật tại xưởng trước khi gửi duyệt!');
+      return;
+    }
+    const currentTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    updateOrderByAdmin(proofModalOrder.id, {
+      proofPhotoUrl: proofPhotoInput,
+      proofNote: proofNoteInput,
+      proofPhotoTime: currentTime,
+      status: 'PHOTO_READY',
+      isApproved: false
     });
+    setProofModalOrder(null);
+    setCopyToast(`🎉 Đã cập nhật ảnh hoa thật cho đơn #${proofModalOrder.orderCode || proofModalOrder.id}! Khách hàng có thể xem & duyệt realtime.`);
+    setTimeout(() => setCopyToast(''), 4000);
   };
 
   const handleSendToShipper = (orderId) => {
@@ -688,13 +729,58 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
 
                     <div className="lg:col-span-5 bg-[#F4F7F5] p-4 rounded-2xl border border-[#D1DFD6] flex flex-col justify-between space-y-3">
                       <div>
-                        <span className="text-xs font-bold text-[#1B3B2B] block mb-2">📸 Ảnh Chụp Hoa Thật Tại Xưởng:</span>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#1B3B2B] flex items-center gap-1.5">
+                            <Camera className="w-3.5 h-3.5 text-[#C4685A]" />
+                            <span>Ảnh Hoa Thật Tại Xưởng:</span>
+                          </span>
+                          {order.proofPhotoUrl ? (
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                              ✓ Đã có ảnh thật
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                              ⏳ Đang cắm hoa
+                            </span>
+                          )}
+                        </div>
+
                         {order.proofPhotoUrl ? (
-                          <img src={order.proofPhotoUrl} alt="Proof" className="aspect-[4/3] rounded-xl object-cover border-2 border-white shadow-xs" />
-                        ) : (
-                          <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 bg-white">
-                            <span>Chưa có ảnh chụp thực tế</span>
+                          <div className="relative group aspect-[4/3] rounded-xl overflow-hidden border-2 border-white shadow-sm">
+                            <img src={order.proofPhotoUrl} alt="Ảnh hoa thật" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenProofModal(order)}
+                                className="bg-white text-[#1B3B2B] text-xs font-bold px-3 py-1.5 rounded-lg shadow-md hover:bg-gray-100 flex items-center gap-1"
+                              >
+                                <Camera className="w-3.5 h-3.5 text-[#C4685A]" />
+                                <span>Chụp lại / Đổi ảnh</span>
+                              </button>
+                            </div>
+                            {order.proofPhotoTime && (
+                              <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] px-2 py-0.5 rounded-md">
+                                Chụp lúc {order.proofPhotoTime}
+                              </span>
+                            )}
                           </div>
+                        ) : (
+                          <div 
+                            onClick={() => handleOpenProofModal(order)}
+                            className="aspect-[4/3] rounded-xl border-2 border-dashed border-emerald-600/40 hover:border-emerald-600 flex flex-col items-center justify-center text-gray-500 bg-white/70 hover:bg-emerald-50/50 cursor-pointer transition-all p-4 text-center group"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 text-[#1B3B2B] flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                              <Camera className="w-5 h-5 text-emerald-800" />
+                            </div>
+                            <strong className="text-xs text-[#1B3B2B] block">Chụp / Tải ảnh hoa thật</strong>
+                            <span className="text-[10px] text-gray-400">Khách hàng sẽ nhìn thấy ảnh ngay lập tức</span>
+                          </div>
+                        )}
+
+                        {order.proofNote && (
+                          <p className="text-[11px] text-emerald-900 bg-emerald-50 p-2 rounded-lg border border-emerald-200 mt-2 italic">
+                            💬 "{order.proofNote}"
+                          </p>
                         )}
                       </div>
 
@@ -718,13 +804,30 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         </button>
 
                         {!order.proofPhotoUrl ? (
-                          <button onClick={() => handleUploadProofPhoto(order.id)} className="w-full bg-[#3B5A45] hover:bg-[#2e4736] text-white text-xs font-bold py-2.5 rounded-xl">
-                            Chụp/Tải Ảnh Lên Hệ Thống
+                          <button 
+                            onClick={() => handleOpenProofModal(order)} 
+                            className="w-full bg-[#3B5A45] hover:bg-[#2e4736] text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-emerald-200" />
+                            <span>📸 Tải Ảnh Hoa Thật Lên Hệ Thống</span>
                           </button>
                         ) : (
-                          <button onClick={() => handleSendToShipper(order.id)} className="w-full bg-[#2E7D32] text-white text-xs font-bold py-2.5 rounded-xl">
-                            Bàn Giao Shipper Đi Giao
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleOpenProofModal(order)}
+                              className="flex-1 bg-white hover:bg-gray-100 text-[#1B3B2B] border border-gray-300 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-95"
+                              title="Tải ảnh khác hoặc chụp lại"
+                            >
+                              <Camera className="w-3.5 h-3.5 text-[#C4685A]" />
+                              <span>Đổi Ảnh</span>
+                            </button>
+                            <button 
+                              onClick={() => handleSendToShipper(order.id)} 
+                              className="flex-1 bg-[#2E7D32] hover:bg-[#256629] text-white text-xs font-bold py-2.5 rounded-xl active:scale-95"
+                            >
+                              Bàn Giao Shipper
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1913,6 +2016,202 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   Hủy
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CHỤP / TẢI ẢNH HOA THẬT TẠI XƯỞNG ĐỂ GỬI DUYỆT */}
+      {proofModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto text-[#222523]">
+            {/* Header Modal */}
+            <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[#F5D6CE]">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold">
+                    Chụp & Cập Nhật Ảnh Hoa Thật Tại Xưởng
+                  </h3>
+                  <p className="text-[11px] text-emerald-200">
+                    Đơn hàng: #{proofModalOrder.orderCode || proofModalOrder.id} • {proofModalOrder.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProofModalOrder(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body Form */}
+            <form onSubmit={handleSaveProofPhoto} className="p-6 space-y-4 max-h-[82vh] overflow-y-auto text-xs">
+              
+              {/* Thông tin đơn */}
+              <div className="p-3 bg-[#FAF8F5] rounded-xl border border-gray-200 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold block">MẪU HOA KHÁCH ĐẶT:</span>
+                  <strong className="text-gray-900 text-sm font-serif">{proofModalOrder.productName}</strong>
+                </div>
+                <span className="text-[10px] font-bold bg-[#E8998D]/20 text-[#C4685A] px-2.5 py-1 rounded-md">
+                  ⏱️ {proofModalOrder.deliverySlot}
+                </span>
+              </div>
+
+              {/* 3 Tabs chọn nguồn ảnh */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1.5">
+                  📸 Nguồn Tải Ảnh Chụp Bó Hoa Thực Tế:
+                </label>
+                <div className="flex bg-gray-100 p-1 rounded-xl mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setProofTabMode('upload')}
+                    className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      proofTabMode === 'upload' ? 'bg-[#1B3B2B] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Tải Từ Máy / Camera</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProofTabMode('preset')}
+                    className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      proofTabMode === 'preset' ? 'bg-[#1B3B2B] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Mẫu Xưởng Studio</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProofTabMode('url')}
+                    className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      proofTabMode === 'url' ? 'bg-[#1B3B2B] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>🔗 Link URL</span>
+                  </button>
+                </div>
+
+                {/* Tab 1: Upload File Từ Máy Tính / Camera */}
+                {proofTabMode === 'upload' && (
+                  <div className="p-4 border-2 border-dashed border-emerald-600/40 hover:border-emerald-600 rounded-2xl text-center bg-[#FAF8F5] space-y-2 cursor-pointer relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleProofFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <strong className="text-gray-800 block">Bấm để chụp ảnh hoặc chọn file từ thiết bị</strong>
+                      <p className="text-[11px] text-gray-500">Hỗ trợ JPG, PNG, WEBP, HEIC (Tối đa 15MB)</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 2: Chọn từ thư viện xưởng studio */}
+                {proofTabMode === 'preset' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {PRESET_FLOWER_PHOTOS.map((p, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setProofPhotoInput(p.url)}
+                        className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all group relative ${
+                          proofPhotoInput === p.url ? 'border-[#1B3B2B] ring-2 ring-[#1B3B2B]' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <img src={p.url} alt={p.name} className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform" />
+                        <div className="p-1.5 bg-white text-[10px] font-bold text-gray-800 truncate text-center">
+                          {p.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tab 3: Nhập URL Trực Tiếp */}
+                {proofTabMode === 'url' && (
+                  <div>
+                    <input
+                      type="url"
+                      value={proofPhotoInput}
+                      onChange={(e) => setProofPhotoInput(e.target.value)}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] font-mono text-xs"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* LIVE PHOTO PREVIEW BOX */}
+              {proofPhotoInput && (
+                <div className="p-3 bg-[#FAF4F0] rounded-2xl border border-[#F5D6CE] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[#1B3B2B] flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-[#C4685A]" />
+                      <span>Xem trước ảnh thật sẽ gửi cho khách duyệt:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setProofPhotoInput('')}
+                      className="text-red-500 hover:text-red-700 text-[11px] font-bold"
+                    >
+                      ✕ Gỡ ảnh
+                    </button>
+                  </div>
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden border-2 border-white shadow-sm relative">
+                    <img src={proofPhotoInput} alt="Preview ảnh hoa thật" className="w-full h-full object-cover" />
+                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] px-2.5 py-1 rounded-md">
+                      Chụp lúc {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • Xưởng Flora Studio
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ghi chú nghệ nhân gửi kèm cho khách */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  💬 Lời nhắn / Ghi chú từ nghệ nhân cắm hoa:
+                </label>
+                <input
+                  type="text"
+                  value={proofNoteInput}
+                  onChange={(e) => setProofNoteInput(e.target.value)}
+                  placeholder="VD: Đã cắm 15 cành hồng Juliet nở chuẩn đẹp, thắt nơ lụa màu be kèm thiệp..."
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
+                />
+              </div>
+
+              {/* Nút Submit */}
+              <div className="pt-3 border-t border-gray-200 flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!proofPhotoInput}
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Xác Nhận Ảnh Thật & Gửi Khách Duyệt (Realtime)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProofModalOrder(null)}
+                  className="px-5 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold"
+                >
+                  Đóng
+                </button>
+              </div>
+
             </form>
           </div>
         </div>

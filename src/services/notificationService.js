@@ -87,13 +87,25 @@ export const broadcastNewOrderToTabs = (order) => {
 };
 
 /**
- * Lắng nghe sự kiện đơn mới từ các tab khác
+ * Phát sự kiện cập nhật đơn hàng (ảnh chụp thật, trạng thái) qua các tab khác
  */
-export const listenToCrossTabOrders = (callback) => {
+export const broadcastOrderUpdateToTabs = (orderId, updates) => {
+  if (broadcastChannel) {
+    broadcastChannel.postMessage({ type: 'UPDATE_ORDER', orderId, updates });
+  }
+};
+
+/**
+ * Lắng nghe sự kiện đơn mới & cập nhật đơn từ các tab khác
+ */
+export const listenToCrossTabOrders = (onNewOrder, onUpdateOrder) => {
   if (!broadcastChannel) return () => {};
   const handler = (event) => {
     if (event.data?.type === 'NEW_ORDER' && event.data.order) {
-      callback(event.data.order);
+      if (typeof onNewOrder === 'function') onNewOrder(event.data.order);
+    }
+    if (event.data?.type === 'UPDATE_ORDER' && event.data.orderId) {
+      if (typeof onUpdateOrder === 'function') onUpdateOrder(event.data.orderId, event.data.updates);
     }
   };
   broadcastChannel.addEventListener('message', handler);
