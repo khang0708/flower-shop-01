@@ -68,18 +68,19 @@
 
 ---
 
-### 🌸 Tính Năng Bổ Sung: Sắp Xếp Mẫu Hoa Tại Trang Chủ (Product Sorting Bar)
-* **Files:** [`src/components/FlowerGrid.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx)
+### 🚚 Tính Năng Bổ Sung: Tùy Chỉnh Phí Giao Hoa & Chính Sách Freeship (Shipping Settings)
+* **Files:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx), [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`server/data/settings.json`](file:///Users/macbook/dev-learning/flora-bloom-shop/server/data/settings.json)
 * **Chi tiết nâng cấp:**
-  1. **6 Tiêu chí sắp xếp trực quan:**
-     * ✨ **Nổi Bật Nhất (Featured):** Thứ tự mặc định của xưởng hoa.
-     * ⬆️ **Giá: Thấp → Cao (Price Ascending):** Tìm các mẫu bó hoa giá tốt nhất trước.
-     * ⬇️ **Giá: Cao → Thấp (Price Descending):** Tìm các thiết kế hoa sang trọng, cao cấp.
-     * ⭐ **Đánh Giá Cao (Top Rated):** Ưu tiên các mẫu hoa nhận nhiều 5 sao nhất.
-     * 🕒 **Mới Ra Mắt (Newest Arrivals):** Các thiết kế vừa được cập nhật vào xưởng.
-     * 🏷️ **Tên: A → Z (Alphabetical):** Tra cứu theo tên chữ cái.
-  2. **Tương thích toàn diện:** Tự động kết hợp mượt mà cùng bộ lọc **Dịp tặng hoa**, **Tone màu chủ đạo** và **Tìm kiếm từ khóa**.
-* **Commit:** `dff865b`
+  1. **Tab Quản Trị Phí Giao Hoa & Freeship:**
+     * Tùy chỉnh **Phí giao tiêu chuẩn theo khung giờ hẹn** (Mặc định 35.000đ, hỗ trợ quick chips chọn nhanh: 0đ, 25k, 30k, 35k, 40k).
+     * Tùy chỉnh **Phí giao hỏa tốc 60 - 90 phút** (Mặc định 60.000đ, quick chips: 45k, 50k, 60k, 70k, 80k).
+     * Bật/Tắt **Chính sách Freeship tự động** theo giá trị đơn hàng (Mặc định đơn từ 1.000.000đ $\rightarrow$ 0đ ship).
+     * Khung **Live Customer Simulation Preview** mô phỏng giao diện khách hàng thời gian thực.
+  2. **Giao Diện Thanh Toán (Checkout Modal):**
+     * Tự động tính cước động theo lựa chọn của khách (Khung giờ vs Hỏa tốc).
+     * Hiển thị Huy hiệu & Lời nhắc Freeship tự động khi giỏ hàng đạt ngưỡng.
+     * Lưu trữ cấu hình bền vững vào REST API Backend (`/api/settings`) và LocalStorage.
+* **Commit:** `381c60d`
 
 ---
 
