@@ -11,23 +11,72 @@ import {
   Flower2, 
   CheckCircle2, 
   Clock,
-  PieChart
+  PieChart,
+  FileSpreadsheet,
+  Download,
+  Filter,
+  Search,
+  RefreshCw,
+  SlidersHorizontal,
+  ChevronDown
 } from 'lucide-react';
 
-export const SalesAnalyticsView = ({ orders, products }) => {
-  const [timeRange, setTimeRange] = useState('7_days'); // 'today' | '7_days' | 'month' | 'all'
+export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
+  // Bộ lọc dữ liệu
+  const [timeRange, setTimeRange] = useState('7_days'); // 'today' | '7_days' | 'month' | 'all' | 'custom'
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [exportToast, setExportToast] = useState('');
 
-  // Tính toán số liệu thống kê
+  // 1. ÁP DỤNG BỘ LỌC LÊN DANH SÁCH ĐƠN HÀNG
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      // Lọc trạng thái
+      if (statusFilter !== 'all' && order.status !== statusFilter) {
+        return false;
+      }
+
+      // Lọc từ khóa tìm kiếm (Mã đơn, Tên người đặt, SĐT người đặt, Tên người nhận, Mẫu hoa)
+      if (searchKeyword.trim()) {
+        const q = searchKeyword.toLowerCase().trim();
+        const matchCode = (order.orderCode || order.id || '').toLowerCase().includes(q);
+        const matchCustomer = (order.customerName || '').toLowerCase().includes(q);
+        const matchCustomerPhone = (order.customerPhone || '').toLowerCase().includes(q);
+        const matchReceiver = (order.receiverName || '').toLowerCase().includes(q);
+        const matchReceiverPhone = (order.receiverPhone || '').toLowerCase().includes(q);
+        const matchProduct = (order.productName || '').toLowerCase().includes(q);
+        const matchAddress = (order.receiverAddress || '').toLowerCase().includes(q);
+
+        if (!matchCode && !matchCustomer && !matchCustomerPhone && !matchReceiver && !matchReceiverPhone && !matchProduct && !matchAddress) {
+          return false;
+        }
+      }
+
+      // Lọc theo khoảng giá tiền
+      const total = Number(order.totalAmount || 0);
+      if (minPrice && total < Number(minPrice)) return false;
+      if (maxPrice && total > Number(maxPrice)) return false;
+
+      return true;
+    });
+  }, [orders, statusFilter, searchKeyword, minPrice, maxPrice]);
+
+  // 2. TÍNH TOÁN SỐ LIỆU THỐNG KÊ DỰA TRÊN ĐƠN ĐÃ LỌC
   const analyticsData = useMemo(() => {
-    const totalOrdersCount = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const totalOrdersCount = filteredOrders.length;
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
     const averageOrderValue = totalOrdersCount > 0 ? Math.round(totalRevenue / totalOrdersCount) : 0;
-    const approvedPhotosCount = orders.filter(o => o.isApproved || o.status === 'DELIVERING' || o.status === 'COMPLETED').length;
+    const approvedPhotosCount = filteredOrders.filter(o => o.isApproved || o.status === 'DELIVERING' || o.status === 'COMPLETED').length;
     const approvalRate = totalOrdersCount > 0 ? Math.round((approvedPhotosCount / totalOrdersCount) * 100) : 100;
 
     // Top mẫu hoa bán chạy
     const productSalesMap = {};
-    orders.forEach(order => {
+    filteredOrders.forEach(order => {
       const pName = order.productName?.split('(')[0]?.trim() || 'Bó Hoa Nghệ Thuật';
       if (!productSalesMap[pName]) {
         productSalesMap[pName] = {
@@ -45,7 +94,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Thống kê doanh thu theo ngày (Mockup biểu đồ 7 ngày gần nhất)
+    // Biểu đồ doanh thu 7 ngày gần nhất
     const daysData = [
       { day: 'T2 (20/08)', revenue: 2450000, orders: 3 },
       { day: 'T3 (21/08)', revenue: 3890000, orders: 4 },
@@ -76,52 +125,266 @@ export const SalesAnalyticsView = ({ orders, products }) => {
       maxDayRevenue,
       occasionsData
     };
-  }, [orders, products]);
+  }, [filteredOrders]);
+
+  // 3. XUẤT BÁO CÁO EXCEL (CSV UTF-8 BOM)
+  const handleExportExcel = () => {
+    if (filteredOrders.length === 0) {
+      alert('Không có dữ liệu đơn hàng nào khớp với bộ lọc hiện tại để xuất!');
+      return;
+    }
+
+    const headers = [
+      'STT',
+      'Mã Đơn Hàng',
+      'Thời Gian Đặt',
+      'Tên Khách Hàng (Người Đặt)',
+      'SĐT Khách Đặt',
+      'Người Nhận Hoa',
+      'SĐT Người Nhận',
+      'Địa Chỉ Giao Hoa',
+      'Khung Giờ Hẹn Giao',
+      'Tên Mẫu Hoa',
+      'Chi Tiết Sản Phẩm & Quà Kèm',
+      'Lời Chúc Thiệp',
+      'Ký Tên Người Gửi',
+      'Giao Ẩn Danh',
+      'Mã Giảm Giá',
+      'Số Tiền Giảm (đ)',
+      'Tổng Tiền Thanh Toán (đ)',
+      'Trạng Thái Đơn Hàng',
+      'Trạng Thái Duyệt Ảnh'
+    ];
+
+    const statusLabels = {
+      'ARRANGING': 'Đang cắm hoa',
+      'PHOTO_READY': 'Chờ duyệt ảnh',
+      'DELIVERING': 'Đang giao hàng',
+      'COMPLETED': 'Đã hoàn tất'
+    };
+
+    const rows = filteredOrders.map((o, idx) => {
+      const itemsList = Array.isArray(o.items) && o.items.length > 0
+        ? o.items.map(it => `${it.name} (${Number(it.price || 0).toLocaleString('vi-VN')}đ)`).join('; ')
+        : o.productName || '';
+
+      return [
+        idx + 1,
+        `"${o.orderCode || o.id}"`,
+        `"${o.createdAt || 'Hôm nay'}"`,
+        `"${(o.customerName || '').replace(/"/g, '""')}"`,
+        `"${o.customerPhone || ''}"`,
+        `"${(o.receiverName || '').replace(/"/g, '""')}"`,
+        `"${o.receiverPhone || ''}"`,
+        `"${(o.receiverAddress || '').replace(/"/g, '""')}"`,
+        `"${(o.deliverySlot || '').replace(/"/g, '""')}"`,
+        `"${(o.productName || '').replace(/"/g, '""')}"`,
+        `"${itemsList.replace(/"/g, '""')}"`,
+        `"${(o.cardMessage || '').replace(/"/g, '""')}"`,
+        `"${(o.senderSign || '').replace(/"/g, '""')}"`,
+        o.isAnonymous ? 'Có' : 'Không',
+        `"${o.discountCode || 'Không'}"`,
+        Number(o.discountAmount || 0),
+        Number(o.totalAmount || 0),
+        `"${statusLabels[o.status] || o.status || 'Đang xử lý'}"`,
+        o.isApproved ? 'Đã duyệt ảnh' : 'Chưa duyệt'
+      ];
+    });
+
+    // Dòng tổng kết
+    const totalRevenueExport = filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const summaryRow = [
+      'TỔNG CỘNG',
+      `"${filteredOrders.length} đơn hàng"`,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      totalRevenueExport,
+      '',
+      ''
+    ];
+
+    // Tạo nội dung CSV kèm UTF-8 BOM (\uFEFF) để Excel hiển thị dấu tiếng Việt chuẩn 100%
+    const csvContent = '\uFEFF' + [
+      headers.join(','),
+      ...rows.map(r => r.join(',')),
+      summaryRow.join(',')
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setExportToast(`🎉 Đã xuất thành công ${filteredOrders.length} đơn hàng ra file Excel (CSV UTF-8)!`);
+    setTimeout(() => setExportToast(''), 4000);
+  };
+
+  const handleResetFilters = () => {
+    setTimeRange('7_days');
+    setStatusFilter('all');
+    setSearchKeyword('');
+    setMinPrice('');
+    setMaxPrice('');
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || searchKeyword.trim() !== '' || minPrice !== '' || maxPrice !== '' || timeRange !== '7_days';
 
   return (
     <div className="space-y-8 animate-fade-in text-[#222523]">
       
-      {/* Header Báo Cáo & Bộ Lọc Thời Gian */}
+      {/* Toast thông báo xuất Excel */}
+      {exportToast && (
+        <div className="fixed top-20 right-6 z-50 bg-[#1B3B2B] text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-400 text-xs flex items-center gap-2.5 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span className="font-semibold">{exportToast}</span>
+        </div>
+      )}
+
+      {/* HEADER BÁO CÁO & THANH CÔNG CỤ XUẤT EXCEL */}
       <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-serif text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
-            <span>📊</span> Báo Cáo Doanh Thu & Hiệu Quả Xưởng Hoa
+            <span>📊</span> Báo Cáo Doanh Thu & Hiệu Quả Bán Hàng
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            Tổng hợp dữ liệu bán hàng thời gian thực, giá trị trung bình đơn và xu hướng quà tặng.
+            Tổng hợp dữ liệu bán hàng thời gian thực, bộ lọc đa tiêu chí và xuất báo cáo bảng tính Excel.
           </p>
         </div>
 
-        {/* Bộ lọc thời gian */}
-        <div className="flex items-center bg-[#FAF8F5] p-1.5 rounded-2xl border border-gray-200">
-          {[
-            { id: 'today', label: 'Hôm Nay' },
-            { id: '7_days', label: '7 Ngày Qua' },
-            { id: 'month', label: 'Tháng Này' },
-            { id: 'all', label: 'Tất Cả' }
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTimeRange(t.id)}
-              className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all ${
-                timeRange === t.id
-                  ? 'bg-[#1B3B2B] text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Nút bật/tắt bộ lọc nâng cao */}
+          <button
+            type="button"
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+            className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl border transition-all ${
+              isFilterExpanded || hasActiveFilters
+                ? 'bg-[#1B3B2B] text-white border-[#1B3B2B]'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+            }`}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Bộ Lọc Nâng Cao</span>
+            {hasActiveFilters && (
+              <span className="w-2 h-2 rounded-full bg-[#E8998D] animate-ping" />
+            )}
+          </button>
+
+          {/* NÚT XUẤT EXCEL CHÍNH */}
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95"
+            title="Xuất danh sách đơn hàng đã lọc ra file Excel (.csv UTF-8 chuẩn font tiếng Việt)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
+            <span>Xuất Báo Cáo Excel ({filteredOrders.length})</span>
+            <Download className="w-3.5 h-3.5 text-white/80" />
+          </button>
         </div>
       </div>
 
-      {/* 4 THẺ KPI CHỈ SỐ CHÍNH */}
+      {/* KHUNG BỘ LỌC ĐẦY ĐỦ (ADVANCED FILTER PANEL) */}
+      {(isFilterExpanded || hasActiveFilters) && (
+        <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+            <span className="text-xs font-bold text-[#1B3B2B] flex items-center gap-1.5">
+              <SlidersHorizontal className="w-4 h-4 text-[#5C8A70]" />
+              Tiêu Chí Lọc Báo Cáo ({filteredOrders.length} / {orders.length} đơn thỏa mãn)
+            </span>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-[11px] text-red-600 hover:text-red-800 font-semibold flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Đặt Lại Mặc Định</span>
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {/* 1. Tìm kiếm từ khóa */}
+            <div>
+              <label className="block font-bold text-gray-700 mb-1">🔍 Tìm kiếm thông tin</label>
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="Tên khách, SĐT, mã đơn, mẫu hoa..."
+                className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5]"
+              />
+            </div>
+
+            {/* 2. Lọc trạng thái đơn */}
+            <div>
+              <label className="block font-bold text-gray-700 mb-1">🏷️ Trạng thái đơn</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5]"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="ARRANGING">Đang cắm hoa</option>
+                <option value="PHOTO_READY">Chờ duyệt ảnh</option>
+                <option value="DELIVERING">Đang giao hàng</option>
+              </select>
+            </div>
+
+            {/* 3. Giá tối thiểu */}
+            <div>
+              <label className="block font-bold text-gray-700 mb-1">💰 Giá tối thiểu (VNĐ)</label>
+              <input
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="VD: 500000"
+                className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5]"
+              />
+            </div>
+
+            {/* 4. Giá tối đa */}
+            <div>
+              <label className="block font-bold text-gray-700 mb-1">💰 Giá tối đa (VNĐ)</label>
+              <input
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="VD: 2000000"
+                className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4 THẺ KPI CHỈ SỐ CHÍNH (TÍNH THEO BỘ LỌC) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         {/* KPI 1: Tổng Doanh Thu */}
         <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-xs space-y-3 relative overflow-hidden">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-medium">Tổng Doanh Thu</span>
+            <span className="text-xs text-gray-500 font-medium">Doanh Thu Đã Lọc</span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <DollarSign className="w-5 h-5" />
             </div>
@@ -132,7 +395,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
             </h4>
             <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold mt-1">
               <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>+18.4% so với tuần trước</span>
+              <span>Tổng doanh số ghi nhận</span>
             </div>
           </div>
         </div>
@@ -140,7 +403,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
         {/* KPI 2: Tổng Số Đơn */}
         <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-xs space-y-3 relative overflow-hidden">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-medium">Tổng Đơn Đã Nhận</span>
+            <span className="text-xs text-gray-500 font-medium">Số Lượng Đơn Hàng</span>
             <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
               <ShoppingBag className="w-5 h-5" />
             </div>
@@ -151,7 +414,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
             </h4>
             <div className="flex items-center gap-1 text-[11px] text-amber-700 font-bold mt-1">
               <Clock className="w-3.5 h-3.5" />
-              <span>100% giao đúng khung giờ</span>
+              <span>Khớp tiêu chí lọc</span>
             </div>
           </div>
         </div>
@@ -169,7 +432,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
               {analyticsData.averageOrderValue.toLocaleString('vi-VN')}đ
             </h4>
             <div className="flex items-center gap-1 text-[11px] text-[#C4685A] font-bold mt-1">
-              <span>Phân khúc cao cấp</span>
+              <span>Phân khúc hoa thiết kế</span>
             </div>
           </div>
         </div>
@@ -188,7 +451,7 @@ export const SalesAnalyticsView = ({ orders, products }) => {
             </h4>
             <div className="flex items-center gap-1 text-[11px] text-sky-700 font-bold mt-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Duyệt ảnh ngay lần đầu</span>
+              <span>Duyệt ảnh trước khi giao</span>
             </div>
           </div>
         </div>
@@ -293,60 +556,81 @@ export const SalesAnalyticsView = ({ orders, products }) => {
 
       </div>
 
-      {/* TOP MẪU HOA BÁN CHẠY NHẤT (BEST SELLERS) */}
+      {/* DANH SÁCH CHI TIẾT CÁC ĐƠN HÀNG TRONG BỘ LỌC (TABLE BREAKDOWN) */}
       <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h4 className="font-serif text-lg font-bold text-[#1B3B2B] flex items-center gap-2">
-              <span>🏆</span> Top Mẫu Hoa Bán Chạy Nhất (Best Sellers)
+              <span>📋</span> Bảng Kê Đơn Hàng Chi Tiết Theo Bộ Lọc ({filteredOrders.length} đơn)
             </h4>
-            <p className="text-xs text-gray-500">Xếp hạng theo số lượng đơn cắm và doanh số</p>
+            <p className="text-xs text-gray-500">Dữ liệu được sử dụng trực tiếp khi xuất bảng tính Excel</p>
           </div>
+
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Tải File Excel (.CSV)</span>
+          </button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-gray-200 text-gray-500 bg-[#FAF8F5]">
-                <th className="p-3.5">Hạng</th>
-                <th className="p-3.5">Mẫu Bó Hoa Nghệ Thuật</th>
-                <th className="p-3.5 text-center">Số Đơn Bán</th>
-                <th className="p-3.5 text-right">Tổng Doanh Thu</th>
-                <th className="p-3.5 text-center">Đánh Giá</th>
+              <tr className="border-b border-gray-200 text-gray-600 bg-[#FAF8F5]">
+                <th className="p-3">Mã Đơn</th>
+                <th className="p-3">Người Đặt & SĐT</th>
+                <th className="p-3">Người Nhận & Địa Chỉ</th>
+                <th className="p-3">Mẫu Hoa</th>
+                <th className="p-3 text-right">Tổng Tiền</th>
+                <th className="p-3 text-center">Trạng Thái</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {analyticsData.topSellingProducts.map((p, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/70 transition-colors">
-                  <td className="p-3.5">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-                      idx === 0 ? 'bg-amber-400 text-white' :
-                      idx === 1 ? 'bg-gray-300 text-gray-800' :
-                      idx === 2 ? 'bg-amber-700 text-white' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {idx + 1}
-                    </span>
-                  </td>
-                  <td className="p-3.5">
-                    <div className="flex items-center gap-3">
-                      <img src={p.image} alt={p.name} className="w-10 h-10 rounded-xl object-cover border" />
-                      <div>
-                        <strong className="font-serif text-gray-900 block">{p.name}</strong>
-                        <span className="text-[11px] text-gray-400">Thiết kế bán chạy nhất</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-3.5 text-center font-mono font-bold text-gray-800">
-                    {p.count} đơn
-                  </td>
-                  <td className="p-3.5 text-right font-mono font-extrabold text-[#C4685A]">
-                    {p.revenue.toLocaleString('vi-VN')}đ
-                  </td>
-                  <td className="p-3.5 text-center text-amber-500 font-bold">
-                    ★ 5.0 (Tuyệt đối)
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((o) => (
+                  <tr key={o.id} className="hover:bg-gray-50/70 transition-colors">
+                    <td className="p-3 font-mono font-bold text-[#1B3B2B]">
+                      #{o.orderCode || o.id}
+                      <span className="block text-[10px] font-normal text-gray-400">{o.createdAt || 'Hôm nay'}</span>
+                    </td>
+                    <td className="p-3">
+                      <strong className="text-gray-900 block">{o.customerName}</strong>
+                      <span className="text-[11px] text-gray-500 font-mono">{o.customerPhone}</span>
+                    </td>
+                    <td className="p-3">
+                      <strong className="text-gray-900 block">{o.receiverName}</strong>
+                      <span className="text-[11px] text-gray-500 line-clamp-1">{o.receiverAddress}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="font-semibold text-gray-900 line-clamp-1">{o.productName}</span>
+                      <span className="text-[10px] text-[#C4685A] font-bold block">{o.deliverySlot}</span>
+                    </td>
+                    <td className="p-3 text-right font-mono font-extrabold text-[#1B3B2B]">
+                      {Number(o.totalAmount || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        o.status === 'ARRANGING' ? 'bg-amber-100 text-amber-800' :
+                        o.status === 'PHOTO_READY' ? 'bg-purple-100 text-purple-800' :
+                        o.status === 'DELIVERING' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {o.status === 'ARRANGING' ? 'Đang cắm' :
+                         o.status === 'PHOTO_READY' ? 'Chờ duyệt ảnh' :
+                         o.status === 'DELIVERING' ? 'Đang giao' : 'Hoàn tất'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-gray-400 italic">
+                    Không tìm thấy đơn hàng nào khớp với điều kiện lọc hiện tại.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
