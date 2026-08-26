@@ -68,20 +68,18 @@
 
 ---
 
-### 📊 Tính Năng Bổ Sung: Xuất Báo Cáo Doanh Thu Ra Excel & Bộ Lọc Nâng Cao
-* **File:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
+### 🌸 Tính Năng Bổ Sung: Sắp Xếp Mẫu Hoa Tại Trang Chủ (Product Sorting Bar)
+* **Files:** [`src/components/FlowerGrid.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx)
 * **Chi tiết nâng cấp:**
-  1. **Bộ Lọc Nâng Cao (Advanced Filters):**
-     * Lọc theo từ khóa (Mã đơn, Tên người đặt, SĐT khách, Tên người nhận, Mẫu hoa, Địa chỉ).
-     * Lọc theo trạng thái đơn hàng (Đang cắm, Chờ duyệt ảnh, Đang giao).
-     * Lọc theo khoảng giá tiền (Giá tối thiểu, Giá tối đa).
-     * Nút Đặt lại mặc định (Reset Filters).
-  2. **Xuất Bảng Tính Excel (CSV UTF-8 BOM):**
-     * Xuất đầy đủ 19 cột nghiệp vụ chi tiết.
-     * Chèn ký tự UTF-8 BOM (`\uFEFF`) đảm bảo Microsoft Excel và Google Sheets hiển thị font tiếng Việt có dấu chuẩn 100% không bị lỗi font.
-     * Tự động tính dòng tổng kết (Summary Row) ở cuối bảng tính.
-     * Tự động đặt tên file theo ngày: `Bao_Cao_Doanh_Thu_Flora_Bloom_YYYY-MM-DD.csv`.
-* **Commit:** `303ca0b`
+  1. **6 Tiêu chí sắp xếp trực quan:**
+     * ✨ **Nổi Bật Nhất (Featured):** Thứ tự mặc định của xưởng hoa.
+     * ⬆️ **Giá: Thấp → Cao (Price Ascending):** Tìm các mẫu bó hoa giá tốt nhất trước.
+     * ⬇️ **Giá: Cao → Thấp (Price Descending):** Tìm các thiết kế hoa sang trọng, cao cấp.
+     * ⭐ **Đánh Giá Cao (Top Rated):** Ưu tiên các mẫu hoa nhận nhiều 5 sao nhất.
+     * 🕒 **Mới Ra Mắt (Newest Arrivals):** Các thiết kế vừa được cập nhật vào xưởng.
+     * 🏷️ **Tên: A → Z (Alphabetical):** Tra cứu theo tên chữ cái.
+  2. **Tương thích toàn diện:** Tự động kết hợp mượt mà cùng bộ lọc **Dịp tặng hoa**, **Tone màu chủ đạo** và **Tìm kiếm từ khóa**.
+* **Commit:** `dff865b`
 
 ---
 
