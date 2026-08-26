@@ -127,34 +127,26 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     };
   }, [filteredOrders]);
 
-  // 3. XUẤT BÁO CÁO EXCEL (CSV UTF-8 BOM)
+  // 3. XUẤT BÁO CÁO EXCEL CAO CẤP (FORMATTED WORKBOOK .XLS & ĐẦY ĐỦ STYLING)
   const handleExportExcel = () => {
     if (filteredOrders.length === 0) {
       alert('Không có dữ liệu đơn hàng nào khớp với bộ lọc hiện tại để xuất!');
       return;
     }
 
-    const headers = [
-      'STT',
-      'Mã Đơn Hàng',
-      'Thời Gian Đặt',
-      'Tên Khách Hàng (Người Đặt)',
-      'SĐT Khách Đặt',
-      'Người Nhận Hoa',
-      'SĐT Người Nhận',
-      'Địa Chỉ Giao Hoa',
-      'Khung Giờ Hẹn Giao',
-      'Tên Mẫu Hoa',
-      'Chi Tiết Sản Phẩm & Quà Kèm',
-      'Lời Chúc Thiệp',
-      'Ký Tên Người Gửi',
-      'Giao Ẩn Danh',
-      'Mã Giảm Giá',
-      'Số Tiền Giảm (đ)',
-      'Tổng Tiền Thanh Toán (đ)',
-      'Trạng Thái Đơn Hàng',
-      'Trạng Thái Duyệt Ảnh'
-    ];
+    const now = new Date();
+    const exportTimeStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const dateFileStr = now.toISOString().slice(0, 10);
+
+    const escapeXml = (str) => {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
 
     const statusLabels = {
       'ARRANGING': 'Đang cắm hoa',
@@ -163,77 +155,293 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
       'COMPLETED': 'Đã hoàn tất'
     };
 
-    const rows = filteredOrders.map((o, idx) => {
+    const statusClasses = {
+      'ARRANGING': 'status-arranging',
+      'PHOTO_READY': 'status-photo',
+      'DELIVERING': 'status-delivering',
+      'COMPLETED': 'status-completed'
+    };
+
+    const totalRevenueExport = filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const avgOrderVal = Math.round(totalRevenueExport / filteredOrders.length);
+    const approvedCount = filteredOrders.filter(o => o.isApproved || o.status === 'DELIVERING' || o.status === 'COMPLETED').length;
+    const approvalRatePercent = Math.round((approvedCount / filteredOrders.length) * 100);
+
+    // Xây dựng mô tả bộ lọc đang áp dụng
+    const filterDesc = [
+      statusFilter !== 'all' ? `Trạng thái: ${statusLabels[statusFilter] || statusFilter}` : 'Trạng thái: Tất cả',
+      searchKeyword ? `Từ khóa: "${searchKeyword}"` : null,
+      (minPrice || maxPrice) ? `Khoảng giá: ${minPrice ? Number(minPrice).toLocaleString('vi-VN') + 'đ' : '0đ'} - ${maxPrice ? Number(maxPrice).toLocaleString('vi-VN') + 'đ' : 'Vô cực'}` : null
+    ].filter(Boolean).join(' | ');
+
+    // Tạo các dòng dữ liệu bảng
+    const tableRowsHtml = filteredOrders.map((o, idx) => {
+      const isEven = idx % 2 === 0;
+      const rowClass = isEven ? 'row-even' : 'row-odd';
+      
       const itemsList = Array.isArray(o.items) && o.items.length > 0
         ? o.items.map(it => `${it.name} (${Number(it.price || 0).toLocaleString('vi-VN')}đ)`).join('; ')
-        : o.productName || '';
+        : (o.productName || '');
 
-      return [
-        idx + 1,
-        `"${o.orderCode || o.id}"`,
-        `"${o.createdAt || 'Hôm nay'}"`,
-        `"${(o.customerName || '').replace(/"/g, '""')}"`,
-        `"${o.customerPhone || ''}"`,
-        `"${(o.receiverName || '').replace(/"/g, '""')}"`,
-        `"${o.receiverPhone || ''}"`,
-        `"${(o.receiverAddress || '').replace(/"/g, '""')}"`,
-        `"${(o.deliverySlot || '').replace(/"/g, '""')}"`,
-        `"${(o.productName || '').replace(/"/g, '""')}"`,
-        `"${itemsList.replace(/"/g, '""')}"`,
-        `"${(o.cardMessage || '').replace(/"/g, '""')}"`,
-        `"${(o.senderSign || '').replace(/"/g, '""')}"`,
-        o.isAnonymous ? 'Có' : 'Không',
-        `"${o.discountCode || 'Không'}"`,
-        Number(o.discountAmount || 0),
-        Number(o.totalAmount || 0),
-        `"${statusLabels[o.status] || o.status || 'Đang xử lý'}"`,
-        o.isApproved ? 'Đã duyệt ảnh' : 'Chưa duyệt'
-      ];
+      const statusText = statusLabels[o.status] || o.status || 'Đang xử lý';
+      const statusCls = statusClasses[o.status] || 'status-arranging';
+
+      return `
+        <tr class="${rowClass}">
+          <td class="data-cell c-center">${idx + 1}</td>
+          <td class="data-cell c-code">${escapeXml(o.orderCode || o.id)}</td>
+          <td class="data-cell c-center">${escapeXml(o.createdAt || 'Hôm nay')}</td>
+          <td class="data-cell c-left font-bold">${escapeXml(o.customerName || 'Khách vãng lai')}</td>
+          <td class="data-cell c-phone">${escapeXml(o.customerPhone || '')}</td>
+          <td class="data-cell c-left">${escapeXml(o.receiverName || '')}</td>
+          <td class="data-cell c-phone">${escapeXml(o.receiverPhone || '')}</td>
+          <td class="data-cell c-left">${escapeXml(o.receiverAddress || '')}</td>
+          <td class="data-cell c-center" style="color: #C4685A; font-weight: 600;">${escapeXml(o.deliverySlot || 'Hỏa tốc 90 phút')}</td>
+          <td class="data-cell c-left font-bold" style="color: #1B3B2B;">${escapeXml(o.productName || 'Bó Hoa Nghệ Thuật')}</td>
+          <td class="data-cell c-left">${escapeXml(itemsList)}</td>
+          <td class="data-cell c-left" style="font-style: italic; color: #555;">${escapeXml(o.cardMessage || '')}</td>
+          <td class="data-cell c-left">${escapeXml(o.senderSign || '')}</td>
+          <td class="data-cell c-center">${o.isAnonymous ? '✓ Có' : 'Không'}</td>
+          <td class="data-cell c-center font-bold">${escapeXml(o.discountCode || '-')}</td>
+          <td class="data-cell c-currency">${Number(o.discountAmount || 0)}</td>
+          <td class="data-cell c-currency">${Number(o.shippingFee || 0)}</td>
+          <td class="data-cell c-currency" style="font-size: 11pt; color: #1B3B2B; font-weight: bold;">${Number(o.totalAmount || 0)}</td>
+          <td class="data-cell ${statusCls}">${escapeXml(statusText)}</td>
+          <td class="data-cell ${o.isApproved ? 'approved-yes' : 'approved-no'}">${o.isApproved ? '✓ Đã duyệt ảnh' : '⏳ Chưa duyệt'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Toàn bộ cấu trúc XML HTML Spreadsheet hỗ trợ mở trực tiếp trong Excel / Numbers / Google Sheets
+    const excelTemplate = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Doanh Thu Flora Bloom</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                  <x:Print>
+                    <x:ValidPrinterInfo/>
+                    <x:PaperSizeIndex>9</x:PaperSizeIndex>
+                    <x:HorizontalResolution>600</x:HorizontalResolution>
+                    <x:VerticalResolution>600</x:VerticalResolution>
+                  </x:Print>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+          table { border-collapse: collapse; width: 100%; table-layout: auto; }
+          .banner-title {
+            background-color: #1B3B2B;
+            color: #FFFFFF;
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            height: 48px;
+            border: 1px solid #1B3B2B;
+          }
+          .banner-sub {
+            background-color: #264A37;
+            color: #F5D6CE;
+            font-size: 10.5pt;
+            text-align: center;
+            vertical-align: middle;
+            height: 28px;
+            border: 1px solid #264A37;
+          }
+          .kpi-title {
+            background-color: #E8EFEA;
+            color: #1B3B2B;
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 8px;
+            border: 1px solid #C4D7CC;
+            vertical-align: middle;
+          }
+          .kpi-cell {
+            background-color: #FAF8F5;
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #C4D7CC;
+            vertical-align: middle;
+          }
+          .kpi-highlight {
+            color: #C4685A;
+            font-size: 12pt;
+            font-weight: bold;
+            mso-number-format: "\#\,\#\#0";
+          }
+          .kpi-green {
+            color: #1B3B2B;
+            font-size: 12pt;
+            font-weight: bold;
+          }
+          th.col-header {
+            background-color: #1B3B2B;
+            color: #FFFFFF;
+            font-size: 10.5pt;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #3B5A45;
+            padding: 10px 8px;
+            height: 38px;
+          }
+          td.data-cell {
+            font-size: 10pt;
+            vertical-align: middle;
+            border: 1px solid #D1DFD6;
+            padding: 7px 8px;
+          }
+          .font-bold { font-weight: bold; }
+          .row-even { background-color: #F8FAF8; }
+          .row-odd { background-color: #FFFFFF; }
+          .c-center { text-align: center; }
+          .c-left { text-align: left; }
+          .c-right { text-align: right; }
+          .c-currency {
+            text-align: right;
+            font-weight: 600;
+            color: #1B3B2B;
+            mso-number-format: "\#\,\#\#0";
+          }
+          .c-phone {
+            mso-number-format: "\@";
+            text-align: center;
+          }
+          .c-code {
+            font-weight: bold;
+            color: #0068FF;
+            text-align: center;
+            mso-number-format: "\@";
+          }
+          .status-arranging { background-color: #FFF3CD; color: #856404; font-weight: bold; text-align: center; }
+          .status-photo { background-color: #FFE8D6; color: #C4685A; font-weight: bold; text-align: center; }
+          .status-delivering { background-color: #CFE2FF; color: #084298; font-weight: bold; text-align: center; }
+          .status-completed { background-color: #D1E7DD; color: #0F5132; font-weight: bold; text-align: center; }
+          .approved-yes { background-color: #D1E7DD; color: #0F5132; font-weight: bold; text-align: center; }
+          .approved-no { background-color: #F8D7DA; color: #842029; text-align: center; }
+          .row-total {
+            background-color: #E8F3ED;
+            font-weight: bold;
+            font-size: 11pt;
+            border-top: 2px solid #1B3B2B;
+            border-bottom: 2px solid #1B3B2B;
+            height: 40px;
+          }
+          .total-sum {
+            font-size: 12pt;
+            color: #C4685A;
+            font-weight: bold;
+            text-align: right;
+            mso-number-format: "\#\,\#\#0";
+          }
+        </style>
+      </head>
+      <body>
+        <table>
+          <!-- 1. BANNER TIÊU ĐỀ BÁO CÁO -->
+          <tr>
+            <td colspan="20" class="banner-title">
+              🌸 FLORA &amp; BLOOM - BÁO CÁO DOANH THU &amp; TIẾN TRÌNH ĐƠN HÀNG CHI TIẾT
+            </td>
+          </tr>
+          <tr>
+            <td colspan="20" class="banner-sub">
+              Hệ Thống Quản Trị Tiệm Hoa Tươi Flora &amp; Bloom Studio &bull; Ngày xuất: ${exportTimeStr} &bull; Người lập: Ban Quản Trị
+            </td>
+          </tr>
+          <tr><td colspan="20" style="height: 10px;"></td></tr>
+
+          <!-- 2. KHUNG THỐNG KÊ KPI TỔNG QUAN -->
+          <tr>
+            <td colspan="4" class="kpi-title">💰 TỔNG DOANH THU ĐÃ LỌC:</td>
+            <td colspan="6" class="kpi-cell kpi-highlight">${totalRevenueExport.toLocaleString('vi-VN')} đ</td>
+            <td colspan="4" class="kpi-title">📦 TỔNG SỐ ĐƠN HÀNG:</td>
+            <td colspan="6" class="kpi-cell kpi-green">${filteredOrders.length} đơn hàng</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="kpi-title">💵 GIÁ TRỊ TRUNG BÌNH/ĐƠN:</td>
+            <td colspan="6" class="kpi-cell">${avgOrderVal.toLocaleString('vi-VN')} đ / đơn</td>
+            <td colspan="4" class="kpi-title">📸 TỶ LỆ DUYỆT ẢNH THẬT:</td>
+            <td colspan="6" class="kpi-cell">${approvalRatePercent}% (${approvedCount}/${filteredOrders.length} đơn)</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="kpi-title">🔍 BỘ LỌC ĐANG ÁP DỤNG:</td>
+            <td colspan="16" class="kpi-cell" style="font-size: 10pt; font-weight: normal; color: #444;">${escapeXml(filterDesc)}</td>
+          </tr>
+          <tr><td colspan="20" style="height: 14px;"></td></tr>
+
+          <!-- 3. TIÊU ĐỀ CÁC CỘT DỮ LIỆU -->
+          <thead>
+            <tr>
+              <th class="col-header" style="width: 45px;">STT</th>
+              <th class="col-header" style="width: 100px;">Mã Đơn Hàng</th>
+              <th class="col-header" style="width: 100px;">Thời Gian</th>
+              <th class="col-header" style="width: 150px;">Người Đặt Hoa</th>
+              <th class="col-header" style="width: 110px;">SĐT Người Đặt</th>
+              <th class="col-header" style="width: 150px;">Người Nhận</th>
+              <th class="col-header" style="width: 110px;">SĐT Người Nhận</th>
+              <th class="col-header" style="width: 220px;">Địa Chỉ Giao Hoa</th>
+              <th class="col-header" style="width: 130px;">Khung Giờ Hẹn</th>
+              <th class="col-header" style="width: 180px;">Tên Mẫu Hoa</th>
+              <th class="col-header" style="width: 220px;">Chi Tiết Sản Phẩm &amp; Quà Kèm</th>
+              <th class="col-header" style="width: 220px;">Lời Chúc Thiệp Kẹp Hoa</th>
+              <th class="col-header" style="width: 120px;">Ký Tên</th>
+              <th class="col-header" style="width: 90px;">Ẩn Danh</th>
+              <th class="col-header" style="width: 90px;">Voucher</th>
+              <th class="col-header" style="width: 110px;">Tiền Giảm (đ)</th>
+              <th class="col-header" style="width: 110px;">Phí Ship (đ)</th>
+              <th class="col-header" style="width: 140px;">Tổng Tiền (đ)</th>
+              <th class="col-header" style="width: 130px;">Trạng Thái Đơn</th>
+              <th class="col-header" style="width: 130px;">Duyệt Ảnh Xưởng</th>
+            </tr>
+          </thead>
+
+          <!-- 4. DANH SÁCH DỮ LIỆU ĐƠN HÀNG -->
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+
+          <!-- 5. DÒNG TỔNG KẾT BẢNG TÍNH -->
+          <tfoot>
+            <tr class="row-total">
+              <td colspan="17" class="data-cell" style="text-align: right; padding-right: 15px; font-weight: bold; font-size: 11pt; color: #1B3B2B;">
+                TỔNG CỘNG DOANH THU (${filteredOrders.length} ĐƠN HÀNG):
+              </td>
+              <td class="data-cell total-sum">${totalRevenueExport}</td>
+              <td colspan="2" class="data-cell" style="background-color: #E8F3ED;"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `;
+
+    // Tải xuống file Excel (.xls) định dạng bảng tính hoàn chỉnh
+    const blob = new Blob(['\uFEFF' + excelTemplate], { 
+      type: 'application/vnd.ms-excel;charset=utf-8;' 
     });
-
-    // Dòng tổng kết
-    const totalRevenueExport = filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-    const summaryRow = [
-      'TỔNG CỘNG',
-      `"${filteredOrders.length} đơn hàng"`,
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      totalRevenueExport,
-      '',
-      ''
-    ];
-
-    // Tạo nội dung CSV kèm UTF-8 BOM (\uFEFF) để Excel hiển thị dấu tiếng Việt chuẩn 100%
-    const csvContent = '\uFEFF' + [
-      headers.join(','),
-      ...rows.map(r => r.join(',')),
-      summaryRow.join(',')
-    ].join('\r\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10);
     link.setAttribute('href', url);
-    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateStr}.csv`);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateFileStr}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    setExportToast(`🎉 Đã xuất thành công ${filteredOrders.length} đơn hàng ra file Excel (CSV UTF-8)!`);
+    setExportToast(`🎉 Đã xuất thành công báo cáo ${filteredOrders.length} đơn hàng ra file Excel (.xls) đẹp mắt!`);
     setTimeout(() => setExportToast(''), 4000);
   };
 
@@ -294,7 +502,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
             type="button"
             onClick={handleExportExcel}
             className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95"
-            title="Xuất danh sách đơn hàng đã lọc ra file Excel (.csv UTF-8 chuẩn font tiếng Việt)"
+            title="Xuất báo cáo bảng tính Excel (.xls) đẹp mắt với đầy đủ màu sắc, tiêu đề banner và định dạng số"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
             <span>Xuất Báo Cáo Excel ({filteredOrders.length})</span>
