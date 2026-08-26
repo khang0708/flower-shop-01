@@ -52,7 +52,9 @@ import {
   Printer,
   BarChart3,
   MessageSquareHeart,
-  Star
+  Star,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -94,6 +96,33 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   // State Modal Thêm/Sửa Mẫu Hoa Mới
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [imageImportMode, setImageImportMode] = useState('upload'); // 'upload' | 'library' | 'url'
+
+  const PRESET_FLOWER_PHOTOS = [
+    { name: 'Bó Juliet Cam Pastel', url: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80' },
+    { name: 'Mẫu Đơn Peony Hồng', url: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80' },
+    { name: 'Tulip Trắng Tinh Khôi', url: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80' },
+    { name: 'Hồng Đỏ Ruby Classic', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80' },
+    { name: 'Hộp Hoa Vintage Garden', url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80' },
+    { name: 'Giỏ Hoa Khai Trương Vàng', url: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=800&q=80' }
+  ];
+
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một file hình ảnh (JPG, PNG, WEBP,...)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const base64Data = uploadEvent.target?.result;
+      if (base64Data) {
+        setFormData(prev => ({ ...prev, image: base64Data }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // State Modal Thêm Voucher
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -1249,15 +1278,131 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">Đường dẫn ảnh (URL) *</label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
-                />
+              {/* HÌNH ẢNH SẢN PHẨM: 3 CÁCH IMPORT ẢNH */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-gray-700 text-xs">
+                    Hình ảnh mẫu hoa *
+                  </label>
+                  <div className="flex bg-gray-100 p-0.5 rounded-lg text-[10px] font-semibold text-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setImageImportMode('upload')}
+                      className={`px-2.5 py-1 rounded-md transition-all ${
+                        imageImportMode === 'upload' ? 'bg-white text-[#1B3B2B] shadow-xs font-bold' : 'hover:text-black'
+                      }`}
+                    >
+                      📁 Tải Từ Máy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageImportMode('library')}
+                      className={`px-2.5 py-1 rounded-md transition-all ${
+                        imageImportMode === 'library' ? 'bg-white text-[#1B3B2B] shadow-xs font-bold' : 'hover:text-black'
+                      }`}
+                    >
+                      🌸 Mẫu Có Sẵn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageImportMode('url')}
+                      className={`px-2.5 py-1 rounded-md transition-all ${
+                        imageImportMode === 'url' ? 'bg-white text-[#1B3B2B] shadow-xs font-bold' : 'hover:text-black'
+                      }`}
+                    >
+                      🔗 Link URL
+                    </button>
+                  </div>
+                </div>
+
+                {/* CÁCH 1: TẢI FILE TỪ MÁY TÍNH (KÉO THẢ HOẶC CHỌN TỆP) */}
+                {imageImportMode === 'upload' && (
+                  <div className="relative border-2 border-dashed border-[#5C8A70] hover:border-[#1B3B2B] bg-[#FAF8F5] hover:bg-[#F4F7F5] p-4 rounded-2xl text-center transition-all cursor-pointer group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="space-y-1.5 flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-[#EBF2ED] text-[#1B3B2B] flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 text-[#5C8A70]" />
+                      </div>
+                      <p className="text-xs font-bold text-[#1B3B2B]">
+                        Bấm để chọn ảnh từ máy tính hoặc kéo thả vào đây
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        Hỗ trợ file JPG, PNG, WEBP, HEIC (Tự động tối ưu)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* CÁCH 2: CHỌN TỪ THƯ VIỆN MẪU XƯỞNG HOA CÓ SẴN */}
+                {imageImportMode === 'library' && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] text-gray-500 font-semibold block">Click vào ảnh mẫu bạn muốn áp dụng:</span>
+                    <div className="grid grid-cols-3 gap-2 p-2 bg-[#FAF8F5] rounded-2xl border border-gray-200 max-h-40 overflow-y-auto">
+                      {PRESET_FLOWER_PHOTOS.map((preset, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setFormData(prev => ({ ...prev, image: preset.url }))}
+                          className={`relative group cursor-pointer aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
+                            formData.image === preset.url ? 'border-[#1B3B2B] ring-2 ring-[#1B3B2B]/20' : 'border-transparent hover:border-gray-300'
+                          }`}
+                        >
+                          <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold p-1 text-center leading-tight">
+                            {preset.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CÁCH 3: NHẬP LINK ẢNH TRỰC TIẾP */}
+                {imageImportMode === 'url' && (
+                  <input
+                    type="url"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="https://images.unsplash.com/... hoặc dán link ảnh Web"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] text-xs font-medium"
+                  />
+                )}
+
+                {/* KHUNG XEM TRƯỚC ẢNH THỰC TẾ (LIVE PREVIEW) */}
+                {formData.image ? (
+                  <div className="flex items-center gap-3 p-2.5 bg-white rounded-2xl border border-[#E8EFEA] shadow-xs">
+                    <img
+                      src={formData.image}
+                      alt="Xem trước ảnh mẫu hoa"
+                      className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] font-bold text-[#1B3B2B] flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                        <span>Đã nạp ảnh thành công</span>
+                      </span>
+                      <span className="text-[10px] text-gray-400 block truncate mt-0.5">
+                        {formData.image.startsWith('data:') ? 'Tệp ảnh từ máy tính (Data URI)' : formData.image}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                      title="Gỡ ảnh này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[10px] flex items-center gap-1.5">
+                    <span>⚠️ Vui lòng chọn hoặc tải lên 1 ảnh để hiển thị ra trang chủ.</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-gray-200 flex gap-2">
