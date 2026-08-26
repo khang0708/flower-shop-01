@@ -135,22 +135,8 @@ export const ShopProvider = ({ children }) => {
   const [latestNewOrder, setLatestNewOrder] = useState(null);
 
   // 4. Giỏ hàng & Sản phẩm
-  const [cart, setCart] = useState([
-    {
-      id: 'fl-01',
-      name: 'Bó Hoa "Juliet Nắng Ban Mai"',
-      price: 850000,
-      image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
-      size: { id: 'standard', name: 'Tiêu Chuẩn (12 - 15 cành)', priceMultiplier: 1.0 },
-      wrapper: { id: 'sage', name: 'Giấy Giản Dị Xanh Sage' },
-      cardMessage: 'Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸',
-      senderSign: 'Từ một người luôn dõi theo em',
-      addOns: [{ id: 'candle', name: 'Nến Thơm Tinh Dầu Organic', price: 150000 }],
-      quantity: 1,
-    }
-  ]);
-
-  const [wishlist, setWishlist] = useState(['fl-01', 'fl-03']);
+  const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [selectedOccasion, setSelectedOccasion] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
