@@ -68,14 +68,20 @@
 
 ---
 
-### 🌸 Tính Năng Bổ Sung: Import / Upload Ảnh Mẫu Hoa Trực Tiếp (Product Image Uploader)
-* **File:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx)
+### 📊 Tính Năng Bổ Sung: Xuất Báo Cáo Doanh Thu Ra Excel & Bộ Lọc Nâng Cao
+* **File:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
 * **Chi tiết nâng cấp:**
-  1. **Tải tệp từ máy tính (File Upload / Kéo thả):** Hỗ trợ chọn tệp ảnh từ máy tính (JPG, PNG, WEBP, HEIC) tự động đọc qua `FileReader` thành Data URL Base64 và lưu trữ/hiển thị tức thì.
-  2. **Thư viện mẫu xưởng (Curated Florist Library):** Cung cấp 6 mẫu ảnh chụp studio hoa thật đẹp có sẵn để chọn nhanh 1-click.
-  3. **Nhập link URL trực tiếp:** Giữ lại tùy chọn dán link ảnh Web khi cần.
-  4. **Live Preview Box:** Khung xem trước ảnh trực quan kèm nút gỡ/thay ảnh.
-* **Commit:** `bcda358`
+  1. **Bộ Lọc Nâng Cao (Advanced Filters):**
+     * Lọc theo từ khóa (Mã đơn, Tên người đặt, SĐT khách, Tên người nhận, Mẫu hoa, Địa chỉ).
+     * Lọc theo trạng thái đơn hàng (Đang cắm, Chờ duyệt ảnh, Đang giao).
+     * Lọc theo khoảng giá tiền (Giá tối thiểu, Giá tối đa).
+     * Nút Đặt lại mặc định (Reset Filters).
+  2. **Xuất Bảng Tính Excel (CSV UTF-8 BOM):**
+     * Xuất đầy đủ 19 cột nghiệp vụ chi tiết.
+     * Chèn ký tự UTF-8 BOM (`\uFEFF`) đảm bảo Microsoft Excel và Google Sheets hiển thị font tiếng Việt có dấu chuẩn 100% không bị lỗi font.
+     * Tự động tính dòng tổng kết (Summary Row) ở cuối bảng tính.
+     * Tự động đặt tên file theo ngày: `Bao_Cao_Doanh_Thu_Flora_Bloom_YYYY-MM-DD.csv`.
+* **Commit:** `303ca0b`
 
 ---
 
