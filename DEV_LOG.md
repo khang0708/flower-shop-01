@@ -68,7 +68,25 @@
 
 ---
 
-### 🚀 Tối Ưu Hóa Hiệu Năng (Performance) & SEO Đạt Chuẩn 95+ (Lighthouse Audit)
+### 🚚 Chuyển Quyền Tính & Xác Nhận Phí Giao Hàng Qua Admin Dashboard
+* **Files:** [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`src/components/OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx), [`src/components/PrintInvoiceModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)
+* **Quy trình hoạt động mới:**
+  1. **Khách đặt hoa (Storefront / Checkout):**
+     * Ở bước thanh toán, khách hàng xem trước tiền hoa + quà tặng. Phí giao hàng hiển thị: *"Xưởng báo sau khi nhận địa chỉ (0đ)"* hoặc *"Freeship (0đ)"* nếu đạt hạn mức miễn phí.
+     * Khách hoàn tất đặt đơn mà không lo bị tính sai phí ship theo bán kính.
+  2. **Xưởng hoa kiểm tra địa chỉ & Xử lý phí ship (Admin Dashboard):**
+     * Mỗi đơn hàng trong Admin có bảng **Xác Nhận Phí Giao Hoa (Admin Xử Lý)**.
+     * Cung cấp các nút chọn nhanh cước Grab / Ahamove: `[Freeship 0đ]`, `[Gần 20k]`, `[Nội thành 30k]`, `[Tiêu chuẩn 35k]`, `[Hỏa tốc 50k]`, `[Ngoại thành 70k]` hoặc ô nhập số tiền bất kỳ.
+     * Khi Admin chọn hoặc sửa phí ship $\rightarrow$ Hệ thống tự động tính lại `totalAmount` chuẩn xác và đồng bộ realtime.
+  3. **Nút "💬 Báo Giá & Phí Ship Qua Zalo":**
+     * 1-Click tự động copy lời nhắn báo giá chi tiết (Tiền hoa + Phí giao xưởng xác nhận + Tổng thanh toán) và mở Zalo khách hàng.
+  4. **In Hóa Đơn & Theo Dõi Đơn:**
+     * Phiếu giao in A4 ([`PrintInvoiceModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)) và màn hình theo dõi đơn khách ([`OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx)) hiển thị rõ ràng phí giao hàng và trạng thái đã được xưởng xác nhận.
+  5. **Cấu hình chế độ vận chuyển:**
+     * Tab *"Phí Giao Hoa & Freeship"* trong Admin cho phép bật/tắt linh hoạt giữa **Chế độ Xưởng Báo Ship (Admin xử lý)** hoặc **Tự động cộng theo bảng giá**.
+* **Commit:** `039ba8e`
+
+---
 * **Files:** [`index.html`](file:///Users/macbook/dev-learning/flora-bloom-shop/index.html), [`src/App.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/App.jsx), [`src/components/HeroSection.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/HeroSection.jsx), [`src/components/FlowerCard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerCard.jsx), [`src/components/Header.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Header.jsx), [`src/components/ReviewsSection.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ReviewsSection.jsx), [`src/components/ZaloChatFloatingButton.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ZaloChatFloatingButton.jsx)
 * **Nguyên nhân điểm thấp ban đầu:**
   1. **SEO (83 điểm):** Thiếu thẻ Meta Description, thiếu OpenGraph / Twitter Cards, thiếu Structured Data JSON-LD (Schema.org `Florist` / `LocalBusiness`), và thiếu `aria-label` cho một số nút icon.
