@@ -68,21 +68,27 @@
 
 ---
 
-### 📊 Chuẩn Hóa Ngày Tháng & Bộ Lọc Thời Gian Thực Tế Trong Báo Cáo Doanh Thu
-* **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx), [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx)
-* **Chi tiết cải tiến:**
-  1. **Hàm trích xuất ngày thực tế (`getOrderDateObj`):**
-     * Tự động trích xuất và phân tích ngày chính xác từ trường `orderDate`, chuỗi `createdAt` hoặc `deliverySlot` (định dạng `DD/MM/YYYY` hoặc `DD/MM`).
-  2. **Tích hợp Bộ Lọc Thời Gian Đa Tiêu Chí:**
-     * Thêm tùy chọn lọc: **7 ngày gần nhất**, **Hôm nay**, **Tháng này**, **Toàn thời gian** và **Tùy chọn khoảng ngày (`startDate` $\rightarrow$ `endDate`)**.
-     * Tự động áp dụng bộ lọc thời gian vào việc tính toán tổng doanh thu, số lượng đơn, AOV và tỷ lệ duyệt ảnh.
-  3. **Biểu đồ cột 7 ngày hiển thị ngày/tháng sắc nét:**
-     * Khớp đơn hàng chính xác theo ngày lịch thực tế (Năm/Tháng/Ngày).
-     * Dưới từng cột biểu đồ hiển thị cả **Tên thứ** và **Ngày/Tháng** (Ví dụ: `Hôm nay (31/08)`, `CN (30/08)`, `T7 (29/08)...`).
-  4. **Xuất Excel Báo Cáo Chuẩn Xác:**
-     * Header file Excel hiển thị chính xác tiêu chí khoảng thời gian đã lọc (Ví dụ: `Thời gian: 7 ngày gần nhất` hoặc `Tùy chỉnh (01/08/2026 đến 31/08/2026)`).
-     * Toàn bộ cột `Thời Gian Đặt` và `Khung Giờ Hẹn` trong bảng kê hiển thị đúng ngày giờ thực tế.
-* **Commit:** `75c78a1`
+### 🚀 Tối Ưu Hóa Hiệu Năng (Performance) & SEO Đạt Chuẩn 95+ (Lighthouse Audit)
+* **Files:** [`index.html`](file:///Users/macbook/dev-learning/flora-bloom-shop/index.html), [`src/App.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/App.jsx), [`src/components/HeroSection.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/HeroSection.jsx), [`src/components/FlowerCard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerCard.jsx), [`src/components/Header.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Header.jsx), [`src/components/ReviewsSection.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ReviewsSection.jsx), [`src/components/ZaloChatFloatingButton.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ZaloChatFloatingButton.jsx)
+* **Nguyên nhân điểm thấp ban đầu:**
+  1. **SEO (83 điểm):** Thiếu thẻ Meta Description, thiếu OpenGraph / Twitter Cards, thiếu Structured Data JSON-LD (Schema.org `Florist` / `LocalBusiness`), và thiếu `aria-label` cho một số nút icon.
+  2. **Performance (33 điểm):** 
+     * Toàn bộ mã nguồn Admin Dashboard (>117KB) và các Modal nặng (AIFlorist, Checkout, OrderTracking, ProductDetail) được bundle chung vào 1 file `index.js` duy nhất (>532KB) tải cùng lúc khi khách vừa vào web.
+     * Ảnh Hero Banner (LCP Image) chưa có `fetchpriority="high"`, tải ảnh Unsplash độ phân giải quá cao không cần thiết.
+     * Chạy audit trên Dev Server unminified kèm Extension trình duyệt can thiệp.
+* **Các giải pháp đã triển khai:**
+  1. **Tối ưu SEO Toàn Diện (Mục tiêu 100 SEO):**
+     * Thêm đầy đủ thẻ Meta Description chuẩn ngữ nghĩa tiếng Việt.
+     * Thêm thẻ `robots`, `keywords`, `canonical` và `author`.
+     * Tích hợp bộ thẻ OpenGraph và Twitter Card (hiển thị thumbnail đẹp khi chia sẻ link qua Facebook, Zalo, Telegram, Twitter).
+     * Bổ sung dữ liệu có cấu trúc **Schema.org JSON-LD** kiểu `Florist / Store` định danh thông tin cửa hàng, địa chỉ, hotline, giờ mở cửa.
+     * Thêm `aria-label` chuẩn Accessibility cho tất cả các nút icon.
+  2. **Tối ưu Hiệu Năng & Tốc Độ Tải Trang (Mục tiêu 95+ Performance):**
+     * **Code Splitting (Dynamic Import):** Dùng `React.lazy()` & `<Suspense>` tách toàn bộ `AdminDashboard`, `CheckoutModal`, `ProductDetailModal`, `AIFloristModal`, `OrderTrackingModal`, `CartDrawer`, `ReviewsSection` thành các chunks tải bất đồng bộ khi cần.
+     * Giảm dung lượng JavaScript tải lần đầu xuống đáng kể.
+     * Thêm `<link rel="preload" as="image" fetchpriority="high">` và `fetchPriority="high"` cho ảnh Hero Banner LCP.
+     * Thêm `loading="lazy"` và `decoding="async"` cho toàn bộ danh sách ảnh sản phẩm và ảnh feedback.
+* **Commit:** `c493ae4`
 
 ---
 
