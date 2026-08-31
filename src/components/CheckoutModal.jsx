@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   X, 
@@ -10,12 +10,59 @@ import {
   CreditCard, 
   ShieldCheck, 
   Camera, 
-  CheckCircle2,
-  Lock,
-  Sparkles
+  CheckCircle2, 
+  Lock, 
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 import { openPersonalZaloChat } from '../services/zaloService';
+
+// Hàm tính toán các mốc ngày giao hoa động theo ngày thực tế hiện tại
+const getDynamicDeliveryDates = () => {
+  const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  const now = new Date();
+
+  const formatDateStr = (d) => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+  };
+
+  const formatISO = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 1. Hôm nay
+  const todayDateStr = formatDateStr(now);
+  const todayLabel = `Hôm nay (${todayDateStr})`;
+  const todayISO = formatISO(now);
+
+  // 2. Ngày mai
+  const tmr = new Date(now);
+  tmr.setDate(now.getDate() + 1);
+  const tmrDateStr = formatDateStr(tmr);
+  const tmrLabel = `Ngày mai (${tmrDateStr})`;
+  const tmrISO = formatISO(tmr);
+
+  // 3. Ngày mốt (Ngày kia)
+  const dayAfter = new Date(now);
+  dayAfter.setDate(now.getDate() + 2);
+  const dayAfterDateStr = formatDateStr(dayAfter);
+  const dayAfterName = dayNames[dayAfter.getDay()];
+  const dayAfterLabel = `${dayAfterName} (${dayAfterDateStr})`;
+  const dayAfterISO = formatISO(dayAfter);
+
+  return {
+    today: { id: 'today', label: todayLabel, iso: todayISO },
+    tomorrow: { id: 'tomorrow', label: tmrLabel, iso: tmrISO },
+    dayAfter: { id: 'day_after', label: dayAfterLabel, iso: dayAfterISO },
+    minISO: todayISO
+  };
+};
 
 export const CheckoutModal = () => {
   const { 
@@ -63,10 +110,35 @@ export const CheckoutModal = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [requestPhotoProof, setRequestPhotoProof] = useState(true);
   
-  // Delivery Schedule
+  // Delivery Schedule - TÍNH TOÁN NGÀY GIAO THỰC TẾ ĐỘNG
+  const dynamicDates = useMemo(() => getDynamicDeliveryDates(), [isCheckoutOpen]);
   const [deliveryType, setDeliveryType] = useState('timeslot'); // 'express' | 'timeslot'
-  const [selectedSlot, setSelectedSlot] = useState('14:00 - 16:00 Hôm nay');
-  const [deliveryDate, setDeliveryDate] = useState('Hôm nay (25/08)');
+  const [dateMode, setDateMode] = useState('today'); // 'today' | 'tomorrow' | 'day_after' | 'custom'
+  const [customDate, setCustomDate] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState('14:00 - 16:00');
+
+  // Tự động load mới ngày hiện tại mỗi lần mở modal đặt hoa
+  useEffect(() => {
+    if (isCheckoutOpen) {
+      setDateMode('today');
+      setCustomDate('');
+      setSelectedSlot('14:00 - 16:00');
+    }
+  }, [isCheckoutOpen]);
+
+  // Nhãn ngày giao hoa hiển thị
+  const currentDeliveryDateLabel = useMemo(() => {
+    if (dateMode === 'today') return dynamicDates.today.label;
+    if (dateMode === 'tomorrow') return dynamicDates.tomorrow.label;
+    if (dateMode === 'day_after') return dynamicDates.dayAfter.label;
+    if (dateMode === 'custom' && customDate) {
+      const parts = customDate.split('-');
+      if (parts.length === 3) {
+        return `Ngày ${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
+    return dynamicDates.today.label;
+  }, [dateMode, customDate, dynamicDates]);
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState('qr_transfer'); // 'qr_transfer' | 'momo' | 'card'
@@ -78,6 +150,10 @@ export const CheckoutModal = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const computedSlot = deliveryType === 'express' 
+      ? `⚡ Hỏa tốc 60 - 90 phút (${dynamicDates.today.label})` 
+      : `${currentDeliveryDateLabel} • ${selectedSlot}`;
+
     submitOrder({
       senderName,
       senderPhone,
@@ -87,7 +163,7 @@ export const CheckoutModal = () => {
       isAnonymous,
       deliveryType,
       shippingFee,
-      deliverySlot: deliveryType === 'express' ? '⚡ Hỏa tốc 60 - 90 phút' : `${deliveryDate} (${selectedSlot})`,
+      deliverySlot: computedSlot,
       paymentMethod,
     });
   };
@@ -279,37 +355,100 @@ export const CheckoutModal = () => {
               </div>
 
               {deliveryType === 'timeslot' && (
-                <div className="space-y-2 pt-1">
-                  <div className="flex gap-2">
-                    {['Hôm nay (25/08)', 'Ngày mai (26/08)', 'Chọn ngày khác 📅'].map((d) => (
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                      Chọn ngày giao hoa (Hệ thống tự động cập nhật theo ngày thật):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        key={d}
                         type="button"
-                        onClick={() => setDeliveryDate(d)}
-                        className={`text-[11px] px-3 py-1.5 rounded-lg border transition-all ${
-                          deliveryDate === d ? 'bg-[#1B3B2B] text-white border-[#1B3B2B]' : 'bg-white text-gray-600 border-gray-200'
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {['08:00 - 10:00', '10:00 - 12:00', '14:00 - 16:00', '16:00 - 18:00', '18:00 - 20:00', 'Đúng 00:00 Đêm'].map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`py-2 px-2.5 text-xs rounded-lg border transition-all text-center ${
-                          selectedSlot === slot 
-                            ? 'bg-[#5C8A70] text-white font-bold border-[#5C8A70]' 
+                        onClick={() => setDateMode('today')}
+                        className={`text-[11px] px-3.5 py-2 rounded-xl border transition-all ${
+                          dateMode === 'today' 
+                            ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] font-bold shadow-xs' 
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {slot}
+                        {dynamicDates.today.label}
                       </button>
-                    ))}
+
+                      <button
+                        type="button"
+                        onClick={() => setDateMode('tomorrow')}
+                        className={`text-[11px] px-3.5 py-2 rounded-xl border transition-all ${
+                          dateMode === 'tomorrow' 
+                            ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] font-bold shadow-xs' 
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {dynamicDates.tomorrow.label}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDateMode('day_after')}
+                        className={`text-[11px] px-3.5 py-2 rounded-xl border transition-all ${
+                          dateMode === 'day_after' 
+                            ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] font-bold shadow-xs' 
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {dynamicDates.dayAfter.label}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDateMode('custom')}
+                        className={`text-[11px] px-3.5 py-2 rounded-xl border transition-all flex items-center gap-1.5 ${
+                          dateMode === 'custom' 
+                            ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] font-bold shadow-xs' 
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Chọn ngày khác 📅</span>
+                      </button>
+                    </div>
+
+                    {/* Input chọn ngày tùy chỉnh */}
+                    {dateMode === 'custom' && (
+                      <div className="mt-2.5 p-3 bg-white rounded-xl border border-gray-300 flex items-center gap-3 animate-fade-in text-xs">
+                        <label className="font-semibold text-gray-700">Ngày bạn muốn giao hoa:</label>
+                        <input
+                          type="date"
+                          min={dynamicDates.minISO}
+                          value={customDate}
+                          onChange={(e) => setCustomDate(e.target.value)}
+                          className="p-2 border border-gray-300 rounded-lg text-xs font-mono font-bold text-[#1B3B2B] focus:outline-none focus:border-[#1B3B2B] bg-gray-50"
+                        />
+                        <span className="text-[11px] text-gray-500 italic">
+                          (Đặt trước cho sinh nhật, kỷ niệm, ngày lễ)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                      Chọn khung giờ giao hoa ({currentDeliveryDateLabel}):
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {['08:00 - 10:00', '10:00 - 12:00', '14:00 - 16:00', '16:00 - 18:00', '18:00 - 20:00', 'Đúng 00:00 Đêm (Sinh Nhật)'].map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`py-2.5 px-2.5 text-xs rounded-xl border transition-all text-center ${
+                            selectedSlot === slot 
+                              ? 'bg-[#5C8A70] text-white font-bold border-[#5C8A70] shadow-xs' 
+                              : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

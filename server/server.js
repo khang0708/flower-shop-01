@@ -199,9 +199,10 @@ app.get('/api/orders', (req, res) => {
 // POST /api/orders
 app.post('/api/orders', async (req, res) => {
   try {
-    const orders = readJson('orders.json');
-    const newOrderCode = `FB-${Math.floor(10000 + Math.random() * 90000)}`;
-    const currentTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    const currentTime = `${timeStr} (${dateStr})`;
 
     const newOrder = {
       id: newOrderCode,

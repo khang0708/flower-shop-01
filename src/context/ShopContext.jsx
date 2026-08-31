@@ -679,7 +679,7 @@ export const ShopProvider = ({ children }) => {
         status: 'ARRANGING',
         florist: 'Thợ cắm hoa Minh Thư',
         floristAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-        createdAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: `${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} (${new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })})`,
         isApproved: false
       };
     }
