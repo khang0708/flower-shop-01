@@ -283,100 +283,307 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
       (minPrice || maxPrice) ? `Khoảng giá: ${minPrice ? Number(minPrice).toLocaleString('vi-VN') + 'đ' : '0đ'} - ${maxPrice ? Number(maxPrice).toLocaleString('vi-VN') + 'đ' : 'Vô cực'}` : null
     ].filter(Boolean).join(' | ');
 
-    const escapeCsv = (str) => {
-      if (str === null || str === undefined) return '""';
-      const s = String(str).replace(/"/g, '""');
-      return `"${s}"`;
-    };
+    // Tạo nội dung HTML/XML Spreadsheet với CSS nâng cao cho Excel
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Báo Cáo Doanh Thu</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                  <x:Print>
+                    <x:ValidPrinterInfo/>
+                    <x:PaperSizeIndex>9</x:PaperSizeIndex>
+                    <x:HorizontalResolution>600</x:HorizontalResolution>
+                    <x:VerticalResolution>600</x:VerticalResolution>
+                  </x:Print>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+          table { border-collapse: collapse; width: 100%; }
+          .banner-title {
+            background-color: #1B3B2B;
+            color: #FFFFFF;
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            height: 50px;
+          }
+          .banner-sub {
+            background-color: #264A37;
+            color: #E8EFEA;
+            font-size: 10pt;
+            text-align: center;
+            height: 25px;
+          }
+          .kpi-title {
+            background-color: #FAF8F5;
+            font-weight: bold;
+            font-size: 10pt;
+            color: #1B3B2B;
+            border: 1px solid #D1DFD6;
+          }
+          .kpi-cell {
+            background-color: #FFFFFF;
+            font-size: 11pt;
+            border: 1px solid #D1DFD6;
+            font-weight: bold;
+          }
+          .kpi-highlight {
+            color: #C4685A;
+            font-size: 13pt;
+            font-weight: bold;
+            mso-number-format: "\\#\\,\\#\\#0";
+          }
+          .kpi-green {
+            color: #1B3B2B;
+            font-size: 12pt;
+            font-weight: bold;
+          }
+          th.col-header {
+            background-color: #1B3B2B;
+            color: #FFFFFF;
+            font-size: 10.5pt;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #3B5A45;
+            padding: 10px 8px;
+            height: 38px;
+          }
+          td.data-cell {
+            font-size: 10pt;
+            vertical-align: middle;
+            border: 1px solid #D1DFD6;
+            padding: 7px 8px;
+          }
+          .font-bold { font-weight: bold; }
+          .row-even { background-color: #F8FAF8; }
+          .row-odd { background-color: #FFFFFF; }
+          .c-center { text-align: center; }
+          .c-left { text-align: left; }
+          .c-right { text-align: right; }
+          .c-currency {
+            text-align: right;
+            font-weight: 600;
+            color: #1B3B2B;
+            mso-number-format: "\\#\\,\\#\\#0";
+          }
+          .c-phone {
+            mso-number-format: "\\@";
+            text-align: center;
+          }
+          .c-code {
+            font-weight: bold;
+            color: #0068FF;
+            text-align: center;
+            mso-number-format: "\\@";
+          }
+          .status-arranging { background-color: #FFF3CD; color: #856404; font-weight: bold; text-align: center; }
+          .status-photo { background-color: #FFE8D6; color: #C4685A; font-weight: bold; text-align: center; }
+          .status-delivering { background-color: #CFE2FF; color: #084298; font-weight: bold; text-align: center; }
+          .status-completed { background-color: #D1E7DD; color: #0F5132; font-weight: bold; text-align: center; }
+          .approved-yes { background-color: #D1E7DD; color: #0F5132; font-weight: bold; text-align: center; }
+          .approved-no { background-color: #F8D7DA; color: #842029; text-align: center; }
+          .row-total {
+            background-color: #E8F3ED;
+            font-weight: bold;
+            font-size: 11pt;
+            border-top: 2px solid #1B3B2B;
+            border-bottom: 2px solid #1B3B2B;
+            height: 40px;
+          }
+          .total-sum {
+            font-size: 12pt;
+            color: #C4685A;
+            font-weight: bold;
+            text-align: right;
+            mso-number-format: "\\#\\,\\#\\#0";
+          }
+        </style>
+      </head>
+      <body>
+        <table>
+          <!-- 1. BANNER TIÊU ĐỀ BÁO CÁO -->
+          <tr>
+            <td colspan="20" class="banner-title">
+              🌸 FLORA &amp; BLOOM - BÁO CÁO DOANH THU &amp; TIẾN TRÌNH ĐƠN HÀNG CHI TIẾT
+            </td>
+          </tr>
+          <tr>
+            <td colspan="20" class="banner-sub">
+              Hệ Thống Quản Trị Tiệm Hoa Tươi Flora &amp; Bloom Studio &bull; Ngày xuất: ${exportTimeStr} &bull; Người lập: Ban Quản Trị
+            </td>
+          </tr>
+          <tr><td colspan="20" style="height: 10px;"></td></tr>
 
-    // 1. Tiêu đề và thông tin KPI quản trị
+          <!-- 2. KHUNG THỐNG KÊ KPI TỔNG QUAN -->
+          <tr>
+            <td colspan="4" class="kpi-title">💰 TỔNG DOANH THU ĐÃ LỌC:</td>
+            <td colspan="6" class="kpi-cell kpi-highlight">${totalRevenueExport.toLocaleString('vi-VN')} đ</td>
+            <td colspan="4" class="kpi-title">📦 TỔNG SỐ ĐƠN HÀNG:</td>
+            <td colspan="6" class="kpi-cell kpi-green">${filteredOrders.length} đơn hàng</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="kpi-title">💵 GIÁ TRỊ TRUNG BÌNH/ĐƠN:</td>
+            <td colspan="6" class="kpi-cell">${avgOrderVal.toLocaleString('vi-VN')} đ / đơn</td>
+            <td colspan="4" class="kpi-title">📸 TỶ LỆ DUYỆT ẢNH THẬT:</td>
+            <td colspan="6" class="kpi-cell">${approvalRatePercent}% (${approvedCount}/${filteredOrders.length} đơn)</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="kpi-title">🔍 BỘ LỌC ĐANG ÁP DỤNG:</td>
+            <td colspan="16" class="kpi-cell" style="font-size: 9.5pt; font-weight: normal; color: #4B5563;">${filterDesc}</td>
+          </tr>
+          <tr><td colspan="20" style="height: 15px;"></td></tr>
+
+          <!-- 3. TIÊU ĐỀ BẢNG DỮ LIỆU -->
+          <thead>
+            <tr>
+              <th class="col-header" style="width: 50px;">STT</th>
+              <th class="col-header" style="width: 120px;">Mã Đơn</th>
+              <th class="col-header" style="width: 130px;">Thời Gian Đặt</th>
+              <th class="col-header" style="width: 160px;">Tên Khách Đặt</th>
+              <th class="col-header" style="width: 130px;">SĐT Khách Đặt</th>
+              <th class="col-header" style="width: 160px;">Tên Người Nhận</th>
+              <th class="col-header" style="width: 130px;">SĐT Người Nhận</th>
+              <th class="col-header" style="width: 250px;">Địa Chỉ Giao Hoa</th>
+              <th class="col-header" style="width: 140px;">Khung Giờ Hẹn</th>
+              <th class="col-header" style="width: 200px;">Tên Mẫu Hoa</th>
+              <th class="col-header" style="width: 220px;">Chi Tiết Quà Kèm</th>
+              <th class="col-header" style="width: 240px;">Lời Chúc Trên Thiệp</th>
+              <th class="col-header" style="width: 140px;">Ký Tên</th>
+              <th class="col-header" style="width: 110px;">Giao Ẩn Danh</th>
+              <th class="col-header" style="width: 110px;">Mã Voucher</th>
+              <th class="col-header" style="width: 120px;">Tiền Giảm</th>
+              <th class="col-header" style="width: 110px;">Phí Ship</th>
+              <th class="col-header" style="width: 140px;">Tổng Tiền</th>
+              <th class="col-header" style="width: 130px;">Trạng Thái Đơn</th>
+              <th class="col-header" style="width: 130px;">Duyệt Ảnh Xưởng</th>
+            </tr>
+          </thead>
+
+          <!-- 4. NỘI DUNG TỪNG DÒNG ĐƠN HÀNG -->
+          <tbody>
+            ${filteredOrders.map((o, idx) => {
+              const rowClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
+              const itemsList = Array.isArray(o.items) && o.items.length > 0
+                ? o.items.map(it => `${it.name} (${Number(it.price || 0).toLocaleString('vi-VN')}đ)`).join('; ')
+                : (o.productName || '');
+
+              const statusClass = 
+                o.status === 'ARRANGING' ? 'status-arranging' :
+                o.status === 'PHOTO_READY' ? 'status-photo' :
+                o.status === 'DELIVERING' ? 'status-delivering' :
+                o.status === 'COMPLETED' ? 'status-completed' : '';
+
+              const isApprClass = o.isApproved ? 'approved-yes' : 'approved-no';
+              const isApprLabel = o.isApproved ? '✓ Đã duyệt ảnh' : 'Chưa duyệt';
+
+              return `
+                <tr class="${rowClass}">
+                  <td class="data-cell c-center">${idx + 1}</td>
+                  <td class="data-cell c-code">#${o.orderCode || o.id}</td>
+                  <td class="data-cell c-center">${o.createdAt || 'Hôm nay'}</td>
+                  <td class="data-cell font-bold">${o.customerName || 'Khách vãng lai'}</td>
+                  <td class="data-cell c-phone">${o.customerPhone || '-'}</td>
+                  <td class="data-cell font-bold">${o.receiverName || '-'}</td>
+                  <td class="data-cell c-phone">${o.receiverPhone || '-'}</td>
+                  <td class="data-cell">${o.receiverAddress || '-'}</td>
+                  <td class="data-cell c-center font-bold" style="color: #C4685A;">${o.deliverySlot || 'Hỏa tốc 90 phút'}</td>
+                  <td class="data-cell font-bold" style="color: #1B3B2B;">${o.productName || 'Bó Hoa Nghệ Thuật'}</td>
+                  <td class="data-cell" style="font-size: 9pt; color: #4B5563;">${itemsList}</td>
+                  <td class="data-cell" style="font-style: italic; color: #374151;">"${o.cardMessage || 'Không kèm thiệp'}"</td>
+                  <td class="data-cell c-center font-bold">${o.senderSign || '-'}</td>
+                  <td class="data-cell c-center">${o.isAnonymous ? '🕵️ Có' : 'Không'}</td>
+                  <td class="data-cell c-center font-bold" style="color: #5C8A70;">${o.discountCode || '-'}</td>
+                  <td class="data-cell c-currency" style="color: #059669;">${o.discountAmount ? Number(o.discountAmount) : 0}</td>
+                  <td class="data-cell c-currency" style="color: #6B7280;">${o.shippingFee ? Number(o.shippingFee) : 0}</td>
+                  <td class="data-cell c-currency font-bold" style="color: #C4685A; font-size: 10.5pt;">${Number(o.totalAmount || 0)}</td>
+                  <td class="data-cell ${statusClass}">${statusLabels[o.status] || o.status || 'Đang xử lý'}</td>
+                  <td class="data-cell ${isApprClass}">${isApprLabel}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+
+          <!-- 5. DÒNG TỔNG KẾT TỔNG DOANH THU -->
+          <tfoot>
+            <tr class="row-total">
+              <td colspan="15" class="data-cell c-right font-bold" style="font-size: 11pt; color: #1B3B2B;">
+                TỔNG CỘNG DOANH THU (${filteredOrders.length} ĐƠN HÀNG):
+              </td>
+              <td class="data-cell c-currency" style="color: #059669; font-size: 11pt;">
+                ${filteredOrders.reduce((sum, o) => sum + Number(o.discountAmount || 0), 0)}
+              </td>
+              <td class="data-cell c-currency" style="color: #6B7280; font-size: 11pt;">
+                ${filteredOrders.reduce((sum, o) => sum + Number(o.shippingFee || 0), 0)}
+              </td>
+              <td class="data-cell total-sum">
+                ${totalRevenueExport}
+              </td>
+              <td colspan="2" class="data-cell c-center font-bold" style="color: #1B3B2B;">
+                ✓ ĐÃ TỔNG HỢP
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `;
+
+    // Tải xuống file Excel (.xls)
+    const blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateFileStr}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setExportToast(`🎉 Đã xuất thành công báo cáo ${filteredOrders.length} đơn hàng ra file Excel (.XLS) đẹp mắt!`);
+    setTimeout(() => setExportToast(''), 4000);
+  };
+
+  // Hàm xuất CSV bổ sung (nhẹ, hỗ trợ import hệ thống khác)
+  const handleExportCsv = () => {
+    const dateFileStr = new Date().toISOString().slice(0, 10);
+    const escapeCsv = (str) => `"${String(str ?? '').replace(/"/g, '""')}"`;
     const lines = [
-      `"FLORA & BLOOM - BÁO CÁO DOANH THU & TIẾN TRÌNH ĐƠN HÀNG CHI TIẾT"`,
-      `"Thời gian xuất: ${exportTimeStr}"`,
-      `"Người lập: Ban Quản Trị Tiệm Hoa Flora & Bloom Studio"`,
-      `"Bộ lọc đang áp dụng: ${filterDesc}"`,
-      `""`,
-      `"--- TỔNG QUAN CHỈ SỐ KINH DOANH (KPI) ---"`,
-      `"Tổng doanh thu đã lọc (VNĐ):",${totalRevenueExport}`,
-      `"Tổng số lượng đơn hàng:",${filteredOrders.length},"đơn hoa"`,
-      `"Giá trị đơn trung bình (AOV):",${avgOrderVal},"VNĐ/đơn"`,
-      `"Tỷ lệ duyệt ảnh thực tế:","${approvalRatePercent}% (${approvedCount}/${filteredOrders.length} đơn)"`,
-      `""`,
-      `"--- BẢNG KÊ CHI TIẾT ĐƠN HÀNG ---"`,
-      [
-        'STT',
-        'Mã Đơn Hàng',
-        'Thời Gian Đặt',
-        'Tên Khách Đặt',
-        'SĐT Khách Đặt',
-        'Tên Người Nhận',
-        'SĐT Người Nhận',
-        'Địa Chỉ Giao Hoa',
-        'Khung Giờ Hẹn',
-        'Tên Mẫu Hoa',
-        'Chi Tiết Sản Phẩm & Quà Kèm',
-        'Lời Chúc Thiệp',
-        'Ký Tên',
-        'Giao Ẩn Danh',
-        'Mã Voucher',
-        'Tiền Giảm (VNĐ)',
-        'Phí Ship (VNĐ)',
-        'Tổng Tiền (VNĐ)',
-        'Trạng Thái Đơn',
-        'Duyệt Ảnh Xưởng'
-      ].map(escapeCsv).join(',')
+      ['STT', 'Mã Đơn', 'Thời Gian', 'Khách Đặt', 'SĐT Khách', 'Người Nhận', 'SĐT Nhận', 'Địa Chỉ', 'Khung Giờ', 'Mẫu Hoa', 'Voucher', 'Giảm Giá', 'Phí Ship', 'Tổng Tiền', 'Trạng Thái'].map(escapeCsv).join(',')
     ];
 
-    // 2. Từng dòng dữ liệu đơn hàng (Giữ số 0 đầu SĐT bằng công thức ="0901234567")
     filteredOrders.forEach((o, idx) => {
-      const itemsList = Array.isArray(o.items) && o.items.length > 0
-        ? o.items.map(it => `${it.name} (${Number(it.price || 0).toLocaleString('vi-VN')}đ)`).join('; ')
-        : (o.productName || '');
-
-      const customerPhoneFormatted = o.customerPhone ? `="""${o.customerPhone}"""` : '""';
-      const receiverPhoneFormatted = o.receiverPhone ? `="""${o.receiverPhone}"""` : '""';
-      const orderCodeFormatted = `="""${o.orderCode || o.id}"""`;
-
-      const row = [
+      lines.push([
         idx + 1,
-        orderCodeFormatted,
-        escapeCsv(o.createdAt || 'Hôm nay'),
-        escapeCsv(o.customerName || 'Khách vãng lai'),
-        customerPhoneFormatted,
+        `="""${o.orderCode || o.id}"""`,
+        escapeCsv(o.createdAt || ''),
+        escapeCsv(o.customerName || ''),
+        `="""${o.customerPhone || ''}"""`,
         escapeCsv(o.receiverName || ''),
-        receiverPhoneFormatted,
+        `="""${o.receiverPhone || ''}"""`,
         escapeCsv(o.receiverAddress || ''),
-        escapeCsv(o.deliverySlot || 'Hỏa tốc 90 phút'),
-        escapeCsv(o.productName || 'Bó Hoa Nghệ Thuật'),
-        escapeCsv(itemsList),
-        escapeCsv(o.cardMessage || ''),
-        escapeCsv(o.senderSign || ''),
-        escapeCsv(o.isAnonymous ? 'Có' : 'Không'),
+        escapeCsv(o.deliverySlot || ''),
+        escapeCsv(o.productName || ''),
         escapeCsv(o.discountCode || '-'),
         Number(o.discountAmount || 0),
         Number(o.shippingFee || 0),
         Number(o.totalAmount || 0),
-        escapeCsv(statusLabels[o.status] || o.status || 'Đang xử lý'),
-        escapeCsv(o.isApproved ? 'Đã duyệt ảnh' : 'Chưa duyệt')
-      ];
-      lines.push(row.join(','));
+        escapeCsv(statusLabels[o.status] || o.status || '')
+      ].join(','));
     });
 
-    // 3. Dòng tổng kết ở chân bảng
-    const totalDiscount = filteredOrders.reduce((sum, o) => sum + Number(o.discountAmount || 0), 0);
-    const totalShipping = filteredOrders.reduce((sum, o) => sum + Number(o.shippingFee || 0), 0);
-
-    const summaryRow = [
-      `"TỔNG CỘNG (${filteredOrders.length} ĐƠN HÀNG)"`,
-      '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""',
-      totalDiscount,
-      totalShipping,
-      totalRevenueExport,
-      '""', '""'
-    ];
-    lines.push(summaryRow.join(','));
-
-    // Tải xuống file CSV kèm UTF-8 BOM (\uFEFF) mở trong Excel hiển thị tiếng Việt hoàn hảo, không có cảnh báo
     const csvContent = '\uFEFF' + lines.join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -387,7 +594,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     link.click();
     document.body.removeChild(link);
 
-    setExportToast(`🎉 Đã xuất thành công báo cáo ${filteredOrders.length} đơn hàng ra file Excel (.csv UTF-8 chuẩn)!`);
+    setExportToast(`🎉 Đã xuất thành công file CSV (${filteredOrders.length} đơn hàng)!`);
     setTimeout(() => setExportToast(''), 4000);
   };
 
@@ -443,16 +650,26 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
             )}
           </button>
 
-          {/* NÚT XUẤT EXCEL CHÍNH */}
+          {/* NÚT XUẤT EXCEL FORMAT ĐẸP CHÍNH */}
           <button
             type="button"
             onClick={handleExportExcel}
             className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95"
-            title="Xuất báo cáo bảng tính Excel (.csv UTF-8 chuẩn) mở trực tiếp không bị cảnh báo định dạng"
+            title="Xuất báo cáo bảng tính Excel (.xls) format đẹp mắt với banner, KPI và màu sắc chuẩn"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
-            <span>Xuất Báo Cáo Excel ({filteredOrders.length})</span>
+            <span>Xuất Excel Đẹp ({filteredOrders.length})</span>
             <Download className="w-3.5 h-3.5 text-white/80" />
+          </button>
+
+          {/* Nút Xuất CSV phụ */}
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5"
+            title="Xuất file CSV thô"
+          >
+            <span>.CSV</span>
           </button>
         </div>
       </div>
@@ -767,14 +984,23 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
             <p className="text-xs text-gray-500">Dữ liệu được sử dụng trực tiếp khi xuất bảng tính Excel</p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Tải Báo Cáo Excel (.CSV)</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="bg-[#107C41] hover:bg-[#0c6233] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Xuất File Excel Đẹp (.XLS)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-3 py-2 rounded-xl transition-all"
+            >
+              <span>.CSV</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
