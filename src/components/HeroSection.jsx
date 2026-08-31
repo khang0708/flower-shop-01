@@ -53,8 +53,8 @@ export const HeroSection = () => {
             </div>
 
             {/* Trust Highlights */}
-            <div className="grid grid-cols-3 gap-3 pt-6 border-t border-[#E8EFEA] text-left">
-              <div className="flex items-start gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 pt-6 border-t border-[#E8EFEA] text-left">
+              <div className="flex items-center sm:items-start gap-3 bg-white/60 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border sm:border-0 border-gray-100">
                 <div className="w-8 h-8 rounded-full bg-[#EBF2ED] text-[#1B3B2B] flex items-center justify-center flex-shrink-0">
                   <Clock className="w-4 h-4" />
                 </div>
@@ -64,7 +64,7 @@ export const HeroSection = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5">
+              <div className="flex items-center sm:items-start gap-3 bg-white/60 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border sm:border-0 border-gray-100">
                 <div className="w-8 h-8 rounded-full bg-[#FDF0ED] text-[#C4685A] flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
@@ -74,7 +74,7 @@ export const HeroSection = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5">
+              <div className="flex items-center sm:items-start gap-3 bg-white/60 sm:bg-transparent p-2.5 sm:p-0 rounded-2xl border sm:border-0 border-gray-100">
                 <div className="w-8 h-8 rounded-full bg-[#EBF2ED] text-[#5C8A70] flex items-center justify-center flex-shrink-0">
                   <HeartHandshake className="w-4 h-4" />
                 </div>
@@ -113,7 +113,7 @@ export const HeroSection = () => {
               </div>
 
               {/* Floating Badge 1: Thợ cắm hoa trực tiếp */}
-              <div className="absolute -bottom-4 -left-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-[#E8EFEA] flex items-center gap-3 animate-fade-in">
+              <div className="absolute -bottom-4 left-2 sm:-left-4 bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-[#E8EFEA] flex items-center gap-3 animate-fade-in z-10">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
                   alt="Nghệ nhân cắm hoa Minh Thư"
@@ -121,18 +121,18 @@ export const HeroSection = () => {
                   height="40"
                   loading="lazy"
                   decoding="async"
-                  className="w-10 h-10 rounded-full object-cover border border-[#1B3B2B]"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-[#1B3B2B]"
                 />
                 <div>
-                  <span className="text-[10px] text-gray-500 block">Nghệ nhân phụ trách</span>
+                  <span className="text-[10px] text-gray-500 block leading-tight">Nghệ nhân phụ trách</span>
                   <span className="text-xs font-bold text-[#1B3B2B]">Thợ cắm hoa Minh Thư</span>
                 </div>
               </div>
 
               {/* Floating Badge 2: Đánh giá 5 sao */}
-              <div className="absolute top-6 -right-4 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-[#E8EFEA] flex items-center gap-1.5">
-                <span className="text-amber-400 text-sm">★★★★★</span>
-                <span className="text-xs font-bold text-[#1B3B2B]">4.9/5.0 (650+ đánh giá)</span>
+              <div className="absolute top-4 right-2 sm:-right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-lg border border-[#E8EFEA] flex items-center gap-1.5 z-10">
+                <span className="text-amber-400 text-xs sm:text-sm">★★★★★</span>
+                <span className="text-[11px] sm:text-xs font-bold text-[#1B3B2B]">4.9/5.0 (650+ đánh giá)</span>
               </div>
 
             </div>

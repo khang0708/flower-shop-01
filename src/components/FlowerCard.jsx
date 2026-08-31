@@ -10,7 +10,10 @@ export const FlowerCard = ({ flower }) => {
     <div className="group bg-white rounded-organic overflow-hidden shadow-organic-soft hover:shadow-xl transition-all duration-500 flex flex-col border border-[#E8EFEA] hover:border-[#D1DFD6]">
       
       {/* 4:5 Aspect Ratio Container */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface-paper">
+      <div 
+        onClick={() => setQuickViewProduct(flower)}
+        className="relative aspect-[4/5] overflow-hidden bg-surface-paper cursor-pointer"
+      >
         <img
           src={flower.image}
           alt={`Mẫu hoa tươi ${flower.name} - Flora & Bloom`}
