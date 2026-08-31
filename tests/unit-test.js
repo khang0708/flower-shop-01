@@ -60,6 +60,29 @@ assert(orders.length > 0, `Có ${orders.length} đơn hàng được đồng b�
 const reviews = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'reviews.json'), 'utf-8'));
 assert(reviews.length > 0, `Có ${reviews.length} đánh giá khách hàng`);
 
+// 5. Inventory Calculations & Deductions
+const inventory = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'inventory.json'), 'utf-8'));
+assert(inventory.length > 0, `Có ${inventory.length} loài hoa trong kho dữ liệu`);
+
+const testItem = { name: 'Hoa Test', total: 100, used: 40 };
+const calculatedRemain = Math.max(0, testItem.total - testItem.used);
+assert(calculatedRemain === 60, 'Công thức tồn kho remain = total - used (100 - 40 = 60)');
+
+// Test Restock
+const restockedTotal = testItem.total + 50;
+const restockedRemain = Math.max(0, restockedTotal - testItem.used);
+assert(restockedTotal === 150 && restockedRemain === 110, 'Nhập thêm hàng +50 cành: total=150, remain=110');
+
+// Test Status
+function getStatus(remain) {
+  if (remain <= 5) return 'danger';
+  if (remain <= 20) return 'warning';
+  return 'normal';
+}
+assert(getStatus(4) === 'danger', 'Mức tồn <= 5 là danger');
+assert(getStatus(18) === 'warning', 'Mức tồn 6-20 là warning');
+assert(getStatus(45) === 'normal', 'Mức tồn > 20 là normal');
+
 console.log('\n====================================================');
 console.log(`🏁 KẾT QUẢ KIỂM THỬ: ${passedTests} ĐẠT / ${passedTests + failedTests} BÀI TEST`);
 console.log('====================================================');

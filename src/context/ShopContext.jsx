@@ -234,6 +234,146 @@ export const ShopProvider = ({ children }) => {
     { name: 'Cẩm Tú Cầu Xanh Lam', total: 40, used: 25, remain: 15, unit: 'bông', status: 'normal' },
   ]);
 
+  // Hàm tính trạng thái tồn kho chuẩn hóa
+  const calculateInventoryStatus = (remain) => {
+    if (remain <= 5) return 'danger';
+    if (remain <= 20) return 'warning';
+    return 'normal';
+  };
+
+  // Thêm nguyên liệu hoa mới vào kho
+  const addInventoryItem = async (itemData) => {
+    const total = Math.max(0, Number(itemData.total) || 0);
+    const used = Math.max(0, Number(itemData.used) || 0);
+    const remain = Math.max(0, total - used);
+    const newItem = {
+      name: itemData.name.trim(),
+      total,
+      used,
+      remain,
+      unit: itemData.unit || 'cành',
+      status: calculateInventoryStatus(remain)
+    };
+
+    const next = [...inventory.filter(i => i.name.toLowerCase() !== newItem.name.toLowerCase()), newItem];
+    setInventory(next);
+    try {
+      await updateInventoryApi(next);
+    } catch (e) {}
+    return newItem;
+  };
+
+  // Cập nhật/Kiểm kê nguyên liệu hoa
+  const updateInventoryItem = async (originalName, updates) => {
+    const next = inventory.map(item => {
+      if (item.name === originalName) {
+        const total = updates.total !== undefined ? Math.max(0, Number(updates.total) || 0) : item.total;
+        const used = updates.used !== undefined ? Math.max(0, Number(updates.used) || 0) : item.used;
+        const remain = Math.max(0, total - used);
+        return {
+          ...item,
+          ...updates,
+          total,
+          used,
+          remain,
+          status: calculateInventoryStatus(remain)
+        };
+      }
+      return item;
+    });
+
+    setInventory(next);
+    try {
+      await updateInventoryApi(next);
+    } catch (e) {}
+  };
+
+  // Nhập thêm hàng (Restock)
+  const restockInventoryItem = async (flowerName, addedQuantity) => {
+    const addQty = Math.max(0, Number(addedQuantity) || 0);
+    const next = inventory.map(item => {
+      if (item.name === flowerName) {
+        const total = item.total + addQty;
+        const remain = Math.max(0, total - item.used);
+        return {
+          ...item,
+          total,
+          remain,
+          status: calculateInventoryStatus(remain)
+        };
+      }
+      return item;
+    });
+
+    setInventory(next);
+    try {
+      await updateInventoryApi(next);
+    } catch (e) {}
+  };
+
+  // Xóa nguyên liệu
+  const deleteInventoryItem = async (flowerName) => {
+    const next = inventory.filter(item => item.name !== flowerName);
+    setInventory(next);
+    try {
+      await updateInventoryApi(next);
+    } catch (e) {}
+  };
+
+  // Tự động trừ kho khi có đơn hàng mới (Deduct on Order)
+  const deductInventoryOnOrder = async (cartItems) => {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) return;
+
+    let updated = [...inventory];
+    let hasChanges = false;
+
+    cartItems.forEach(cartItem => {
+      const qty = Number(cartItem.quantity || 1);
+      const itemNameLower = (cartItem.name || '').toLowerCase();
+
+      // Định lượng cành hoa theo từng mẫu
+      updated = updated.map(invItem => {
+        const invLower = invItem.name.toLowerCase();
+        let deductAmount = 0;
+
+        if (itemNameLower.includes('juliet') && invLower.includes('juliet')) {
+          deductAmount = 10 * qty;
+        } else if ((itemNameLower.includes('ruby') || itemNameLower.includes('đỏ')) && invLower.includes('ruby')) {
+          deductAmount = 15 * qty;
+        } else if (itemNameLower.includes('mẫu đơn') && invLower.includes('mẫu đơn')) {
+          deductAmount = 3 * qty;
+        } else if (itemNameLower.includes('hướng dương') && invLower.includes('hướng dương')) {
+          deductAmount = 5 * qty;
+        } else if (itemNameLower.includes('cẩm tú cầu') && invLower.includes('cẩm tú cầu')) {
+          deductAmount = 3 * qty;
+        } else if (itemNameLower.includes('baby') && invLower.includes('baby')) {
+          deductAmount = 1 * qty;
+        }
+
+        if (deductAmount > 0) {
+          hasChanges = true;
+          const newUsed = invItem.used + deductAmount;
+          const newRemain = Math.max(0, invItem.total - newUsed);
+          return {
+            ...invItem,
+            used: newUsed,
+            remain: newRemain,
+            status: calculateInventoryStatus(newRemain)
+          };
+        }
+
+        return invItem;
+      });
+    });
+
+    if (hasChanges) {
+      setInventory(updated);
+      try {
+        await updateInventoryApi(updated);
+      } catch (e) {}
+    }
+  };
+
   // Hàm phát thông báo âm thanh & giao diện khi có đơn hàng mới (Chuông + Popup + Push)
   const triggerAdminOrderAlert = useCallback((order) => {
     // 1. Cập nhật state đơn mới & popup toast
@@ -707,6 +847,10 @@ export const ShopProvider = ({ children }) => {
       return [newOrder, ...prev];
     });
     setActiveOrder(newOrder);
+
+    // Tự động trừ hoa nguyên liệu tương ứng trong kho
+    deductInventoryOnOrder(cart);
+
     setCart([]);
     setIsCheckoutOpen(false);
     setIsTrackingOpen(true);
@@ -865,6 +1009,10 @@ export const ShopProvider = ({ children }) => {
         orders,
         activeOrder,
         inventory,
+        addInventoryItem,
+        updateInventoryItem,
+        restockInventoryItem,
+        deleteInventoryItem,
         discounts,
         appliedCoupon,
         discountAmount,

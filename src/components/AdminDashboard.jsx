@@ -63,6 +63,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     orders, 
     updateOrderByAdmin, 
     inventory, 
+    addInventoryItem,
+    updateInventoryItem,
+    restockInventoryItem,
+    deleteInventoryItem,
     products, 
     addProduct, 
     updateProduct, 
@@ -111,6 +115,14 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   // State Chỉnh sửa phí ship nhanh cho từng đơn hàng
   const [editingShippingOrderId, setEditingShippingOrderId] = useState(null);
   const [customShippingInput, setCustomShippingInput] = useState('');
+
+  // State Quản lý Kho Hoa Tươi
+  const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+  const [addInventoryForm, setAddInventoryForm] = useState({ name: '', total: 60, unit: 'cành' });
+  const [restockItem, setRestockItem] = useState(null);
+  const [restockQty, setRestockQty] = useState(30);
+  const [editInventoryItemData, setEditInventoryItemData] = useState(null);
+  const [editInventoryForm, setEditInventoryForm] = useState({ name: '', total: 0, used: 0, unit: 'cành' });
 
   // State Cấu hình Phí Giao Hoa & Freeship
   const [shippingForm, setShippingForm] = useState({
@@ -362,6 +374,43 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     window.open(`https://zalo.me/${cleanPhone}`, '_blank');
     setCopyToast(`🎉 Đã copy báo giá & phí ship cho ${order.customerName}! Hãy bấm Dán (Paste) vào Zalo.`);
     setTimeout(() => setCopyToast(''), 4000);
+  };
+
+  // Handlers Nghiệp Vụ Kho Hoa Tươi
+  const handleCreateInventoryItem = async (e) => {
+    e.preventDefault();
+    if (!addInventoryForm.name.trim()) return;
+    await addInventoryItem(addInventoryForm);
+    setIsAddInventoryOpen(false);
+    setAddInventoryForm({ name: '', total: 60, unit: 'cành' });
+    setCopyToast(`✓ Đã thêm ${addInventoryForm.name} vào kho hoa tươi thành công!`);
+    setTimeout(() => setCopyToast(''), 3000);
+  };
+
+  const handleRestockSubmit = async (e) => {
+    e.preventDefault();
+    if (!restockItem) return;
+    await restockInventoryItem(restockItem.name, Number(restockQty) || 0);
+    setCopyToast(`✓ Đã nhập thêm +${restockQty} ${restockItem.unit} cho ${restockItem.name}!`);
+    setRestockItem(null);
+    setTimeout(() => setCopyToast(''), 3000);
+  };
+
+  const handleEditInventorySubmit = async (e) => {
+    e.preventDefault();
+    if (!editInventoryItemData) return;
+    await updateInventoryItem(editInventoryItemData.name, editInventoryForm);
+    setCopyToast(`✓ Đã cập nhật số liệu kiểm kê cho ${editInventoryItemData.name}!`);
+    setEditInventoryItemData(null);
+    setTimeout(() => setCopyToast(''), 3000);
+  };
+
+  const handleDeleteInventory = async (itemName) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa loài hoa "${itemName}" khỏi danh mục kho?`)) {
+      await deleteInventoryItem(itemName);
+      setCopyToast(`Đã xóa "${itemName}" khỏi kho hoa.`);
+      setTimeout(() => setCopyToast(''), 3000);
+    }
   };
 
   const handleOpenProofModal = (order) => {
@@ -1774,31 +1823,186 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           </div>
         )}
 
-        {/* TAB 4: TỒN KHO */}
+        {/* TAB 4: TỒN KHO HOA TƯƠI & NGUYÊN LIỆU CẮM */}
         {activeTab === 'inventory' && (
-          <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-6">
-            <h3 className="font-serif text-xl font-bold text-[#1B3B2B]">Quản Lý Kho Hoa Tươi</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-500 bg-[#FAF8F5]">
-                    <th className="p-3.5">Loài Hoa Nhập Khẩu</th>
-                    <th className="p-3.5">Tổng Nhập Sáng</th>
-                    <th className="p-3.5">Đã Cắm Vào Đơn</th>
-                    <th className="p-3.5">Còn Lại</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {inventory.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-3.5 font-bold text-gray-900">{item.name}</td>
-                      <td className="p-3.5 text-gray-600">{item.total} {item.unit}</td>
-                      <td className="p-3.5 text-amber-700 font-semibold">{item.used} {item.unit}</td>
-                      <td className="p-3.5 font-extrabold text-[#1B3B2B]">{item.remain} {item.unit}</td>
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Tab */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <span>🌿 Quản Lý Kho Hoa Tươi & Định Lượng Cành</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Kiểm soát lượng hoa nhập khẩu/Đà Lạt mỗi sáng, tự động trừ hoa theo đơn hàng và cảnh báo khi sắp hết hoa.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setAddInventoryForm({ name: '', total: 60, unit: 'cành' });
+                  setIsAddInventoryOpen(true);
+                }}
+                className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4 text-[#F5D6CE]" />
+                <span>+ Thêm Loài Hoa Mới</span>
+              </button>
+            </div>
+
+            {/* 4 Thẻ Thống Kê KPI Kho */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-[#E8EFEA] shadow-xs">
+                <span className="text-[11px] text-gray-500 font-bold block">TỔNG LOÀI HOA TƯƠI</span>
+                <span className="text-2xl font-extrabold text-[#1B3B2B] font-mono mt-1 block">{inventory.length}</span>
+                <span className="text-[10px] text-gray-400">Đang lưu hành trong xưởng</span>
+              </div>
+
+              <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 shadow-xs">
+                <span className="text-[11px] text-emerald-800 font-bold block">DỒI DÀO / AN TOÀN</span>
+                <span className="text-2xl font-extrabold text-emerald-700 font-mono mt-1 block">
+                  {inventory.filter(i => i.status === 'normal').length}
+                </span>
+                <span className="text-[10px] text-emerald-600">Đủ hoa nhận đơn hỏa tốc</span>
+              </div>
+
+              <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 shadow-xs">
+                <span className="text-[11px] text-amber-800 font-bold block">SẮP HẾT HOA (≤ 20)</span>
+                <span className="text-2xl font-extrabold text-amber-700 font-mono mt-1 block">
+                  {inventory.filter(i => i.status === 'warning').length}
+                </span>
+                <span className="text-[10px] text-amber-600">Cần liên hệ nhà vườn nhập thêm</span>
+              </div>
+
+              <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-200 shadow-xs">
+                <span className="text-[11px] text-rose-800 font-bold block">BÁO ĐỘNG ĐỎ (≤ 5)</span>
+                <span className="text-2xl font-extrabold text-rose-700 font-mono mt-1 block">
+                  {inventory.filter(i => i.status === 'danger').length}
+                </span>
+                <span className="text-[10px] text-rose-600">Nguy cơ hết hoa cho đơn mới</span>
+              </div>
+            </div>
+
+            {/* Bảng Chi Tiết Tồn Kho */}
+            <div className="bg-white rounded-3xl border border-[#E8EFEA] shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <span className="font-bold text-xs text-gray-800">Danh Mục Chi Tiết Cành / Bông Trong Kho</span>
+                <span className="text-[11px] text-gray-500 italic">💡 Số liệu tự động cập nhật & trừ kho khi khách đặt đơn hoa</span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-600 bg-[#FAF8F5] font-bold">
+                      <th className="p-3.5">Loài Hoa Nhập Khẩu / Đà Lạt</th>
+                      <th className="p-3.5 text-center">Tổng Nhập Sáng</th>
+                      <th className="p-3.5 text-center">Đã Cắm Vào Đơn</th>
+                      <th className="p-3.5">Tiến Độ Tiêu Thụ</th>
+                      <th className="p-3.5 text-center">Còn Lại Trong Kho</th>
+                      <th className="p-3.5 text-center">Trạng Thái</th>
+                      <th className="p-3.5 text-right">Thao Tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {inventory.map((item, idx) => {
+                      const consumptionPercent = Math.min(100, Math.round((Number(item.used || 0) / Math.max(1, Number(item.total || 1))) * 100));
+                      return (
+                        <tr key={idx} className="hover:bg-gray-50/80 transition-colors">
+                          <td className="p-3.5">
+                            <span className="font-bold text-gray-900 block text-sm">{item.name}</span>
+                            <span className="text-[10px] text-gray-400">Đơn vị: {item.unit}</span>
+                          </td>
+                          <td className="p-3.5 text-center font-semibold text-gray-700 font-mono">
+                            {item.total} {item.unit}
+                          </td>
+                          <td className="p-3.5 text-center font-bold text-amber-700 font-mono">
+                            {item.used} {item.unit}
+                          </td>
+                          <td className="p-3.5 w-48">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+                                <span>Tiêu thụ:</span>
+                                <span>{consumptionPercent}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className={`h-2 rounded-full transition-all ${
+                                    consumptionPercent > 85 ? 'bg-rose-500' : consumptionPercent > 60 ? 'bg-amber-500' : 'bg-[#1B3B2B]'
+                                  }`}
+                                  style={{ width: `${consumptionPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <span className={`text-base font-extrabold font-mono px-3 py-1 rounded-xl ${
+                              item.status === 'danger'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse'
+                                : item.status === 'warning'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-[#EBF2ED] text-[#1B3B2B]'
+                            }`}>
+                              {item.remain} {item.unit}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            {item.status === 'danger' ? (
+                              <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full border border-rose-300">
+                                🚨 Báo động đỏ (≤ 5)
+                              </span>
+                            ) : item.status === 'warning' ? (
+                              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full border border-amber-300">
+                                ⚠️ Sắp hết hoa
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
+                                ✓ Dồi dào
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setRestockItem(item);
+                                  setRestockQty(30);
+                                }}
+                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition-all"
+                                title="Nhập thêm cành hoa vào kho"
+                              >
+                                + Nhập Thêm
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setEditInventoryItemData(item);
+                                  setEditInventoryForm({
+                                    name: item.name,
+                                    total: item.total,
+                                    used: item.used,
+                                    unit: item.unit
+                                  });
+                                }}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold px-2 py-1.5 rounded-lg transition-all"
+                                title="Kiểm kê điều chỉnh số lượng"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteInventory(item.name)}
+                                className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-all"
+                                title="Xóa loài hoa khỏi kho"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -2381,6 +2585,223 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 </button>
               </div>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: THÊM LOÀI HOA NGUYÊN LIỆU MỚI VÀO KHO */}
+      {isAddInventoryOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto">
+            <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-serif text-lg font-bold flex items-center gap-2">
+                <span>🌿 Thêm Loài Hoa Vào Kho</span>
+              </h3>
+              <button onClick={() => setIsAddInventoryOpen(false)} className="text-white/80 hover:text-white text-lg">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateInventoryItem} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Tên loài hoa tươi *</label>
+                <input
+                  type="text"
+                  required
+                  value={addInventoryForm.name}
+                  onChange={(e) => setAddInventoryForm({ ...addInventoryForm, name: e.target.value })}
+                  placeholder="VD: Hoa Tulip Hà Lan (Hồng Phấn)"
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] font-semibold text-gray-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Số lượng nhập sáng *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={addInventoryForm.total}
+                    onChange={(e) => setAddInventoryForm({ ...addInventoryForm, total: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Đơn vị tính *</label>
+                  <select
+                    value={addInventoryForm.unit}
+                    onChange={(e) => setAddInventoryForm({ ...addInventoryForm, unit: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white font-semibold"
+                  >
+                    <option value="cành">cành</option>
+                    <option value="bông">bông</option>
+                    <option value="bó lớn">bó lớn</option>
+                    <option value="chậu">chậu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Lưu Vào Kho Hoa</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddInventoryOpen(false)}
+                  className="px-4 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: NHẬP THÊM HÀNG (RESTOCK) */}
+      {restockItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto">
+            <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-serif text-base font-bold flex items-center gap-2">
+                <span>📦 Nhập Thêm Hoa Tươi</span>
+              </h3>
+              <button onClick={() => setRestockItem(null)} className="text-white/80 hover:text-white text-lg">✕</button>
+            </div>
+
+            <form onSubmit={handleRestockSubmit} className="p-6 space-y-4 text-xs">
+              <div className="p-3 bg-[#FAF8F5] rounded-xl border border-gray-200">
+                <span className="text-gray-500 block text-[11px]">Loài hoa đang nhập:</span>
+                <strong className="text-[#1B3B2B] text-sm block">{restockItem.name}</strong>
+                <span className="text-[11px] text-gray-600">Hiện còn: <strong>{restockItem.remain} {restockItem.unit}</strong> (Đã dùng {restockItem.used})</span>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Số lượng {restockItem.unit} nhập thêm hôm nay:
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={restockQty}
+                  onChange={(e) => setRestockQty(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-base font-extrabold text-[#1B3B2B]"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[10, 20, 30, 50, 100].map(val => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setRestockQty(val)}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border font-bold ${
+                      Number(restockQty) === val ? 'bg-[#1B3B2B] text-white border-[#1B3B2B]' : 'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    +{val} {restockItem.unit}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Xác Nhận Nhập Thêm</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRestockItem(null)}
+                  className="px-4 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: KIỂM KÊ & ĐIỀU CHỈNH KHO THỰC TẾ */}
+      {editInventoryItemData && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto">
+            <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-serif text-base font-bold flex items-center gap-2">
+                <span>✏️ Kiểm Kê & Sửa Số Lượng Hoa</span>
+              </h3>
+              <button onClick={() => setEditInventoryItemData(null)} className="text-white/80 hover:text-white text-lg">✕</button>
+            </div>
+
+            <form onSubmit={handleEditInventorySubmit} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Tên loài hoa *</label>
+                <input
+                  type="text"
+                  required
+                  value={editInventoryForm.name}
+                  onChange={(e) => setEditInventoryForm({ ...editInventoryForm, name: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Tổng nhập (Total) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editInventoryForm.total}
+                    onChange={(e) => setEditInventoryForm({ ...editInventoryForm, total: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Đã cắm vào đơn (Used) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editInventoryForm.used}
+                    onChange={(e) => setEditInventoryForm({ ...editInventoryForm, used: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#FAF8F5] rounded-xl border border-gray-200 flex justify-between items-center">
+                <span className="text-gray-600 font-semibold">Tồn kho tính toán lại:</span>
+                <span className="text-base font-extrabold text-[#1B3B2B] font-mono">
+                  {Math.max(0, Number(editInventoryForm.total || 0) - Number(editInventoryForm.used || 0))} {editInventoryForm.unit}
+                </span>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Lưu Cập Nhật Kiểm Kê</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditInventoryItemData(null)}
+                  className="px-4 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold"
+                >
+                  Hủy
+                </button>
+              </div>
             </form>
           </div>
         </div>
