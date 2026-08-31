@@ -68,23 +68,21 @@
 
 ---
 
-### 📅 Khắc Phục Lỗi Ngày Giao Hoa: Tự Động Load Mới Theo Ngày Thực Tế Mỗi Lần Đặt Đơn
-* **Files:** [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`server/server.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/server/server.js), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx)
-* **Nguyên nhân lỗi trước đó:** 
-  * Trong `CheckoutModal.jsx`, mảng ngày giao hoa bị gán cứng tĩnh `['Hôm nay (25/08)', 'Ngày mai (26/08)', 'Chọn ngày khác 📅']`. Khi khách hàng đặt đơn vào các ngày sau (27/08, 31/08, 01/09...), modal vẫn giữ nguyên mốc ngày 25/08 và không có ô chọn lịch cụ thể dẫn đến sai lệch ngày hẹn giao hoa.
-* **Giải pháp khắc phục triệt để:**
-  1. **Bộ tính toán ngày giao hoa động (`getDynamicDeliveryDates`):**
-     * Tự động quét `new Date()` thời gian thực mỗi khi mở Modal Thanh toán để sinh ra:
-       * **Hôm nay:** `Hôm nay (DD/MM)`
-       * **Ngày mai:** `Ngày mai (DD/MM)`
-       * **Ngày mốt:** `Thứ X (DD/MM)`
-  2. **Tích hợp Bộ Chọn Ngày Tùy Chỉnh (HTML5 Date Picker):**
-     * Thêm ô chọn ngày theo lịch `<input type="date" min={today} />` cho phép khách hàng chủ động chọn ngày giao hoa bất kỳ trong tương lai (đặt trước cho sinh nhật, kỷ niệm, ngày lễ 20/10, Valentine...).
-  3. **Chuẩn hóa chuỗi thông tin giao hàng (`deliverySlot`):**
-     * Kết hợp chính xác: `${currentDeliveryDateLabel} • ${selectedSlot}` (VD: `Hôm nay (31/08) • 14:00 - 16:00` hoặc `Ngày 15/09/2026 • 08:00 - 10:00`).
-  4. **Thời gian tạo đơn (`createdAt`) chuẩn xác:**
-     * Lưu đầy đủ cả giờ và ngày tạo đơn: `${timeStr} (${dateStr})` trên cả Client và Server Node.js.
-* **Commit:** `d35af5f`
+### 📊 Chuẩn Hóa Ngày Tháng & Bộ Lọc Thời Gian Thực Tế Trong Báo Cáo Doanh Thu
+* **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx), [`src/components/AdminDashboard.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AdminDashboard.jsx)
+* **Chi tiết cải tiến:**
+  1. **Hàm trích xuất ngày thực tế (`getOrderDateObj`):**
+     * Tự động trích xuất và phân tích ngày chính xác từ trường `orderDate`, chuỗi `createdAt` hoặc `deliverySlot` (định dạng `DD/MM/YYYY` hoặc `DD/MM`).
+  2. **Tích hợp Bộ Lọc Thời Gian Đa Tiêu Chí:**
+     * Thêm tùy chọn lọc: **7 ngày gần nhất**, **Hôm nay**, **Tháng này**, **Toàn thời gian** và **Tùy chọn khoảng ngày (`startDate` $\rightarrow$ `endDate`)**.
+     * Tự động áp dụng bộ lọc thời gian vào việc tính toán tổng doanh thu, số lượng đơn, AOV và tỷ lệ duyệt ảnh.
+  3. **Biểu đồ cột 7 ngày hiển thị ngày/tháng sắc nét:**
+     * Khớp đơn hàng chính xác theo ngày lịch thực tế (Năm/Tháng/Ngày).
+     * Dưới từng cột biểu đồ hiển thị cả **Tên thứ** và **Ngày/Tháng** (Ví dụ: `Hôm nay (31/08)`, `CN (30/08)`, `T7 (29/08)...`).
+  4. **Xuất Excel Báo Cáo Chuẩn Xác:**
+     * Header file Excel hiển thị chính xác tiêu chí khoảng thời gian đã lọc (Ví dụ: `Thời gian: 7 ngày gần nhất` hoặc `Tùy chỉnh (01/08/2026 đến 31/08/2026)`).
+     * Toàn bộ cột `Thời Gian Đặt` và `Khung Giờ Hẹn` trong bảng kê hiển thị đúng ngày giờ thực tế.
+* **Commit:** `75c78a1`
 
 ---
 
