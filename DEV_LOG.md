@@ -68,16 +68,21 @@
 
 ---
 
-### 🛠️ Khắc Phục Lỗi Cảnh Báo Excel: Định Dạng CSV UTF-8 BOM Chuẩn (Không Bị Extension Mismatch)
-* **Files:** [`src/components/SalesAnalyticsView.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/SalesAnalyticsView.jsx)
-* **Nguyên nhân lỗi trước đó:** 
-  * Khi xuất file nội dung HTML dưới đuôi `.xls`, Microsoft Excel kích hoạt cơ chế bảo vệ *"Extension Hardening"* và hiển thị popup cảnh báo: *"The file format and extension of ... don't match"*.
-* **Giải pháp khắc phục triệt để:**
-  1. Chuyển đổi định dạng file tải về sang chuẩn **`.csv` với UTF-8 BOM (`\uFEFF`)**.
-  2. **Bảo toàn số `0` đầu của Số điện thoại:** Sử dụng cú pháp `="0901234567"` giúp Excel không bị hiểu nhầm thành số nguyên và không bao giờ bị cắt mất số 0 đầu.
-  3. **Mở trực tiếp 100% trơn tru:** Nhấp đúp mở file trên Excel ngay lập tức mà **không xuất hiện bất kỳ hộp thoại cảnh báo nào**, font tiếng Việt có dấu hiển thị sắc nét 100%.
-  4. Đầy đủ các phần: Tiêu đề banner, Tóm tắt KPI (Doanh thu, Số đơn, AOV, Tỷ lệ duyệt ảnh), Bảng kê 20 cột và Dòng tổng cộng doanh thu.
-* **Commit:** `82b908e`
+### 💬 Tính Năng Nâng Cấp: Cấu Hình Zalo Cá Nhân Chạy Động 100% & Tích Hợp Toàn Diện
+* **Files:** [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`src/services/zaloService.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/services/zaloService.js), [`src/components/Header.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Header.jsx), [`src/components/Footer.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Footer.jsx), [`src/components/FlowerGrid.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx), [`src/components/ProductDetailModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ProductDetailModal.jsx), [`src/components/CartDrawer.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CartDrawer.jsx), [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`src/components/OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx), [`src/components/AIFloristModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AIFloristModal.jsx), [`src/components/PrintInvoiceModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)
+* **Chi tiết nâng cấp:**
+  1. **Cấu hình Zalo Cá Nhân 100% Động:**
+     * Lưu trữ và đồng bộ hóa qua REST API (`/api/settings` - `settings.json`) và LocalStorage. Khi admin thay đổi số điện thoại trong mục **"Cài Đặt Zalo & Telegram"**, toàn bộ các nút Zalo trên toàn hệ thống lập tức cập nhật theo số mới.
+     * Mã QR kết bạn Zalo trong Admin Dashboard tự sinh theo số điện thoại cấu hình.
+  2. **Tích hợp Zalo tại tất cả các điểm chạm khách hàng:**
+     * **Top Banner Header & Footer:** Hiển thị Hotline/Zalo động kèm liên kết gọi điện và chat trực tiếp.
+     * **Màn Hình Theo Dõi Đơn Hoa ([`OrderTrackingModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx)):** Nút "Chat Zalo Với Xưởng" và "Yêu Cầu Sửa Hoa" tự động mở Zalo nghệ nhân kèm nội dung mã đơn hàng.
+     * **Chi Tiết Mẫu Hoa ([`ProductDetailModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ProductDetailModal.jsx)):** Thêm nút *"Tư Vấn Zalo"* gửi sẵn tên mẫu hoa, kích thước và mức giá cho nghệ nhân.
+     * **Trang Chủ ([`FlowerGrid`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx)):** Banner cắm hoa theo ngân sách riêng mở Zalo tư vấn kèm số điện thoại xưởng.
+     * **Cắm Hoa AI ([`AIFloristModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AIFloristModal.jsx)):** Nút gửi ảnh mẫu AI đã nhận diện qua Zalo xưởng.
+     * **Giỏ Hàng ([`CartDrawer`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CartDrawer.jsx)) & Thanh Toán ([`CheckoutModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx)):** Thêm lối tắt tư vấn hoa và hỗ trợ đặt gấp qua Zalo.
+     * **Hóa Đơn In Ấn ([`PrintInvoiceModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)):** In Hotline/Zalo động trên phiếu giao hàng.
+* **Commit:** `a735f77`
 
 ---
 
