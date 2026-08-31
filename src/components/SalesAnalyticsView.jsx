@@ -21,6 +21,34 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+// Hàm chuẩn hóa trích xuất ngày thực tế của đơn hàng từ orderDate, createdAt hoặc deliverySlot
+export const getOrderDateObj = (order) => {
+  if (!order) return new Date();
+
+  // 1. Nếu có trường orderDate chuẩn ISO (VD: 2026-08-31)
+  if (order.orderDate) {
+    const d = new Date(order.orderDate);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  const now = new Date();
+  const cTime = order.createdAt || '';
+  const dSlot = order.deliverySlot || '';
+
+  // 2. Tìm mẫu ngày DD/MM/YYYY hoặc DD/MM trong createdAt hoặc deliverySlot
+  const matchDate = (cTime + ' ' + dSlot).match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+  if (matchDate) {
+    const day = parseInt(matchDate[1], 10);
+    const month = parseInt(matchDate[2], 10) - 1;
+    const year = matchDate[3] ? parseInt(matchDate[3], 10) : now.getFullYear();
+    const parsed = new Date(year, month, day);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+
+  // 3. Fallback: ngày hiện tại
+  return now;
+};
+
 export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
   // Bộ lọc dữ liệu
   const [timeRange, setTimeRange] = useState('7_days'); // 'today' | '7_days' | 'month' | 'all' | 'custom'
@@ -35,13 +63,42 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
 
   // 1. ÁP DỤNG BỘ LỌC LÊN DANH SÁCH ĐƠN HÀNG
   const filteredOrders = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    const sevenDaysAgo = new Date(todayStart);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+
     return orders.filter(order => {
-      // Lọc trạng thái
+      // 1. Lọc theo khoảng thời gian thực tế
+      const orderDate = getOrderDateObj(order);
+      
+      if (timeRange === 'today') {
+        if (orderDate < todayStart || orderDate > todayEnd) return false;
+      } else if (timeRange === '7_days') {
+        if (orderDate < sevenDaysAgo || orderDate > todayEnd) return false;
+      } else if (timeRange === 'month') {
+        if (orderDate < startOfMonth || orderDate > todayEnd) return false;
+      } else if (timeRange === 'custom') {
+        if (startDate) {
+          const s = new Date(startDate + 'T00:00:00');
+          if (orderDate < s) return false;
+        }
+        if (endDate) {
+          const e = new Date(endDate + 'T23:59:59');
+          if (orderDate > e) return false;
+        }
+      }
+
+      // 2. Lọc trạng thái
       if (statusFilter !== 'all' && order.status !== statusFilter) {
         return false;
       }
 
-      // Lọc từ khóa tìm kiếm (Mã đơn, Tên người đặt, SĐT người đặt, Tên người nhận, Mẫu hoa)
+      // 3. Lọc từ khóa tìm kiếm (Mã đơn, Tên người đặt, SĐT người đặt, Tên người nhận, Mẫu hoa)
       if (searchKeyword.trim()) {
         const q = searchKeyword.toLowerCase().trim();
         const matchCode = (order.orderCode || order.id || '').toLowerCase().includes(q);
@@ -57,16 +114,15 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
         }
       }
 
-      // Lọc theo khoảng giá tiền
+      // 4. Lọc theo khoảng giá tiền
       const total = Number(order.totalAmount || 0);
       if (minPrice && total < Number(minPrice)) return false;
       if (maxPrice && total > Number(maxPrice)) return false;
 
       return true;
     });
-  }, [orders, statusFilter, searchKeyword, minPrice, maxPrice]);
+  }, [orders, timeRange, startDate, endDate, statusFilter, searchKeyword, minPrice, maxPrice]);
 
-  // 2. TÍNH TOÁN SỐ LIỆU THỐNG KÊ DỰA TRÊN ĐƠN ĐÃ LỌC
   // 2. TÍNH TOÁN SỐ LIỆU THỐNG KÊ DỰA TRÊN 100% ĐƠN HÀNG THẬT
   const analyticsData = useMemo(() => {
     const totalOrdersCount = filteredOrders.length;
@@ -110,22 +166,14 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
       const isToday = i === 0;
       const dayLabel = isToday ? `Hôm nay (${dateStr})` : `${dayOfWeek} (${dateStr})`;
 
-      // Lọc các đơn thật thuộc ngày này
+      const dYear = d.getFullYear();
+      const dMonth = d.getMonth();
+      const dDate = d.getDate();
+
+      // Khớp chính xác đơn hàng theo ngày thực tế
       const matchedOrders = filteredOrders.filter(order => {
-        const cTime = order.createdAt || '';
-        const dSlot = order.deliverySlot || '';
-        
-        // Nếu đơn tạo hôm nay hoặc có định dạng giờ HH:mm
-        if (isToday) {
-          if (cTime.includes(dateStr) || /^\d{1,2}:\d{2}/.test(cTime) || cTime === 'Hôm nay') {
-            return true;
-          }
-        } else {
-          if (cTime.includes(dateStr) || dSlot.includes(dateStr)) {
-            return true;
-          }
-        }
-        return false;
+        const oDate = getOrderDateObj(order);
+        return oDate.getFullYear() === dYear && oDate.getMonth() === dMonth && oDate.getDate() === dDate;
       });
 
       const dayRevenue = matchedOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
@@ -220,7 +268,16 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     const approvalRatePercent = Math.round((approvedCount / filteredOrders.length) * 100);
 
     // Xây dựng mô tả bộ lọc đang áp dụng
+    const timeRangeLabels = {
+      '7_days': '7 ngày gần nhất',
+      'today': 'Hôm nay',
+      'month': 'Tháng này',
+      'all': 'Toàn thời gian',
+      'custom': `Tùy chỉnh (${startDate || 'Từ đầu'} đến ${endDate || 'Hiện tại'})`
+    };
+
     const filterDesc = [
+      `Thời gian: ${timeRangeLabels[timeRange] || timeRange}`,
       statusFilter !== 'all' ? `Trạng thái: ${statusLabels[statusFilter] || statusFilter}` : 'Trạng thái: Tất cả',
       searchKeyword ? `Từ khóa: "${searchKeyword}"` : null,
       (minPrice || maxPrice) ? `Khoảng giá: ${minPrice ? Number(minPrice).toLocaleString('vi-VN') + 'đ' : '0đ'} - ${maxPrice ? Number(maxPrice).toLocaleString('vi-VN') + 'đ' : 'Vô cực'}` : null
@@ -420,20 +477,36 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            {/* 1. Tìm kiếm từ khóa */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            {/* 1. Lọc khoảng thời gian */}
+            <div>
+              <label className="block font-bold text-gray-700 mb-1">📅 Khoảng thời gian</label>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5] font-semibold"
+              >
+                <option value="7_days">7 ngày gần nhất</option>
+                <option value="today">Hôm nay</option>
+                <option value="month">Tháng này</option>
+                <option value="all">Toàn thời gian</option>
+                <option value="custom">Tùy chọn khoảng ngày</option>
+              </select>
+            </div>
+
+            {/* 2. Tìm kiếm từ khóa */}
             <div>
               <label className="block font-bold text-gray-700 mb-1">🔍 Tìm kiếm thông tin</label>
               <input
                 type="text"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="Tên khách, SĐT, mã đơn, mẫu hoa..."
+                placeholder="Tên khách, SĐT, mã đơn..."
                 className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] bg-[#FAF8F5]"
               />
             </div>
 
-            {/* 2. Lọc trạng thái đơn */}
+            {/* 3. Lọc trạng thái đơn */}
             <div>
               <label className="block font-bold text-gray-700 mb-1">🏷️ Trạng thái đơn</label>
               <select
@@ -445,10 +518,11 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
                 <option value="ARRANGING">Đang cắm hoa</option>
                 <option value="PHOTO_READY">Chờ duyệt ảnh</option>
                 <option value="DELIVERING">Đang giao hàng</option>
+                <option value="COMPLETED">Đã hoàn tất</option>
               </select>
             </div>
 
-            {/* 3. Giá tối thiểu */}
+            {/* 4. Giá tối thiểu */}
             <div>
               <label className="block font-bold text-gray-700 mb-1">💰 Giá tối thiểu (VNĐ)</label>
               <input
@@ -460,7 +534,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
               />
             </div>
 
-            {/* 4. Giá tối đa */}
+            {/* 5. Giá tối đa */}
             <div>
               <label className="block font-bold text-gray-700 mb-1">💰 Giá tối đa (VNĐ)</label>
               <input
@@ -472,6 +546,31 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
               />
             </div>
           </div>
+
+          {/* Ô chọn ngày tùy chỉnh khi timeRange === 'custom' */}
+          {timeRange === 'custom' && (
+            <div className="pt-2 flex flex-wrap items-center gap-3 border-t border-gray-100 text-xs animate-fade-in">
+              <span className="font-bold text-gray-700">Chọn khoảng ngày báo cáo:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Từ ngày:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-lg text-xs font-mono font-bold bg-[#FAF8F5]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Đến ngày:</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-lg text-xs font-mono font-bold bg-[#FAF8F5]"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -597,11 +696,16 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
                   />
                   
                   {/* Day Label */}
-                  <span className={`text-[10px] font-medium truncate w-full text-center ${
-                    isToday ? 'font-bold text-[#1B3B2B]' : 'text-gray-500'
-                  }`}>
-                    {d.shortDay}
-                  </span>
+                  <div className="text-center w-full">
+                    <span className={`text-[10px] font-medium block truncate ${
+                      isToday ? 'font-bold text-[#1B3B2B]' : 'text-gray-600'
+                    }`}>
+                      {d.shortDay}
+                    </span>
+                    <span className="text-[9px] text-gray-400 block font-mono">
+                      {d.dateFormatted}
+                    </span>
+                  </div>
                 </div>
               );
             })}
