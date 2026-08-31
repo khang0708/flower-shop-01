@@ -68,21 +68,23 @@
 
 ---
 
-### 💬 Tính Năng Nâng Cấp: Cấu Hình Zalo Cá Nhân Chạy Động 100% & Tích Hợp Toàn Diện
-* **Files:** [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx), [`src/services/zaloService.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/services/zaloService.js), [`src/components/Header.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Header.jsx), [`src/components/Footer.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/Footer.jsx), [`src/components/FlowerGrid.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx), [`src/components/ProductDetailModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ProductDetailModal.jsx), [`src/components/CartDrawer.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CartDrawer.jsx), [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`src/components/OrderTrackingModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx), [`src/components/AIFloristModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AIFloristModal.jsx), [`src/components/PrintInvoiceModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)
-* **Chi tiết nâng cấp:**
-  1. **Cấu hình Zalo Cá Nhân 100% Động:**
-     * Lưu trữ và đồng bộ hóa qua REST API (`/api/settings` - `settings.json`) và LocalStorage. Khi admin thay đổi số điện thoại trong mục **"Cài Đặt Zalo & Telegram"**, toàn bộ các nút Zalo trên toàn hệ thống lập tức cập nhật theo số mới.
-     * Mã QR kết bạn Zalo trong Admin Dashboard tự sinh theo số điện thoại cấu hình.
-  2. **Tích hợp Zalo tại tất cả các điểm chạm khách hàng:**
-     * **Top Banner Header & Footer:** Hiển thị Hotline/Zalo động kèm liên kết gọi điện và chat trực tiếp.
-     * **Màn Hình Theo Dõi Đơn Hoa ([`OrderTrackingModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/OrderTrackingModal.jsx)):** Nút "Chat Zalo Với Xưởng" và "Yêu Cầu Sửa Hoa" tự động mở Zalo nghệ nhân kèm nội dung mã đơn hàng.
-     * **Chi Tiết Mẫu Hoa ([`ProductDetailModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/ProductDetailModal.jsx)):** Thêm nút *"Tư Vấn Zalo"* gửi sẵn tên mẫu hoa, kích thước và mức giá cho nghệ nhân.
-     * **Trang Chủ ([`FlowerGrid`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/FlowerGrid.jsx)):** Banner cắm hoa theo ngân sách riêng mở Zalo tư vấn kèm số điện thoại xưởng.
-     * **Cắm Hoa AI ([`AIFloristModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/AIFloristModal.jsx)):** Nút gửi ảnh mẫu AI đã nhận diện qua Zalo xưởng.
-     * **Giỏ Hàng ([`CartDrawer`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CartDrawer.jsx)) & Thanh Toán ([`CheckoutModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx)):** Thêm lối tắt tư vấn hoa và hỗ trợ đặt gấp qua Zalo.
-     * **Hóa Đơn In Ấn ([`PrintInvoiceModal`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/PrintInvoiceModal.jsx)):** In Hotline/Zalo động trên phiếu giao hàng.
-* **Commit:** `a735f77`
+### 📅 Khắc Phục Lỗi Ngày Giao Hoa: Tự Động Load Mới Theo Ngày Thực Tế Mỗi Lần Đặt Đơn
+* **Files:** [`src/components/CheckoutModal.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/components/CheckoutModal.jsx), [`server/server.js`](file:///Users/macbook/dev-learning/flora-bloom-shop/server/server.js), [`src/context/ShopContext.jsx`](file:///Users/macbook/dev-learning/flora-bloom-shop/src/context/ShopContext.jsx)
+* **Nguyên nhân lỗi trước đó:** 
+  * Trong `CheckoutModal.jsx`, mảng ngày giao hoa bị gán cứng tĩnh `['Hôm nay (25/08)', 'Ngày mai (26/08)', 'Chọn ngày khác 📅']`. Khi khách hàng đặt đơn vào các ngày sau (27/08, 31/08, 01/09...), modal vẫn giữ nguyên mốc ngày 25/08 và không có ô chọn lịch cụ thể dẫn đến sai lệch ngày hẹn giao hoa.
+* **Giải pháp khắc phục triệt để:**
+  1. **Bộ tính toán ngày giao hoa động (`getDynamicDeliveryDates`):**
+     * Tự động quét `new Date()` thời gian thực mỗi khi mở Modal Thanh toán để sinh ra:
+       * **Hôm nay:** `Hôm nay (DD/MM)`
+       * **Ngày mai:** `Ngày mai (DD/MM)`
+       * **Ngày mốt:** `Thứ X (DD/MM)`
+  2. **Tích hợp Bộ Chọn Ngày Tùy Chỉnh (HTML5 Date Picker):**
+     * Thêm ô chọn ngày theo lịch `<input type="date" min={today} />` cho phép khách hàng chủ động chọn ngày giao hoa bất kỳ trong tương lai (đặt trước cho sinh nhật, kỷ niệm, ngày lễ 20/10, Valentine...).
+  3. **Chuẩn hóa chuỗi thông tin giao hàng (`deliverySlot`):**
+     * Kết hợp chính xác: `${currentDeliveryDateLabel} • ${selectedSlot}` (VD: `Hôm nay (31/08) • 14:00 - 16:00` hoặc `Ngày 15/09/2026 • 08:00 - 10:00`).
+  4. **Thời gian tạo đơn (`createdAt`) chuẩn xác:**
+     * Lưu đầy đủ cả giờ và ngày tạo đơn: `${timeStr} (${dateStr})` trên cả Client và Server Node.js.
+* **Commit:** `d35af5f`
 
 ---
 
