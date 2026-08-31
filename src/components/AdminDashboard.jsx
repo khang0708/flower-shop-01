@@ -55,7 +55,8 @@ import {
   Star,
   Upload,
   Image as ImageIcon,
-  Truck
+  Truck,
+  Menu
 } from 'lucide-react';
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -97,6 +98,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   } = useShop();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory' | 'shipping_config'
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedOrderFilter, setSelectedOrderFilter] = useState('all');
   const [browserNotifStatus, setBrowserNotifStatus] = useState(getBrowserNotificationPermission());
   const [printOrder, setPrintOrder] = useState(null);
@@ -533,199 +535,291 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         </div>
       )}
 
-      {/* Admin Top Header */}
-      <header className="bg-[#1B3B2B] text-white border-b border-[#264A37] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          
-          <div className="flex items-center gap-3 sm:gap-4">
+      {/* BỐ CỤC CHÍNH: SIDEBAR DỌC (PHƯƠNG ÁN 2) & KHU VỰC LÀM VIỆC */}
+      <div className="flex min-h-screen">
+        
+        {/* LỚP PHỦ CHO MOBILE (BACKDROP) */}
+        {isMobileSidebarOpen && (
+          <div 
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+          />
+        )}
+
+        {/* 1. SIDEBAR DỌC BÊN TRÁI (STICKY DESKTOP & DRAWER MOBILE) */}
+        <aside className={`
+          fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-[#1B3B2B] text-white flex-shrink-0 flex flex-col justify-between border-r border-[#153023] shadow-xl transition-transform duration-300 ease-in-out
+          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          {/* Sidebar Top: Brand Header */}
+          <div className="p-5 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-[#F5D6CE] font-serif text-lg font-bold border border-white/10 shadow-xs">
+                🌸
+              </div>
+              <div>
+                <h2 className="font-serif text-base font-bold text-white leading-tight">Flora & Bloom</h2>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] text-emerald-200 uppercase font-bold tracking-wider">Admin Portal</span>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setIsMobileSidebarOpen(false)} 
+              className="md:hidden text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Sidebar Center: 4 Phân Khu Nghiệp Vụ */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-5 text-xs">
+            {[
+              {
+                groupTitle: 'VẬN HÀNH XƯỞNG',
+                items: [
+                  { id: 'orders', label: 'Đơn Hàng & Cắm Mẫu', icon: ShoppingBag, count: orders.length, alert: unreadOrdersCount > 0 },
+                  { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length, danger: inventory.some(i => i.status === 'danger') }
+                ]
+              },
+              {
+                groupTitle: 'SẢN PHẨM & BÁN HÀNG',
+                items: [
+                  { id: 'products_cms', label: 'Danh Mục Mẫu Hoa', icon: Flower2, count: products.length },
+                  { id: 'discounts', label: 'Voucher Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
+                  { id: 'reviews', label: 'Đánh Giá Khách Hàng', icon: MessageSquareHeart, count: reviews?.length || 0 }
+                ]
+              },
+              {
+                groupTitle: 'BÁO CÁO & PHÂN TÍCH',
+                items: [
+                  { id: 'analytics', label: 'Báo Cáo Doanh Thu', icon: BarChart3 }
+                ]
+              },
+              {
+                groupTitle: 'CÀI ĐẶT CỬA HÀNG',
+                items: [
+                  { id: 'shipping_config', label: 'Phí Giao Hoa & Freeship', icon: Truck },
+                  { id: 'zalo_config', label: 'Cấu Hình Zalo & Telegram', icon: Smartphone }
+                ]
+              }
+            ].map((group, gIdx) => (
+              <div key={gIdx} className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-emerald-300/60 uppercase tracking-wider px-3 block">
+                  {group.groupTitle}
+                </span>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          if (item.id === 'orders') resetUnreadOrdersCount();
+                          setIsMobileSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold transition-all text-left group ${
+                          isActive
+                            ? 'bg-[#2E5E45] text-white shadow-sm ring-1 ring-white/10'
+                            : 'text-emerald-100/80 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon className={`w-4 h-4 flex-shrink-0 transition-transform ${isActive ? 'text-[#F5D6CE] scale-110' : 'text-emerald-300/70 group-hover:text-white'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+
+                        {item.count !== undefined && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-extrabold flex-shrink-0 ${
+                            item.danger
+                              ? 'bg-rose-500 text-white animate-pulse'
+                              : isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-white/10 text-emerald-200'
+                          }`}>
+                            {item.count}
+                          </span>
+                        )}
+
+                        {item.alert && (
+                          <span className="w-2 h-2 rounded-full bg-[#E8998D] animate-ping" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sidebar Bottom: Quick Return & User Profile */}
+          <div className="p-4 border-t border-white/10 space-y-3 bg-[#163325]">
             <button
               onClick={onBackToStore}
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-xs font-semibold px-3 py-2 rounded-full transition-all text-emerald-100"
+              className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-emerald-100 hover:text-white py-2 rounded-xl text-xs font-bold transition-all"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">← Về Cửa Hàng</span>
+              <span>← Về Cửa Hàng</span>
             </button>
 
-            <div className="flex items-center gap-2 border-l border-white/20 pl-3 sm:pl-4">
-              <span className="font-serif text-lg sm:text-xl font-bold tracking-tight">
-                Flora & Bloom
-              </span>
-              <span className="text-[10px] bg-[#E8998D] text-[#1B3B2B] font-extrabold px-2 py-0.5 rounded-md uppercase">
-                Admin
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Notification & Sound Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* Nút Bật/Tắt Chuông Báo */}
-            <button
-              onClick={() => {
-                setIsSoundEnabled(!isSoundEnabled);
-                if (!isSoundEnabled) playTestChime();
-              }}
-              className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full transition-all border ${
-                isSoundEnabled 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 hover:bg-emerald-500/30' 
-                  : 'bg-red-500/20 text-red-300 border-red-400/40 hover:bg-red-500/30'
-              }`}
-              title={isSoundEnabled ? 'Chuông báo đơn mới đang BẬT (Click để tắt)' : 'Chuông báo đơn mới đang TẮT (Click để bật)'}
-            >
-              {isSoundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              <span className="hidden md:inline text-[11px] font-semibold">{isSoundEnabled ? 'Chuông Bật' : 'Tắt Chuông'}</span>
-            </button>
-
-            {/* Nút Nghe Thử Chuông */}
-            <button
-              onClick={playTestChime}
-              className="text-[11px] bg-white/10 hover:bg-white/20 text-emerald-200 px-2.5 py-1.5 rounded-full transition-all hidden sm:inline"
-              title="Phát thử âm thanh chuông báo Botanical Crystal Chime"
-            >
-              🎵 Thử Chuông
-            </button>
-
-            {/* Chuông Thông Báo Bell Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setIsNotifDropdownOpen(!isNotifDropdownOpen);
-                  if (!isNotifDropdownOpen) resetUnreadOrdersCount();
-                }}
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all relative text-white"
-                title="Thông báo đơn mới"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadOrdersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#E8998D] text-[#1B3B2B] text-[10px] font-extrabold flex items-center justify-center animate-pulse border-2 border-[#1B3B2B]">
-                    {unreadOrdersCount}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <img
+                  src={adminUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}
+                  alt={adminUser?.name || "Admin"}
+                  className="w-7 h-7 rounded-full object-cover border border-[#E8998D]"
+                />
+                <div className="min-w-0">
+                  <span className="font-bold text-white text-[11px] block truncate max-w-[100px]">
+                    {adminUser?.name || 'Admin Atelier'}
                   </span>
-                )}
-              </button>
-
-              {/* Notification Dropdown Menu */}
-              {isNotifDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 text-[#222523] text-xs space-y-3 z-50 animate-fade-in">
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <strong className="font-serif text-sm text-[#1B3B2B]">Thông Báo Đơn Hàng</strong>
-                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Radio className="w-2.5 h-2.5 animate-pulse" /> SSE Realtime
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 max-h-56 overflow-y-auto">
-                    {orders.slice(0, 4).map((o) => (
-                      <div
-                        key={o.id}
-                        onClick={() => {
-                          setActiveTab('orders');
-                          setIsNotifDropdownOpen(false);
-                        }}
-                        className="p-2.5 rounded-xl bg-gray-50 hover:bg-[#FAF8F5] cursor-pointer transition-colors border border-gray-100"
-                      >
-                        <div className="flex justify-between font-bold text-[#1B3B2B]">
-                          <span>#{o.orderCode || o.id}</span>
-                          <span className="text-[#C4685A]">{Number(o.totalAmount || 0).toLocaleString('vi-VN')}đ</span>
-                        </div>
-                        <p className="text-[11px] text-gray-600 line-clamp-1 mt-0.5">{o.productName}</p>
-                        <span className="text-[10px] text-gray-400 block mt-1">Người nhận: {o.receiverName} ({o.deliverySlot})</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {browserNotifStatus !== 'granted' && (
-                    <button
-                      onClick={handleRequestBrowserNotif}
-                      className="w-full bg-[#0068FF] hover:bg-blue-600 text-white font-bold py-2 rounded-xl text-center text-[11px] transition-all"
-                    >
-                      🔔 Bật Thông Báo Nổi Màn Hình Máy Tính
-                    </button>
-                  )}
+                  <span className="text-[9px] text-emerald-300 block truncate">
+                    {adminUser?.provider === 'google' ? 'Google SSO' : 'Admin'}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Profile Admin & Nút Đăng Xuất */}
-            <div className="flex items-center gap-2.5 border-l border-white/20 pl-3 sm:pl-4">
-              <img
-                src={adminUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}
-                alt={adminUser?.name || "Admin"}
-                className="w-8 h-8 rounded-full object-cover border-2 border-[#E8998D] shadow-xs"
-              />
-              <div className="hidden md:block text-left text-xs">
-                <span className="font-bold text-white block leading-tight truncate max-w-[130px]">
-                  {adminUser?.name || 'Admin Atelier'}
-                </span>
-                <span className="text-[10px] text-emerald-200">
-                  {adminUser?.provider === 'google' ? '🟢 Google SSO' :
-                   adminUser?.provider === 'facebook' ? '🔵 Facebook' :
-                   adminUser?.provider === 'telegram' ? '✈️ Telegram' : '🔑 Mã PIN'}
-                </span>
               </div>
+
               <button
                 onClick={onLogout}
-                className="flex items-center gap-1.5 bg-white/10 hover:bg-red-500/20 text-emerald-100 hover:text-red-200 px-3 py-1.5 rounded-full transition-all text-xs font-semibold border border-white/15 hover:border-red-400/50 ml-1"
-                title="Đăng xuất khỏi bảng điều hành"
+                className="text-emerald-200 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/20 transition-all"
+                title="Đăng xuất"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Đăng Xuất</span>
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
+        </aside>
 
-        </div>
-      </header>
-
-      {/* Admin Navigation Tabs */}
-      <div className="bg-white border-b border-[#E8EFEA]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2">
-          {[
-            { id: 'orders', label: 'Quản Lý Đơn Hàng & Cắm Mẫu', icon: ShoppingBag, count: orders.length },
-            { id: 'analytics', label: '📊 Báo Cáo Doanh Thu', icon: BarChart3 },
-            { id: 'products_cms', label: 'Quản Lý Mẫu Hoa (Storefront CMS)', icon: Flower2, count: products.length },
-            { id: 'discounts', label: '🎟️ Quản Lý Voucher & Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
-            { id: 'shipping_config', label: '🚚 Phí Giao Hoa & Freeship', icon: Truck, badge: 'Tùy Chỉnh' },
-            { id: 'reviews', label: '⭐ Đánh Giá & Feedback', icon: MessageSquareHeart, count: reviews?.length || 0 },
-            { id: 'zalo_config', label: '💬 Cài Đặt Zalo & Telegram Nhận Đơn', icon: Smartphone, badge: 'Đa Kênh' },
-            { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
+        {/* 2. KHU VỰC NỘI DUNG CHÍNH (RIGHT WORKSPACE) */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#F8FAF9]">
+          
+          {/* Top Navigation Bar */}
+          <header className="bg-white border-b border-[#E8EFEA] sticky top-0 z-30 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between shadow-xs">
+            
+            {/* Left: Mobile Menu Toggle & Breadcrumb Title */}
+            <div className="flex items-center gap-3">
               <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  if (tab.id === 'orders') resetUnreadOrdersCount();
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#1B3B2B] text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-[#FAF8F5]'
-                }`}
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="md:hidden p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
+                aria-label="Mở Menu Admin"
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-                {tab.badge && (
-                  <span className="text-[10px] bg-[#0068FF] text-white px-2 py-0.5 rounded-full font-bold">
-                    {tab.badge}
-                  </span>
-                )}
+                <Menu className="w-5 h-5" />
               </button>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div>
+                <h1 className="font-serif text-base sm:text-lg font-bold text-[#1B3B2B] leading-tight">
+                  {activeTab === 'orders' && '🛍️ Quản Lý Đơn Hàng & Cắm Mẫu'}
+                  {activeTab === 'inventory' && '🌿 Quản Lý Kho Hoa Tươi & Định Lượng'}
+                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Mẫu Hoa'}
+                  {activeTab === 'discounts' && '🎟️ Quản Lý Voucher & Khuyến Mãi'}
+                  {activeTab === 'reviews' && '⭐ Quản Lý Đánh Giá & Feedback Khách Hàng'}
+                  {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
+                  {activeTab === 'shipping_config' && '🚚 Cấu Hình Phí Giao Hoa & Freeship'}
+                  {activeTab === 'zalo_config' && '💬 Cấu Hình Zalo OA & Telegram Nhận Đơn'}
+                </h1>
+                <span className="text-[10px] text-gray-400 hidden sm:block">Flora & Bloom Atelier • Bảng Điều Hành Trung Tâm</span>
+              </div>
+            </div>
+
+            {/* Right: Sound controls, Bell & Profile */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              
+              {/* Nút Bật/Tắt Chuông Báo */}
+              <button
+                onClick={() => {
+                  setIsSoundEnabled(!isSoundEnabled);
+                  if (!isSoundEnabled) playTestChime();
+                }}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all border font-semibold ${
+                  isSoundEnabled 
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' 
+                    : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+                }`}
+                title={isSoundEnabled ? 'Chuông báo đơn mới đang BẬT' : 'Chuông báo đang TẮT'}
+              >
+                {isSoundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-700" /> : <VolumeX className="w-3.5 h-3.5 text-rose-700" />}
+                <span className="hidden sm:inline">{isSoundEnabled ? 'Chuông Bật' : 'Tắt Chuông'}</span>
+              </button>
+
+              {/* Nút Nghe Thử Chuông */}
+              <button
+                onClick={playTestChime}
+                className="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2.5 py-1.5 rounded-full transition-all hidden sm:inline"
+                title="Phát thử âm thanh chuông báo"
+              >
+                🎵 Thử
+              </button>
+
+              {/* Chuông Thông Báo Bell Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotifDropdownOpen(!isNotifDropdownOpen);
+                    if (!isNotifDropdownOpen) resetUnreadOrdersCount();
+                  }}
+                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all relative text-gray-700"
+                  title="Thông báo đơn mới"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadOrdersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#C4685A] text-white text-[10px] font-extrabold flex items-center justify-center animate-pulse border-2 border-white">
+                      {unreadOrdersCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown Menu */}
+                {isNotifDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 text-[#222523] text-xs space-y-3 z-50 animate-fade-in">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                      <strong className="font-serif text-sm text-[#1B3B2B]">Thông Báo Đơn Hàng</strong>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Radio className="w-2.5 h-2.5 animate-pulse" /> SSE Realtime
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                      {orders.slice(0, 4).map((o) => (
+                        <div
+                          key={o.id}
+                          onClick={() => {
+                            setActiveTab('orders');
+                            setIsNotifDropdownOpen(false);
+                          }}
+                          className="p-2.5 rounded-xl bg-gray-50 hover:bg-[#FAF8F5] cursor-pointer transition-colors border border-gray-100"
+                        >
+                          <div className="flex justify-between font-bold text-[#1B3B2B]">
+                            <span>#{o.orderCode || o.id}</span>
+                            <span className="text-[#C4685A]">{Number(o.totalAmount || 0).toLocaleString('vi-VN')}đ</span>
+                          </div>
+                          <p className="text-[11px] text-gray-600 line-clamp-1 mt-0.5">{o.productName}</p>
+                          <span className="text-[10px] text-gray-400 block mt-1">Người nhận: {o.receiverName} ({o.deliverySlot})</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {browserNotifStatus !== 'granted' && (
+                      <button
+                        onClick={handleRequestBrowserNotif}
+                        className="w-full bg-[#0068FF] hover:bg-blue-600 text-white font-bold py-2 rounded-xl text-center text-[11px] transition-all"
+                      >
+                        🔔 Bật Thông Báo Nổi Màn Hình Máy Tính
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </header>
+
+          {/* Main Content Body */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         
         {/* TAB 1: QUẢN LÝ ĐƠN HÀNG */}
         {activeTab === 'orders' && (
@@ -2008,6 +2102,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         )}
 
       </main>
+    </div>
+  </div>
 
       {/* MODAL THÊM / SỬA MẪU HOA */}
       {isProductModalOpen && (
