@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import confetti from 'canvas-confetti';
 import { FLOWERS_DATA } from '../data/flowers';
 import { 
   fetchProductsApi, 
@@ -331,7 +330,7 @@ export const ShopProvider = ({ children }) => {
     }
   ]);
 
-  // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel
+  // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel (trì hoãn sau first paint)
   useEffect(() => {
     const initDataFromApi = async () => {
       try {
@@ -339,9 +338,9 @@ export const ShopProvider = ({ children }) => {
         if (health.status === 'ONLINE') {
           setIsApiConnected(true);
           const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiReviews, apiSettings] = await Promise.all([
-            fetchProductsApi(),
-            fetchOrdersApi(),
-            fetchInventoryApi(),
+            fetchProductsApi().catch(() => null),
+            fetchOrdersApi().catch(() => null),
+            fetchInventoryApi().catch(() => null),
             fetchDiscountsApi().catch(() => null),
             fetchReviewsApi().catch(() => null),
             fetchSettingsApi().catch(() => null)
@@ -362,11 +361,11 @@ export const ShopProvider = ({ children }) => {
           }
         }
       } catch (err) {
-        console.log('API Server running in local fallback state mode');
+        // Fallback local mode
       }
     };
 
-    initDataFromApi();
+    const timer = setTimeout(initDataFromApi, 60);
 
     // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
     let eventSource = null;
@@ -408,6 +407,7 @@ export const ShopProvider = ({ children }) => {
     );
 
     return () => {
+      clearTimeout(timer);
       if (eventSource) eventSource.close();
       cleanupTabListener();
     };
@@ -705,12 +705,14 @@ export const ShopProvider = ({ children }) => {
     broadcastNewOrderToTabs(newOrder);
     triggerAdminOrderAlert(newOrder);
 
-    confetti({
-      particleCount: 120,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#1B3B2B', '#E8998D', '#F5D6CE', '#5C8A70']
-    });
+    import('canvas-confetti').then(({ default: confetti }) => {
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#1B3B2B', '#E8998D', '#F5D6CE', '#5C8A70']
+      });
+    }).catch(() => {});
   };
 
   const approvePhotoProof = async () => {
@@ -732,12 +734,14 @@ export const ShopProvider = ({ children }) => {
       status: 'DELIVERING'
     }));
 
-    confetti({
-      particleCount: 60,
-      spread: 60,
-      origin: { y: 0.5 },
-      colors: ['#5C8A70', '#E8998D']
-    });
+    import('canvas-confetti').then(({ default: confetti }) => {
+      confetti({
+        particleCount: 60,
+        spread: 60,
+        origin: { y: 0.5 },
+        colors: ['#5C8A70', '#E8998D']
+      });
+    }).catch(() => {});
   };
 
   const updateOrderByAdmin = async (orderId, updates) => {
