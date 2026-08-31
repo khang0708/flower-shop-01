@@ -83,6 +83,15 @@ assert(getStatus(4) === 'danger', 'Mức tồn <= 5 là danger');
 assert(getStatus(18) === 'warning', 'Mức tồn 6-20 là warning');
 assert(getStatus(45) === 'normal', 'Mức tồn > 20 là normal');
 
+// 6. Native XLSX Generator (Zero-warning OpenXML binary format)
+import { SimpleZip } from '../src/utils/excelGenerator.js';
+
+const testZip = new SimpleZip();
+testZip.addFile('test.txt', 'Hello Flora & Bloom');
+const zipBytes = testZip.generateUint8Array();
+assert(zipBytes.length > 50, 'Bộ nén SimpleZip tạo thành công mảng binary');
+assert(zipBytes[0] === 0x50 && zipBytes[1] === 0x4B, 'Header file đúng chuẩn PKZip signature (0x504B)');
+
 console.log('\n====================================================');
 console.log(`🏁 KẾT QUẢ KIỂM THỬ: ${passedTests} ĐẠT / ${passedTests + failedTests} BÀI TEST`);
 console.log('====================================================');
