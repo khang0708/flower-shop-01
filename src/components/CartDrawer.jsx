@@ -1,6 +1,7 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { X, Trash2, Plus, Minus, ArrowRight, Sparkles } from 'lucide-react';
+import { openPersonalZaloChat } from '../services/zaloService';
+import { X, Trash2, Plus, Minus, ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
 
 export const CartDrawer = () => {
   const { 
@@ -14,7 +15,8 @@ export const CartDrawer = () => {
     discountAmount,
     applyCoupon,
     removeCoupon,
-    setIsCheckoutOpen 
+    setIsCheckoutOpen,
+    shopZaloPhone
   } = useShop();
 
   const [couponInput, setCouponInput] = React.useState('');
@@ -252,6 +254,21 @@ export const CartDrawer = () => {
                   {Math.max(0, cartTotal - discountAmount).toLocaleString('vi-VN')}đ
                 </span>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const itemsSummary = cart.map(it => it.name).join(', ');
+                  openPersonalZaloChat(
+                    shopZaloPhone,
+                    `Chào shop, tôi đang chọn các mẫu hoa: ${itemsSummary}. Tôi muốn nhờ shop tư vấn thêm!`
+                  );
+                }}
+                className="w-full py-2 px-3 bg-blue-50/80 hover:bg-blue-100 text-[#0068FF] rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors border border-blue-100"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Cần đổi hoa / viết thiệp riêng? Chat Zalo ({shopZaloPhone})</span>
+              </button>
 
               <button
                 onClick={() => {

@@ -9,9 +9,16 @@ export const isRunningInZalo = () => {
   return /zalo/i.test(userAgent) || Boolean(window.ZLP) || Boolean(window.ZMP);
 };
 
-// 1. Mở Chat Zalo Cá Nhân qua Số Điện Thoại
-export const openPersonalZaloChat = (phone = '0909123456', prefilledText = '') => {
-  const cleanPhone = phone.replace(/\D/g, '');
+// 1. Mở Chat Zalo Cá Nhân qua Số Điện Thoại (Có hỗ trợ copy tin nhắn mẫu)
+export const openPersonalZaloChat = (phone = '0843066604', prefilledText = '') => {
+  const cleanPhone = (phone || '0843066604').replace(/\D/g, '');
+  
+  if (prefilledText && typeof navigator !== 'undefined' && navigator.clipboard) {
+    try {
+      navigator.clipboard.writeText(prefilledText);
+    } catch (e) {}
+  }
+  
   // Link chuẩn của Zalo cá nhân
   const zaloUrl = `https://zalo.me/${cleanPhone}`;
   

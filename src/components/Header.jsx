@@ -22,7 +22,8 @@ export const Header = () => {
     setIsZaloMode,
     searchQuery,
     setSearchQuery,
-    activeOrder
+    activeOrder,
+    shopZaloPhone
   } = useShop();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -57,7 +58,13 @@ export const Header = () => {
               <span>{isZaloMode ? '⚡ Zalo Mini App' : 'Mô phỏng Zalo'}</span>
             </button>
             <span className="text-white/60">|</span>
-            <a href="tel:1900888999" className="hover:text-white font-medium">Hotline: 1900 888 999</a>
+            <a 
+              href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`} 
+              className="hover:text-white font-medium flex items-center gap-1"
+              title={`Hotline / Zalo: ${shopZaloPhone}`}
+            >
+              Hotline/Zalo: <strong>{shopZaloPhone}</strong>
+            </a>
           </div>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useShop } from '../context/ShopContext';
 import { Printer, X, Sparkles, FileText, Heart, CheckCircle2 } from 'lucide-react';
 
 export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
+  const { shopZaloPhone } = useShop();
   const [printSection, setPrintSection] = useState('all'); // 'all' | 'invoice_only' | 'card_only'
 
   if (!isOpen || !order) return null;
@@ -159,7 +161,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                     FLORA & BLOOM ATELIER
                   </h2>
                   <p className="text-[11px] text-gray-600 italic">Tiệm Hoa Tươi Nghệ Thuật & Thiết Kế Quà Tặng</p>
-                  <p className="text-[10px] text-gray-700 mt-0.5 font-medium">📍 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM • Hotline: 1900 888 999</p>
+                  <p className="text-[10px] text-gray-700 mt-0.5 font-medium">📍 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM • Hotline/Zalo: {shopZaloPhone}</p>
                 </div>
 
                 <div className="text-right">

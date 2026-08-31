@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { BOUQUET_SIZES, WRAPPING_PAPERS, ADDONS } from '../data/flowers';
 import { CardPreviewer } from './CardPreviewer';
-import { X, Check, Star, ShoppingBag, ShieldCheck, Truck } from 'lucide-react';
+import { openPersonalZaloChat } from '../services/zaloService';
+import { X, Check, Star, ShoppingBag, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { quickViewProduct, setQuickViewProduct, addToCart } = useShop();
+  const { quickViewProduct, setQuickViewProduct, addToCart, shopZaloPhone } = useShop();
 
   if (!quickViewProduct) return null;
 
@@ -213,7 +214,7 @@ export const ProductDetailModal = () => {
             </div>
 
             {/* Footer Nút Thêm Giỏ Hàng & Tính Giá */}
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-4">
+            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-gray-500 block">Tổng thanh toán mẫu này:</span>
                 <span className="text-2xl font-extrabold text-[#1B3B2B] font-sans">
@@ -221,13 +222,30 @@ export const ProductDetailModal = () => {
                 </span>
               </div>
 
-              <button
-                onClick={handleAddToCart}
-                className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95"
-              >
-                <ShoppingBag className="w-4 h-4 text-[#F5D6CE]" />
-                <span>Thêm Vào Giỏ & Đặt Ngay</span>
-              </button>
+              <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    openPersonalZaloChat(
+                      shopZaloPhone,
+                      `Chào shop, tôi muốn hỏi thêm thông tin về mẫu hoa "${quickViewProduct.name}" (Kích thước: ${selectedSize.name}, Giá: ${finalPrice.toLocaleString('vi-VN')}đ)`
+                    );
+                  }}
+                  className="px-4 py-3.5 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  title={`Tư vấn mẫu này qua Zalo (${shopZaloPhone})`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Tư Vấn Zalo</span>
+                </button>
+
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <ShoppingBag className="w-4 h-4 text-[#F5D6CE]" />
+                  <span>Thêm Vào Giỏ & Đặt Ngay</span>
+                </button>
+              </div>
             </div>
 
           </div>

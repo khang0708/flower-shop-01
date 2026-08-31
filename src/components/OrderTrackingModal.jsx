@@ -17,11 +17,20 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+import { openPersonalZaloChat } from '../services/zaloService';
+
 export const OrderTrackingModal = () => {
-  const { isTrackingOpen, setIsTrackingOpen, activeOrder, approvePhotoProof } = useShop();
+  const { isTrackingOpen, setIsTrackingOpen, activeOrder, approvePhotoProof, shopZaloPhone } = useShop();
   const [showCatalogRef, setShowCatalogRef] = useState(false);
 
   if (!isTrackingOpen || !activeOrder) return null;
+
+  const handleChatZaloFlorist = () => {
+    openPersonalZaloChat(
+      shopZaloPhone,
+      `Chào shop, tôi muốn hỏi thăm tiến độ cắm hoa cho mã đơn #${activeOrder.orderCode || activeOrder.id} (${activeOrder.productName || 'Bó Hoa'})`
+    );
+  };
 
   const hasRealPhoto = Boolean(activeOrder.proofPhotoUrl);
   const isDelivering = Boolean(activeOrder.isApproved || activeOrder.status === 'DELIVERING' || activeOrder.status === 'COMPLETED');
@@ -83,21 +92,20 @@ export const OrderTrackingModal = () => {
 
             <div className="flex gap-1.5">
               <a
-                href="tel:1900888999"
+                href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`}
                 className="p-2.5 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-[#1B3B2B] shadow-xs transition-transform active:scale-95"
-                title="Gọi nghệ nhân"
+                title={`Gọi nghệ nhân (${shopZaloPhone})`}
               >
                 <PhoneCall className="w-4 h-4" />
               </a>
-              <a
-                href="https://zalo.me"
-                target="_blank"
-                rel="noreferrer"
-                className="p-2.5 bg-[#0068FF] text-white rounded-full hover:bg-blue-600 shadow-xs transition-transform active:scale-95"
-                title="Chat Zalo Với Xưởng Hoa"
+              <button
+                type="button"
+                onClick={handleChatZaloFlorist}
+                className="p-2.5 bg-[#0068FF] text-white rounded-full hover:bg-blue-600 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
+                title={`Chat Zalo Với Xưởng Hoa (${shopZaloPhone})`}
               >
                 <MessageCircle className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -199,12 +207,14 @@ export const OrderTrackingModal = () => {
                         <ThumbsUp className="w-4 h-4 text-[#F5D6CE]" />
                         <span>Tôi Duyệt Ảnh Hoa Này - Cho Phép Giao Ngay</span>
                       </button>
-                      <a
-                        href="tel:1900888999"
-                        className="text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 px-4 py-3 rounded-xl font-bold transition-all text-center"
+                      <button
+                        type="button"
+                        onClick={handleChatZaloFlorist}
+                        className="text-xs text-[#0068FF] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 py-3 rounded-xl font-bold transition-all text-center flex items-center justify-center gap-1.5 active:scale-95"
                       >
-                        Yêu Cầu Sửa Thêm
-                      </a>
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>Chat Zalo Yêu Cầu Sửa</span>
+                      </button>
                     </div>
                   </div>
                 ) : (

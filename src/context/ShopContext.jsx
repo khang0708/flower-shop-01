@@ -93,7 +93,7 @@ export const ShopProvider = ({ children }) => {
 
   // 2. Cài đặt kết nối Zalo Cá Nhân / Telegram (Lưu bền vững vào LocalStorage & Backend Settings)
   const [shopZaloPhone, setShopZaloPhoneState] = useState(() => {
-    return localStorage.getItem('flora_shop_zalo_phone') || '0909123456';
+    return localStorage.getItem('flora_shop_zalo_phone') || '0843066604';
   });
   const [zaloModeType, setZaloModeType] = useState('personal');
 
@@ -105,9 +105,10 @@ export const ShopProvider = ({ children }) => {
   });
 
   const setShopZaloPhone = (val) => {
-    setShopZaloPhoneState(val);
-    localStorage.setItem('flora_shop_zalo_phone', val);
-    saveSettingsApi({ shopZaloPhone: val }).catch(() => {});
+    const clean = (val || '').trim();
+    setShopZaloPhoneState(clean);
+    localStorage.setItem('flora_shop_zalo_phone', clean);
+    saveSettingsApi({ shopZaloPhone: clean }).catch(() => {});
   };
 
   const setTelegramBotToken = (val) => {

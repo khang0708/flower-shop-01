@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { analyzeFlowerWithAiApi } from '../api';
+import { openPersonalZaloChat } from '../services/zaloService';
 import { Sparkles, Upload, CheckCircle, RefreshCw, ArrowRight, Wand2 } from 'lucide-react';
 
 const PRESET_SAMPLES = [
@@ -52,7 +53,7 @@ const PRESET_SAMPLES = [
 ];
 
 export const AIFloristModal = () => {
-  const { isAIFloristOpen, setIsAIFloristOpen, addToCart } = useShop();
+  const { isAIFloristOpen, setIsAIFloristOpen, addToCart, shopZaloPhone } = useShop();
 
   const [selectedImage, setSelectedImage] = useState(PRESET_SAMPLES[0].image);
   const [selectedSample, setSelectedSample] = useState(PRESET_SAMPLES[0]);
@@ -294,14 +295,20 @@ export const AIFloristModal = () => {
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
-                  <a
-                    href="https://zalo.me"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const detected = analysisResult?.detectedFlowers?.join(', ') || 'Hoa theo ảnh tải lên';
+                      const theme = analysisResult?.style || 'Nghệ thuật';
+                      openPersonalZaloChat(
+                        shopZaloPhone,
+                        `Chào nghệ nhân Flora & Bloom, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
+                      );
+                    }}
+                    className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                   >
-                    Gửi Ảnh Qua Zalo Nghệ Nhân
-                  </a>
+                    <span>💬 Gửi Mẫu Qua Zalo ({shopZaloPhone})</span>
+                  </button>
                 </div>
               </div>
             )}

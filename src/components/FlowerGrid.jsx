@@ -12,6 +12,8 @@ import {
   Tag
 } from 'lucide-react';
 
+import { openPersonalZaloChat } from '../services/zaloService';
+
 export const FlowerGrid = () => {
   const { 
     products, 
@@ -20,7 +22,8 @@ export const FlowerGrid = () => {
     searchQuery, 
     sortBy, 
     setSortBy, 
-    setIsAIFloristOpen 
+    setIsAIFloristOpen,
+    shopZaloPhone
   } = useShop();
 
   const SORT_OPTIONS = [
@@ -168,19 +171,18 @@ export const FlowerGrid = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <a
-            href="https://zalo.me"
-            target="_blank"
-            rel="noreferrer"
-            className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3 rounded-full hover:bg-blue-600 transition-all shadow-sm active:scale-95"
+          <button
+            type="button"
+            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào nghệ nhân Flora & Bloom, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!')}
+            className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3 rounded-full hover:bg-blue-600 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
           >
-            💬 Chat Zalo Với Nghệ Nhân
-          </a>
+            <span>💬 Chat Zalo Với Nghệ Nhân ({shopZaloPhone})</span>
+          </button>
           <a
-            href="tel:1900888999"
+            href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`}
             className="bg-white text-[#1B3B2B] border border-[#D1DFD6] text-xs font-bold px-5 py-3 rounded-full hover:bg-gray-50 transition-all active:scale-95"
           >
-            📞 Gọi 1900 888 999
+            📞 Gọi {shopZaloPhone}
           </a>
         </div>
       </div>

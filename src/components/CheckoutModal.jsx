@@ -15,6 +15,8 @@ import {
   Sparkles
 } from 'lucide-react';
 
+import { openPersonalZaloChat } from '../services/zaloService';
+
 export const CheckoutModal = () => {
   const { 
     isCheckoutOpen, 
@@ -27,7 +29,8 @@ export const CheckoutModal = () => {
     removeCoupon,
     shippingSettings,
     getShippingFee,
-    submitOrder 
+    submitOrder,
+    shopZaloPhone
   } = useShop();
 
   if (!isCheckoutOpen) return null;
@@ -485,6 +488,16 @@ export const CheckoutModal = () => {
                 <Lock className="w-4 h-4 text-[#F5D6CE]" />
                 <span>Hoàn Tất Đặt Hoa Ngay</span>
               </button>
+
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop, tôi đang ở bước thanh toán đơn hoa và cần hỗ trợ tư vấn gấp!')}
+                  className="text-xs text-[#0068FF] hover:underline font-semibold inline-flex items-center gap-1"
+                >
+                  <span>💬 Cần hỗ trợ đặt gấp / thanh toán? Chat Zalo ({shopZaloPhone})</span>
+                </button>
+              </div>
 
               <div className="text-[10px] text-gray-400 text-center space-y-1">
                 <p>🔒 Bảo mật thông tin đơn hàng tuyệt đối</p>

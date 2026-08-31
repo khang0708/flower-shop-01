@@ -1,7 +1,10 @@
 import React from 'react';
+import { useShop } from '../context/ShopContext';
+import { openPersonalZaloChat } from '../services/zaloService';
 import { Phone, Mail, MapPin, ShieldCheck, Heart, Globe, MessageCircle, Lock } from 'lucide-react';
 
 export const Footer = ({ onOpenAdminLogin }) => {
+  const { shopZaloPhone } = useShop();
   return (
     <footer className="bg-[#1B3B2B] text-[#FAF8F5] pt-16 pb-10 border-t border-[#264A37]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,9 +28,14 @@ export const Footer = ({ onOpenAdminLogin }) => {
               <a href="#" className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E8998D] hover:text-white flex items-center justify-center transition-all" title="Instagram">
                 <Globe className="w-4 h-4" />
               </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E8998D] hover:text-white flex items-center justify-center transition-all" title="Zalo OA">
-                <MessageCircle className="w-4 h-4" />
-              </a>
+              <button 
+                type="button"
+                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Flora & Bloom, tôi muốn tư vấn mẫu hoa!')}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0068FF] hover:text-white flex items-center justify-center transition-all" 
+                title={`Chat Zalo (${shopZaloPhone})`}
+              >
+                <span className="font-bold text-xs">Z</span>
+              </button>
               <a href="#" className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E8998D] hover:text-white flex items-center justify-center transition-all" title="Hotline">
                 <Phone className="w-4 h-4" />
               </a>
@@ -72,7 +80,19 @@ export const Footer = ({ onOpenAdminLogin }) => {
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#E8998D] flex-shrink-0" />
-                <span className="font-bold text-white">Hotline: 1900 888 999 (07:00 - 22:00)</span>
+                <a href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`} className="font-bold text-white hover:text-[#E8998D] transition-colors">
+                  Hotline/Zalo: {shopZaloPhone} (07:00 - 22:00)
+                </a>
+              </p>
+              <p className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-[#0068FF] flex-shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop, tôi muốn được tư vấn đặt hoa tươi!')}
+                  className="text-gray-300 hover:text-white transition-colors underline flex items-center gap-1 text-[11px]"
+                >
+                  Chat Zalo Cá Nhân Xưởng Hoa
+                </button>
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#E8998D] flex-shrink-0" />
