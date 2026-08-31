@@ -13,9 +13,12 @@ export const FlowerCard = ({ flower }) => {
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-paper">
         <img
           src={flower.image}
-          alt={flower.name}
+          alt={`Mẫu hoa tươi ${flower.name} - Flora & Bloom`}
+          width="320"
+          height="400"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Overlay Dark Gradient on hover */}

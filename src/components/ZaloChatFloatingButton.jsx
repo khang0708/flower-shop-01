@@ -72,6 +72,7 @@ export const ZaloChatFloatingButton = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-14 h-14 rounded-full bg-[#0068FF] hover:bg-blue-600 text-white shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-300 active:scale-90 relative group border-2 border-white"
         title={`Chat Zalo Cá Nhân (${shopZaloPhone})`}
+        aria-label={`Chat Zalo tư vấn hoa tươi với shop số ${shopZaloPhone}`}
       >
         <span className="font-extrabold text-xl font-sans">Z</span>
         <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" />

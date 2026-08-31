@@ -94,8 +94,12 @@ export const HeroSection = () => {
               {/* Main Image Frame 4:5 */}
               <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white">
                 <img
-                  src="https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=1000&q=85"
-                  alt="Bó hoa nghệ thuật Flora"
+                  src="https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80"
+                  alt="Bó hoa nghệ thuật Juliet Nắng Ban Mai - Flora & Bloom"
+                  width="400"
+                  height="500"
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
                 />
                 
@@ -112,7 +116,11 @@ export const HeroSection = () => {
               <div className="absolute -bottom-4 -left-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-[#E8EFEA] flex items-center gap-3 animate-fade-in">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                  alt="Florist"
+                  alt="Nghệ nhân cắm hoa Minh Thư"
+                  width="40"
+                  height="40"
+                  loading="lazy"
+                  decoding="async"
                   className="w-10 h-10 rounded-full object-cover border border-[#1B3B2B]"
                 />
                 <div>
