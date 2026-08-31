@@ -133,18 +133,19 @@ export const ShopProvider = ({ children }) => {
     saveSettingsApi({ isSoundEnabled: val }).catch(() => {});
   };
 
-  // 3.1. Cấu hình Phí Giao Hoa & Freeship
+  // 3.1. Cấu hình Phí Giao Hoa & Freeship (Xử lý linh hoạt qua Admin hoặc Tự Động)
   const [shippingSettings, setShippingSettingsState] = useState(() => {
     try {
       const cached = localStorage.getItem('flora_shipping_settings');
       if (cached) return JSON.parse(cached);
     } catch (e) {}
     return {
+      shippingMode: 'admin_confirm', // 'admin_confirm' (Xưởng xác nhận báo ship) | 'auto' (Tự động theo bảng giá)
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
       isFreeShippingEnabled: true,
-      freeShippingNote: 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+      freeShippingNote: 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
     };
   });
 
@@ -160,17 +161,26 @@ export const ShopProvider = ({ children }) => {
   };
 
   const getShippingFee = useCallback((type = 'timeslot', subtotal = 0) => {
-    const { standardFee = 35000, expressFee = 60000, freeShippingThreshold = 1000000, isFreeShippingEnabled = true } = shippingSettings;
+    const { 
+      shippingMode = 'admin_confirm', 
+      standardFee = 35000, 
+      expressFee = 60000, 
+      freeShippingThreshold = 1000000, 
+      isFreeShippingEnabled = true 
+    } = shippingSettings;
+
     const isFreeship = isFreeShippingEnabled && subtotal >= freeShippingThreshold;
+    if (isFreeship) return 0;
+
+    // Chế độ Admin xử lý phí ship: Tạm tính 0đ tại bước đặt hoa, shop báo phí ship thực tế sau
+    if (shippingMode === 'admin_confirm') {
+      return 0;
+    }
 
     if (type === 'express') {
-      if (isFreeship) {
-        return Math.max(0, Number(expressFee) - Number(standardFee));
-      }
       return Number(expressFee);
     }
 
-    if (isFreeship) return 0;
     return Number(standardFee);
   }, [shippingSettings]);
 
@@ -764,6 +774,40 @@ export const ShopProvider = ({ children }) => {
     broadcastOrderUpdateToTabs(orderId, updates);
   };
 
+  // Cập nhật phí ship riêng cho từng đơn hàng từ Admin Dashboard
+  const updateOrderShippingFee = async (orderId, newShippingFee) => {
+    const fee = Math.max(0, Number(newShippingFee) || 0);
+    const targetOrder = orders.find(o => o.id === orderId || o.orderCode === orderId);
+    if (!targetOrder) return;
+
+    // Tính lại totalAmount chuẩn xác
+    const itemsTotal = Array.isArray(targetOrder.items) && targetOrder.items.length > 0
+      ? targetOrder.items.reduce((sum, it) => sum + Number(it.price || 0), 0)
+      : Number(targetOrder.productPrice || targetOrder.totalAmount || 0);
+
+    const discount = Number(targetOrder.discountAmount || 0);
+    const newTotalAmount = Math.max(0, itemsTotal - discount + fee);
+
+    const updates = {
+      shippingFee: fee,
+      totalAmount: newTotalAmount,
+      isShippingConfirmed: true,
+      shippingConfirmedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    try {
+      await updateOrderStatusApi(targetOrder.id, updates);
+    } catch (e) {}
+
+    setOrders(prev => prev.map(o => (o.id === targetOrder.id ? { ...o, ...updates } : o)));
+    if (activeOrder && (activeOrder.id === targetOrder.id || activeOrder.orderCode === targetOrder.id)) {
+      setActiveOrder(prev => ({ ...prev, ...updates }));
+    }
+
+    broadcastOrderUpdateToTabs(targetOrder.id, updates);
+    return updates;
+  };
+
   const resetUnreadOrdersCount = () => {
     setUnreadOrdersCount(0);
   };
@@ -789,6 +833,7 @@ export const ShopProvider = ({ children }) => {
         shippingSettings,
         updateShippingSettings,
         getShippingFee,
+        updateOrderShippingFee,
         unreadOrdersCount,
         resetUnreadOrdersCount,
         latestNewOrder,

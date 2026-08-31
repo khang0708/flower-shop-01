@@ -282,6 +282,15 @@ export const OrderTrackingModal = () => {
             <p className="pl-6 text-[#1B3B2B] font-bold">
               ⏱️ Khung giờ hẹn: {activeOrder.deliverySlot}
             </p>
+            <div className="pl-6 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-200">
+              <span className="text-gray-600">
+                🚚 Phí giao hoa: <strong>{Number(activeOrder.shippingFee || 0) === 0 ? 'Freeship (0đ)' : `${Number(activeOrder.shippingFee).toLocaleString('vi-VN')}đ`}</strong>
+                {activeOrder.isShippingConfirmed && <span className="text-[10px] text-emerald-700 ml-1.5 font-bold">(✓ Xưởng đã xác nhận)</span>}
+              </span>
+              <span className="text-sm font-extrabold text-[#1B3B2B] font-mono">
+                Tổng thanh toán: {Number(activeOrder.totalAmount || 0).toLocaleString('vi-VN')}đ
+              </span>
+            </div>
             {activeOrder.cardMessage && (
               <div className="ml-6 p-3 bg-white rounded-xl border border-dashed border-[#E8998D] italic text-[#1B3B2B]">
                 💌 Lời chúc thiệp: "{activeOrder.cardMessage}"

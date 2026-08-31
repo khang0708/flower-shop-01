@@ -223,6 +223,31 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                         <td className="p-2 text-right font-bold font-mono">{formattedAmount}đ</td>
                       </tr>
                     )}
+                    {/* Dòng Phí Giao Hoa */}
+                    <tr className="bg-gray-50 text-gray-800">
+                      <td className="p-2 text-center font-mono border-r border-gray-200">#</td>
+                      <td className="p-2 font-medium border-r border-gray-200">
+                        🚚 Phí giao hoa tận tay (Flora Express)
+                        {order.isShippingConfirmed && <span className="text-[10px] text-emerald-800 font-bold ml-1.5">(Xưởng đã xác nhận)</span>}
+                      </td>
+                      <td className="p-2 text-right font-mono font-bold text-gray-900">
+                        {Number(order.shippingFee || 0) === 0 ? 'Freeship (0đ)' : `${Number(order.shippingFee).toLocaleString('vi-VN')}đ`}
+                      </td>
+                    </tr>
+
+                    {/* Dòng Giảm giá Voucher nếu có */}
+                    {Number(order.discountAmount || 0) > 0 && (
+                      <tr className="bg-rose-50/50 text-rose-800">
+                        <td className="p-2 text-center font-mono border-r border-gray-200">%</td>
+                        <td className="p-2 font-medium border-r border-gray-200">
+                          🎁 Chiết khấu ưu đãi voucher
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold text-rose-700">
+                          -{Number(order.discountAmount).toLocaleString('vi-VN')}đ
+                        </td>
+                      </tr>
+                    )}
+
                     <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
                       <td colSpan={2} className="p-2 text-right text-gray-900 font-bold">
                         TỔNG CỘNG THANH TOÁN (ĐÃ GỒM SHIP & VAT):

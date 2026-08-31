@@ -588,9 +588,17 @@ export const CheckoutModal = () => {
                   <span>Tiền hoa & quà:</span>
                   <span className="font-semibold text-gray-900">{cartTotal.toLocaleString('vi-VN')}đ</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Phí giao hoa tận tay:</span>
-                  <span className="font-semibold text-gray-900">{shippingFee.toLocaleString('vi-VN')}đ</span>
+                  <span className="font-semibold text-gray-900">
+                    {isFreeshipEligible ? (
+                      <span className="text-emerald-700 font-bold">Freeship (0đ)</span>
+                    ) : shippingSettings?.shippingMode === 'admin_confirm' ? (
+                      <span className="text-[#C4685A] font-bold text-[11px]">Xưởng báo sau khi nhận địa chỉ (0đ)</span>
+                    ) : (
+                      `${shippingFee.toLocaleString('vi-VN')}đ`
+                    )}
+                  </span>
                 </div>
 
                 {appliedCoupon && (

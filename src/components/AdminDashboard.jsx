@@ -85,6 +85,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setIsSoundEnabled,
     shippingSettings,
     updateShippingSettings,
+    updateOrderShippingFee,
     unreadOrdersCount,
     resetUnreadOrdersCount,
     latestNewOrder,
@@ -107,24 +108,30 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [proofNoteInput, setProofNoteInput] = useState('');
   const [proofTabMode, setProofTabMode] = useState('upload'); // 'upload' | 'preset' | 'url'
 
+  // State Chỉnh sửa phí ship nhanh cho từng đơn hàng
+  const [editingShippingOrderId, setEditingShippingOrderId] = useState(null);
+  const [customShippingInput, setCustomShippingInput] = useState('');
+
   // State Cấu hình Phí Giao Hoa & Freeship
   const [shippingForm, setShippingForm] = useState({
+    shippingMode: shippingSettings?.shippingMode ?? 'admin_confirm',
     standardFee: shippingSettings?.standardFee ?? 35000,
     expressFee: shippingSettings?.expressFee ?? 60000,
     freeShippingThreshold: shippingSettings?.freeShippingThreshold ?? 1000000,
     isFreeShippingEnabled: shippingSettings?.isFreeShippingEnabled ?? true,
-    freeShippingNote: shippingSettings?.freeShippingNote ?? 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+    freeShippingNote: shippingSettings?.freeShippingNote ?? 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
   });
   const [isShippingSaved, setIsShippingSaved] = useState(false);
 
   useEffect(() => {
     if (shippingSettings) {
       setShippingForm({
+        shippingMode: shippingSettings.shippingMode ?? 'admin_confirm',
         standardFee: shippingSettings.standardFee ?? 35000,
         expressFee: shippingSettings.expressFee ?? 60000,
         freeShippingThreshold: shippingSettings.freeShippingThreshold ?? 1000000,
         isFreeShippingEnabled: shippingSettings.isFreeShippingEnabled ?? true,
-        freeShippingNote: shippingSettings.freeShippingNote ?? 'Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ'
+        freeShippingNote: shippingSettings.freeShippingNote ?? 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
       });
     }
   }, [shippingSettings]);
@@ -132,6 +139,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const handleSaveShippingSettings = (e) => {
     e.preventDefault();
     updateShippingSettings({
+      shippingMode: shippingForm.shippingMode || 'admin_confirm',
       standardFee: Number(shippingForm.standardFee) || 0,
       expressFee: Number(shippingForm.expressFee) || 0,
       freeShippingThreshold: Number(shippingForm.freeShippingThreshold) || 0,
@@ -331,14 +339,28 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     }
   };
 
-  const handleOpenPersonalZaloForOrder = (order) => {
-    const msg = openPersonalZaloToCustomer(
-      order.customerPhone, 
-      order.orderCode || order.id, 
-      order.proofPhotoUrl || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
-      order.customerName
-    );
-    setCopyToast(`Đã copy nội dung gửi duyệt ảnh cho ${order.customerName}! Hãy bấm Dán (Paste) vào Zalo.`);
+  const handleQuickSetOrderShipping = async (orderId, fee) => {
+    await updateOrderShippingFee(orderId, fee);
+    setEditingShippingOrderId(null);
+    setCopyToast(`✓ Đã cập nhật phí giao hoa thành ${Number(fee).toLocaleString('vi-VN')}đ! Tổng tiền đơn đã được tính lại.`);
+    setTimeout(() => setCopyToast(''), 3500);
+  };
+
+  const handleSendShippingZaloQuote = (order) => {
+    const shipFee = Number(order.shippingFee || 0);
+    const shipText = shipFee === 0 ? 'Miễn phí giao hoa (Freeship 0đ)' : `${shipFee.toLocaleString('vi-VN')}đ`;
+    const message = `🌸 Chào ${order.customerName}, Flora & Bloom Studio xin gửi thông tin xác nhận & báo giá đơn hoa #${order.orderCode || order.id}:\n\n` +
+      `💐 Mẫu hoa: ${order.productName}\n` +
+      `📍 Giao đến: ${order.receiverAddress}\n` +
+      `⏱️ Khung giờ hẹn: ${order.deliverySlot}\n` +
+      `🚚 Phí giao hoa xưởng xác nhận: ${shipText}\n` +
+      `💰 TỔNG CỘNG THANH TOÁN: ${Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ\n\n` +
+      `👉 Xưởng hoa đang tiến hành tuyển chọn cành tươi để cắm theo mẫu. Khi cắm xong xưởng sẽ gửi ảnh chụp thật cho bạn duyệt trước khi giao nhé!`;
+
+    navigator.clipboard?.writeText(message);
+    const cleanPhone = (order.customerPhone || '').replace(/\D/g, '');
+    window.open(`https://zalo.me/${cleanPhone}`, '_blank');
+    setCopyToast(`🎉 Đã copy báo giá & phí ship cho ${order.customerName}! Hãy bấm Dán (Paste) vào Zalo.`);
     setTimeout(() => setCopyToast(''), 4000);
   };
 
@@ -725,6 +747,109 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         <p>Địa chỉ: {order.receiverAddress}</p>
                         <p className="text-[#C4685A] font-bold pt-1">⏱️ Khung giờ: {order.deliverySlot}</p>
                       </div>
+
+                      {/* BẢNG XỬ LÝ PHÍ GIAO HÀNG TRỰC TIẾP TỪ ADMIN */}
+                      <div className="bg-[#F0F5F2] p-3.5 rounded-2xl border border-[#D1DFD6] space-y-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 font-bold text-[#1B3B2B]">
+                            <Truck className="w-4 h-4 text-[#5C8A70]" />
+                            <span>Xác Nhận Phí Giao Hoa (Admin Xử Lý):</span>
+                          </div>
+                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            Number(order.shippingFee) > 0 
+                              ? 'bg-[#1B3B2B] text-white' 
+                              : order.isShippingConfirmed 
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-900 animate-pulse'
+                          }`}>
+                            {Number(order.shippingFee) > 0 
+                              ? `Phí ship: ${Number(order.shippingFee).toLocaleString('vi-VN')}đ` 
+                              : order.isShippingConfirmed
+                              ? 'Freeship (0đ)'
+                              : '⏳ Chưa xác nhận phí ship'}
+                          </span>
+                        </div>
+
+                        {/* Quick Presets for florists */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-gray-500 font-semibold block">Chọn nhanh mức phí theo cước Grab / Ahamove:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { label: 'Freeship (0đ)', val: 0 },
+                              { label: 'Gần 20k', val: 20000 },
+                              { label: 'Nội thành 30k', val: 30000 },
+                              { label: 'Tiêu chuẩn 35k', val: 35000 },
+                              { label: 'Hỏa tốc 50k', val: 50000 },
+                              { label: 'Ngoại thành 70k', val: 70000 }
+                            ].map((preset) => (
+                              <button
+                                key={preset.val}
+                                type="button"
+                                onClick={() => handleQuickSetOrderShipping(order.id, preset.val)}
+                                className={`text-[10px] px-2 py-1 rounded-lg font-bold transition-all ${
+                                  Number(order.shippingFee) === preset.val && order.isShippingConfirmed
+                                    ? 'bg-[#1B3B2B] text-white shadow-xs'
+                                    : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-200'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Custom Shipping Input & Zalo Quote Button */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-200/60">
+                          {editingShippingOrderId === order.id ? (
+                            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                value={customShippingInput}
+                                onChange={(e) => setCustomShippingInput(e.target.value)}
+                                placeholder="Nhập số tiền (VD: 45000)"
+                                className="p-1.5 rounded-lg border border-gray-300 text-xs w-28 bg-white font-mono"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleQuickSetOrderShipping(order.id, Number(customShippingInput) || 0)}
+                                className="bg-[#1B3B2B] text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-[#264A37]"
+                              >
+                                Lưu
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingShippingOrderId(null)}
+                                className="text-gray-500 hover:text-gray-800 text-[10px] px-2 py-1.5"
+                              >
+                                Hủy
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingShippingOrderId(order.id);
+                                setCustomShippingInput(String(order.shippingFee || 35000));
+                              }}
+                              className="text-[11px] font-bold text-[#1B3B2B] hover:underline flex items-center gap-1"
+                            >
+                              ✏️ Nhập số tiền ship khác
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleSendShippingZaloQuote(order)}
+                            className="ml-auto bg-[#0068FF] hover:bg-blue-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95"
+                            title="Tự động copy tin nhắn báo giá hoa + tiền ship và mở Zalo gửi khách hàng"
+                          >
+                            <span>💬 Báo Giá & Phí Ship Qua Zalo</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="lg:col-span-5 bg-[#F4F7F5] p-4 rounded-2xl border border-[#D1DFD6] flex flex-col justify-between space-y-3">
@@ -1032,6 +1157,50 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-6">
                 <form onSubmit={handleSaveShippingSettings} className="space-y-6 text-xs">
                   
+                  {/* CHỌN CHẾ ĐỘ XỬ LÝ PHÍ GIAO HÀNG */}
+                  <div className="p-5 bg-[#FAF8F5] rounded-3xl border border-gray-200 space-y-3">
+                    <label className="font-bold text-gray-900 text-sm block">
+                      ⚙️ Cơ Chế Tính & Xác Nhận Phí Ship:
+                    </label>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Chế độ 1: Admin xử lý (Khuyên dùng) */}
+                      <div 
+                        onClick={() => setShippingForm({ ...shippingForm, shippingMode: 'admin_confirm' })}
+                        className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                          shippingForm.shippingMode === 'admin_confirm'
+                            ? 'bg-white border-[#1B3B2B] ring-2 ring-[#1B3B2B]/20 shadow-xs'
+                            : 'bg-white/60 border-gray-200 hover:border-gray-300 opacity-80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold text-xs text-[#1B3B2B] mb-1">
+                          <span>🌸 Xưởng Báo Phí Ship (Admin xử lý)</span>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Khuyên dùng</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          Khách đặt đơn tạm tính 0đ ship. Nghệ nhân/chủ shop kiểm tra địa chỉ và báo phí ship chính xác theo Grab/Ahamove qua Zalo.
+                        </p>
+                      </div>
+
+                      {/* Chế độ 2: Tự động theo bảng giá */}
+                      <div 
+                        onClick={() => setShippingForm({ ...shippingForm, shippingMode: 'auto' })}
+                        className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                          shippingForm.shippingMode === 'auto'
+                            ? 'bg-white border-[#1B3B2B] ring-2 ring-[#1B3B2B]/20 shadow-xs'
+                            : 'bg-white/60 border-gray-200 hover:border-gray-300 opacity-80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold text-xs text-gray-800 mb-1">
+                          <span>⚡ Tự Động Theo Bảng Giá Cố Định</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          Tự động cộng phí ship cố định ({Number(shippingForm.standardFee || 35000).toLocaleString('vi-VN')}đ khung giờ / {Number(shippingForm.expressFee || 60000).toLocaleString('vi-VN')}đ hỏa tốc) vào tổng đơn khi khách đặt.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* 1. Phí Giao Tiêu Chuẩn */}
                   <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-200 space-y-3">
                     <div className="flex items-center justify-between">
