@@ -1,0 +1,22 @@
+# Flora & Bloom Atelier
+
+> Flora & Bloom là tiệm hoa tươi nghệ thuật thủ công cao cấp tại Việt Nam, chuyên cung cấp hoa sinh nhật, hoa khai trương, hoa tình yêu và dịch vụ thiết kế hoa theo ngân sách riêng. Điểm đặc trưng là chụp ảnh hoa thật tại xưởng gửi khách duyệt trước khi giao hỏa tốc 60-90 phút.
+
+## Dịch Vụ & Mẫu Hoa Tươi
+
+- [Danh Mục Mẫu Hoa Tươi](https://florabloom.vn/#catalog): Bộ sưu tập các mẫu bó hoa, giỏ hoa, bình hoa nghệ thuật cập nhật mỗi sáng.
+- [Hoa Sinh Nhật & Kỷ Niệm](https://florabloom.vn/#birthday): Mẫu hoa thiết kế tinh tế tặng người thương, bạn bè, đối tác.
+- [Hoa Khai Trương Tài Lộc](https://florabloom.vn/#opening): Giỏ hoa sang trọng chúc mừng đối tác, doanh nghiệp hồng phát.
+- [Thẩm Định Mẫu Hoa Với AI](https://florabloom.vn/#ai-florist): Phân tích ảnh mẫu hoa khách hàng gửi bằng trí tuệ nhân tạo.
+- [Theo Dõi Đơn & Duyệt Ảnh Hoa Thật](https://florabloom.vn/#tracking): Khách hàng duyệt ảnh hoa cắm thực tế trước khi shipper giao hàng.
+
+## Kênh Liên Hệ & Đặt Hoa Nhanh
+
+- [Tư Vấn Zalo Trực Tiếp](https://zalo.me/0843066604): Hotline/Zalo cá nhân nghệ nhân tiệm hoa 0843066604.
+- [Thông Tin Cửa Hàng](https://florabloom.vn/#about): 128 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh.
+- [Đánh Giá Khách Hàng Thực Tế](https://florabloom.vn/#reviews): Trải nghiệm và hình ảnh nhận hoa thực tế từ khách hàng.
+
+## API & Tích Hợp Hệ Thống
+
+- [Products API](https://florabloom.vn/api/products): REST API lấy danh sách các mẫu hoa tươi và giá bán.
+- [Orders API](https://florabloom.vn/api/orders): REST API tạo và theo dõi trạng thái đơn đặt hoa.
