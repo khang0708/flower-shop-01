@@ -18,9 +18,10 @@ import {
 } from 'lucide-react';
 
 import { openPersonalZaloChat } from '../services/zaloService';
+import { generateMessengerOrderInquiry } from '../services/facebookService';
 
 export const OrderTrackingModal = () => {
-  const { isTrackingOpen, setIsTrackingOpen, activeOrder, approvePhotoProof, shopZaloPhone } = useShop();
+  const { isTrackingOpen, setIsTrackingOpen, activeOrder, approvePhotoProof, shopZaloPhone, facebookSettings } = useShop();
   const [showCatalogRef, setShowCatalogRef] = useState(false);
 
   if (!isTrackingOpen || !activeOrder) return null;
@@ -30,6 +31,10 @@ export const OrderTrackingModal = () => {
       shopZaloPhone,
       `Chào shop, tôi muốn hỏi thăm tiến độ cắm hoa cho mã đơn #${activeOrder.orderCode || activeOrder.id} (${activeOrder.productName || 'Bó Hoa'})`
     );
+  };
+
+  const handleChatMessengerFlorist = () => {
+    generateMessengerOrderInquiry(facebookSettings?.pageId, activeOrder.orderCode || activeOrder.id);
   };
 
   const hasRealPhoto = Boolean(activeOrder.proofPhotoUrl);
@@ -90,7 +95,19 @@ export const OrderTrackingModal = () => {
               </div>
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
+              {facebookSettings?.isEnabled !== false && (
+                <button
+                  type="button"
+                  onClick={handleChatMessengerFlorist}
+                  className="p-2.5 bg-gradient-to-tr from-[#0084FF] to-[#A824FF] text-white rounded-full hover:opacity-90 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
+                  title="Trao đổi với xưởng qua Facebook Messenger"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
+                  </svg>
+                </button>
+              )}
               <a
                 href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`}
                 className="p-2.5 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-[#1B3B2B] shadow-xs transition-transform active:scale-95"
@@ -104,7 +121,7 @@ export const OrderTrackingModal = () => {
                 className="p-2.5 bg-[#0068FF] text-white rounded-full hover:bg-blue-600 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
                 title={`Chat Zalo Với Xưởng Hoa (${shopZaloPhone})`}
               >
-                <MessageCircle className="w-4 h-4" />
+                <span className="font-bold text-xs">Z</span>
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { OccasionFilter } from './components/OccasionFilter';
 import { FlowerGrid } from './components/FlowerGrid';
-import { ZaloChatFloatingButton } from './components/ZaloChatFloatingButton';
+import { SocialChatHubFloatingButton } from './components/SocialChatHubFloatingButton';
 import { Footer } from './components/Footer';
 
 // Code-splitting lazy load các thành phần nặng không cần tải ở màn hình ban đầu
@@ -121,8 +121,8 @@ function AppContent() {
         </Suspense>
       </main>
 
-      {/* Floating Real Zalo Chat Button */}
-      <ZaloChatFloatingButton />
+      {/* Floating Multi-Channel Social Chat Hub (Messenger + Zalo) */}
+      <SocialChatHubFloatingButton />
 
       {/* Modals & Drawers */}
       <Suspense fallback={null}>

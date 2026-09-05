@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { analyzeFlowerWithAiApi } from '../api';
 import { openPersonalZaloChat } from '../services/zaloService';
+import { generateMessengerAIInquiry } from '../services/facebookService';
 import { Sparkles, Upload, CheckCircle, RefreshCw, ArrowRight, Wand2 } from 'lucide-react';
 
 const PRESET_SAMPLES = [
@@ -53,7 +54,7 @@ const PRESET_SAMPLES = [
 ];
 
 export const AIFloristModal = () => {
-  const { isAIFloristOpen, setIsAIFloristOpen, addToCart, shopZaloPhone } = useShop();
+  const { isAIFloristOpen, setIsAIFloristOpen, addToCart, shopZaloPhone, facebookSettings } = useShop();
 
   const [selectedImage, setSelectedImage] = useState(PRESET_SAMPLES[0].image);
   const [selectedSample, setSelectedSample] = useState(PRESET_SAMPLES[0]);
@@ -295,20 +296,37 @@ export const AIFloristModal = () => {
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const detected = analysisResult?.detectedFlowers?.join(', ') || 'Hoa theo ảnh tải lên';
-                      const theme = analysisResult?.style || 'Nghệ thuật';
-                      openPersonalZaloChat(
-                        shopZaloPhone,
-                        `Chào nghệ nhân Flora & Bloom, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
-                      );
-                    }}
-                    className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
-                  >
-                    <span>💬 Gửi Mẫu Qua Zalo ({shopZaloPhone})</span>
-                  </button>
+                  <div className="flex gap-2">
+                    {facebookSettings?.isEnabled !== false && (
+                      <button
+                        type="button"
+                        onClick={() => generateMessengerAIInquiry(facebookSettings?.pageId, analysisResult)}
+                        className="flex-1 bg-gradient-to-r from-[#0084FF] via-[#7B3FE4] to-[#A824FF] text-white text-xs font-bold px-4 py-3.5 rounded-full hover:opacity-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                        title="Gửi mẫu hoa AI này qua Facebook Messenger"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
+                        </svg>
+                        <span>Gửi Messenger</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const detected = analysisResult?.detectedFlowers?.join(', ') || 'Hoa theo ảnh tải lên';
+                        const theme = analysisResult?.style || 'Nghệ thuật';
+                        openPersonalZaloChat(
+                          shopZaloPhone,
+                          `Chào nghệ nhân Flora & Bloom, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
+                        );
+                      }}
+                      className="flex-1 bg-[#0068FF] text-white text-xs font-bold px-4 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                    >
+                      <span className="font-extrabold text-xs">Z</span>
+                      <span>Gửi Zalo ({shopZaloPhone})</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

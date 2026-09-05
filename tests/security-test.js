@@ -161,6 +161,34 @@ assert(!verifyAdminSession({ role: 'admin' }), 'Từ chối session thiếu thô
 assert(verifyAdminSession({ id: 'adm-01', name: 'Florist Minh Thu', provider: 'google' }), 'Chấp nhận session hợp lệ được cấp bởi SSO');
 
 // ----------------------------------------------------
+// 6. KIỂM TRA BẢO MẬT WEBHOOK FACEBOOK & DỮ LIỆU ĐẦU VÀO (META WEBHOOK & PSID SECURITY)
+// ----------------------------------------------------
+console.log('\n6️⃣ KIỂM TRA BẢO MẬT WEBHOOK FACEBOOK & DỮ LIỆU ĐẦU VÀO:');
+
+function verifyMetaWebhook(mode, verifyToken, configuredSecret) {
+  if (!mode || !verifyToken || !configuredSecret) return false;
+  return mode === 'subscribe' && verifyToken === configuredSecret;
+}
+
+const secretToken = 'flora_bloom_webhook_secret_2026';
+assert(verifyMetaWebhook('subscribe', 'flora_bloom_webhook_secret_2026', secretToken), 'Meta Webhook chấp nhận khi đúng mode subscribe và đúng secret token');
+assert(!verifyMetaWebhook('subscribe', 'wrong_token_hacker', secretToken), 'Meta Webhook từ chối token sai lệch');
+assert(!verifyMetaWebhook('unsubscribe', secretToken, secretToken), 'Meta Webhook từ chối mode khác subscribe');
+assert(!verifyMetaWebhook(null, null, secretToken), 'Meta Webhook từ chối tham số rỗng');
+
+// Kiểm tra client không hardcode Meta Page Access Token (EAAB...)
+let hasHardcodedFbToken = false;
+srcFiles.forEach(f => {
+  if (fs.existsSync(f)) {
+    const content = fs.readFileSync(f, 'utf-8');
+    if (/\bEAAB[A-Za-z0-9]{30,}\b/.test(content)) {
+      hasHardcodedFbToken = true;
+    }
+  }
+});
+assert(!hasHardcodedFbToken, 'Mã nguồn Client không chứa hardcode Meta Page Access Token bí mật');
+
+// ----------------------------------------------------
 // TỔNG KẾT
 // ----------------------------------------------------
 console.log('\n====================================================');

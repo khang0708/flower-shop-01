@@ -397,3 +397,23 @@ export const checkHealthApi = async () => {
   return res;
 };
 
+// ----------------------------------------------------
+// 10. FACEBOOK MESSENGER API
+// ----------------------------------------------------
+export const sendFacebookTestApi = async (fbConfig) => {
+  const res = await request('/facebook/test-connection', {
+    method: 'POST',
+    body: JSON.stringify(fbConfig)
+  });
+  return res;
+};
+
+export const sendFacebookMessageApi = async (payload) => {
+  const res = await request('/facebook/send-message', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return res;
+};
+
+

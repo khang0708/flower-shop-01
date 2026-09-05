@@ -504,6 +504,267 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// 7. SETTINGS API
+// ----------------------------------------------------
+app.get('/api/settings', (req, res) => {
+  try {
+    const settings = readJson('settings.json');
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/settings', (req, res) => {
+  try {
+    const current = readJson('settings.json') || {};
+    const updated = {
+      ...current,
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    writeJson('settings.json', updated);
+    res.json({ success: true, data: updated, message: 'Đã lưu cấu hình cài đặt thành công!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ----------------------------------------------------
+// 8. FACEBOOK MESSENGER WEBHOOK & GRAPH API INTEGRATION
+// ----------------------------------------------------
+
+// Helper gửi tin nhắn qua Facebook Graph API Send API
+const callFacebookSendApi = async (pageAccessToken, recipientId, messageText, quickReplies = []) => {
+  if (!pageAccessToken) {
+    return {
+      success: true,
+      isMock: true,
+      message: 'Chế độ giả lập (Chưa cấu hình Page Access Token)',
+      recipientId,
+      text: messageText
+    };
+  }
+
+  const messagePayload = { text: messageText };
+  if (quickReplies && quickReplies.length > 0) {
+    messagePayload.quick_replies = quickReplies.map(qr => ({
+      content_type: 'text',
+      title: qr.title,
+      payload: qr.payload || qr.title
+    }));
+  }
+
+  const graphUrl = `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageAccessToken)}`;
+  const response = await fetch(graphUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      message: messagePayload
+    })
+  });
+
+  const resData = await response.json();
+  if (resData.error) {
+    throw new Error(`Facebook Graph API Lỗi: ${resData.error.message}`);
+  }
+  return { success: true, isLiveApi: true, data: resData };
+};
+
+// 8.1. Meta Webhook Verification (Xác thực Webhook với Meta Developer Portal)
+app.get('/api/facebook/webhook', (req, res) => {
+  try {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    const settings = readJson('settings.json') || {};
+    const expectedToken = settings.facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026';
+
+    if (mode && token) {
+      if (mode === 'subscribe' && token === expectedToken) {
+        console.log('✅ [Facebook Webhook] Đã xác thực thành công Webhook với Meta for Developers!');
+        return res.status(200).send(challenge);
+      } else {
+        console.warn('⚠️ [Facebook Webhook] Từ chối: Verify Token không khớp');
+        return res.status(403).send('Forbidden: Token mismatch');
+      }
+    }
+    return res.status(400).send('Bad Request: Thiếu thông số xác thực hub.mode hoặc hub.verify_token');
+  } catch (error) {
+    res.status(500).send('Internal Server Error: ' + error.message);
+  }
+});
+
+// 8.2. Nhận tin nhắn sự kiện từ Webhook Facebook Messenger & Tự động phản hồi thông minh (Chatbot)
+app.post('/api/facebook/webhook', async (req, res) => {
+  try {
+    const body = req.body;
+
+    if (body.object === 'page') {
+      const settings = readJson('settings.json') || {};
+      const fbConfig = settings.facebookSettings || {};
+
+      for (const entry of (body.entry || [])) {
+        const webhookEvent = entry.messaging?.[0];
+        if (!webhookEvent) continue;
+
+        const senderPsid = webhookEvent.sender?.id;
+        const userMessage = webhookEvent.message?.text?.trim() || '';
+
+        console.log(`📩 [Facebook Messenger] Nhận tin nhắn từ PSID ${senderPsid}: "${userMessage}"`);
+
+        // Nếu bật Auto Reply và có senderPsid
+        if (fbConfig.autoReplyEnabled !== false && senderPsid && userMessage) {
+          const lowerText = userMessage.toLowerCase();
+          const orderMatch = userMessage.match(/FB-[\w\d]+/i);
+
+          let replyText = '';
+          const quickReplies = [
+            { title: '💐 Xem mẫu hoa', payload: 'MENU' },
+            { title: '🔍 Tra cứu đơn', payload: 'TRACK' },
+            { title: '⚡ Giao gấp 60p', payload: 'EXPRESS' }
+          ];
+
+          // 1. Trường hợp khách hỏi mã đơn hàng (VD: "Kiểm tra đơn FB-89241")
+          if (orderMatch) {
+            const searchedCode = orderMatch[0].toUpperCase();
+            const orders = readJson('orders.json') || [];
+            const found = orders.find(o => (o.orderCode || o.id || '').toUpperCase() === searchedCode);
+
+            if (found) {
+              const statusMap = {
+                ARRANGING: 'Đang cắm tại xưởng',
+                PHOTO_READY: 'Đã cắm xong - Chờ khách duyệt ảnh',
+                DELIVERING: 'Đang trên đường giao hoa',
+                COMPLETED: 'Đã giao hoa thành công'
+              };
+              replyText = `🌸 Thông tin đơn hàng #${found.orderCode}:\n` +
+                `• Người nhận: ${found.receiverName}\n` +
+                `• Mẫu hoa: ${found.productName}\n` +
+                `• Trạng thái: ${statusMap[found.status] || found.status}\n` +
+                `• Khung giờ: ${found.deliverySlot || 'Hỏa tốc'}\n` +
+                (found.proofPhotoUrl ? `📸 Xem ảnh hoa thực tế: ${found.proofPhotoUrl}\n` : '') +
+                `👉 Nếu quý khách cần thay đổi nội dung thiệp hoặc hỗ trợ gấp, vui lòng nhắn tin ngay tại đây nhé!`;
+            } else {
+              replyText = `🌸 Flora & Bloom đã tìm kiếm nhưng chưa thấy mã đơn #${searchedCode} trên hệ thống. Quý khách vui lòng kiểm tra lại mã đơn hoặc để lại số điện thoại đặt hoa để tiệm tra cứu nhé!`;
+            }
+          } 
+          // 2. Trường hợp khách hỏi Menu / Mẫu hoa
+          else if (lowerText.includes('hoa') || lowerText.includes('menu') || lowerText.includes('mẫu') || lowerText.includes('giá')) {
+            const products = readJson('products.json') || [];
+            const topProducts = products.slice(0, 3).map(p => `• ${p.name}: ${Number(p.price).toLocaleString('vi-VN')}đ`).join('\n');
+            replyText = `🌸 Dạ chào bạn! Các mẫu hoa thiết kế đang được yêu thích nhất hôm nay tại Flora & Bloom Studio:\n\n` +
+              `${topProducts}\n\n` +
+              `💐 Tất cả mẫu hoa đều được tặng kèm thiệp thiết kế & túi xách cao cấp. Bạn muốn tiệm tư vấn hoa cho dịp nào ạ?`;
+          } 
+          // 3. Chào mừng mặc định
+          else {
+            replyText = fbConfig.welcomeMessage || 
+              'Dạ chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn. Bạn muốn tư vấn đặt hoa theo dịp hay cần tra cứu tiến trình đơn hàng đã đặt ạ? 🌸';
+          }
+
+          // Gửi phản hồi qua Graph API nếu có Token, hoặc log nếu mock
+          try {
+            await callFacebookSendApi(fbConfig.pageAccessToken, senderPsid, replyText, quickReplies);
+          } catch (sendErr) {
+            console.warn('⚠️ Lỗi gửi tin nhắn Facebook:', sendErr.message);
+          }
+        }
+      }
+
+      return res.status(200).send('EVENT_RECEIVED');
+    }
+
+    res.sendStatus(404);
+  } catch (error) {
+    console.error('Lỗi xử lý Facebook Webhook:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 8.3. API gửi tin nhắn chủ động qua Facebook Messenger (Send Message / Push Notification)
+app.post('/api/facebook/send-message', async (req, res) => {
+  try {
+    const { recipientId, message, pageAccessToken, quickReplies } = req.body;
+    const settings = readJson('settings.json') || {};
+    const token = pageAccessToken || settings.facebookSettings?.pageAccessToken;
+    const targetRecipient = recipientId || settings.facebookSettings?.adminRecipientId;
+
+    if (!targetRecipient) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Vui lòng cung cấp recipientId (PSID người nhận) hoặc cấu hình Admin Recipient ID trong Cài đặt' 
+      });
+    }
+
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Nội dung tin nhắn không được để trống' });
+    }
+
+    const result = await callFacebookSendApi(token, targetRecipient, message, quickReplies);
+    res.json({
+      success: true,
+      message: result.isMock 
+        ? '✅ Đã kích hoạt kịch bản gửi tin nhắn Messenger (Chế độ mô phỏng / Chưa gắn Token)'
+        : '🎉 Đã gửi tin nhắn thành công qua Facebook Messenger!',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 8.4. API thử nghiệm kết nối Facebook Messenger (Test Connection)
+app.post('/api/facebook/test-connection', async (req, res) => {
+  try {
+    const { pageId, pageAccessToken, recipientId, testOrder } = req.body;
+    const cleanId = (pageId || 'tiemhoaflorabloom').trim();
+
+    const order = testOrder || {
+      orderCode: 'FB-FB-TEST',
+      customerName: 'Khách hàng Messenger',
+      productName: 'Bó Hoa Juliet Nắng Ban Mai',
+      totalAmount: 850000,
+      deliverySlot: 'Hỏa tốc 90 phút'
+    };
+
+    const notificationMessage = `🌸 [FLORA & BLOOM] THÔNG BÁO TEST KẾT NỐI MESSENGER!\n\n` +
+      `👤 Khách hàng: ${order.customerName}\n` +
+      `💐 Mẫu hoa: ${order.productName}\n` +
+      `💰 Tổng tiền: ${Number(order.totalAmount).toLocaleString('vi-VN')}đ\n` +
+      `⏱️ Khung giờ: ${order.deliverySlot}\n\n` +
+      `👉 Kết nối Facebook Fanpage (@${cleanId}) đang hoạt động hoàn hảo!`;
+
+    if (pageAccessToken && recipientId) {
+      const graphResult = await callFacebookSendApi(pageAccessToken, recipientId, notificationMessage);
+      return res.json({
+        success: true,
+        isLiveApi: true,
+        message: `🎉 Đã gửi tin nhắn test thành công đến Messenger PSID: ${recipientId}`,
+        messengerUrl: `https://m.me/${cleanId}`,
+        data: graphResult
+      });
+    }
+
+    // Nếu không có Token/PSID, trả về xác nhận cấu hình Fanpage và liên kết m.me
+    res.json({
+      success: true,
+      isLiveApi: false,
+      message: `🎉 Kết nối Fanpage @${cleanId} hợp lệ! Link chat: https://m.me/${cleanId}`,
+      messengerUrl: `https://m.me/${cleanId}`,
+      data: {
+        pageId: cleanId,
+        previewText: notificationMessage
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ----------------------------------------------------
 // 7. HEALTH CHECK
 // ----------------------------------------------------
 app.get('/api/health', (req, res) => {

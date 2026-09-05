@@ -5,12 +5,17 @@ import {
   openPersonalZaloChat, 
   openPersonalZaloToCustomer 
 } from '../services/zaloService';
+import { 
+  cleanFacebookPageId, 
+  getMessengerUrl, 
+  openFacebookMessenger 
+} from '../services/facebookService';
 import { playTestChime } from '../services/soundService';
 import { 
   requestBrowserNotificationPermission, 
   getBrowserNotificationPermission 
 } from '../services/notificationService';
-import { sendTelegramTestApi, getTelegramChatIdAutoApi } from '../api';
+import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { 
@@ -94,7 +99,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     unreadOrdersCount,
     resetUnreadOrdersCount,
     latestNewOrder,
-    setLatestNewOrder
+    setLatestNewOrder,
+    facebookSettings,
+    updateFacebookSettings
   } = useShop();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory' | 'shipping_config'
@@ -217,7 +224,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     freshDays: 4,
   });
 
-  // State Cài đặt
+  // State Cài đặt Zalo & Telegram
   const [inputShopPhone, setInputShopPhone] = useState(shopZaloPhone);
   const [inputBotToken, setInputBotToken] = useState(telegramBotToken);
   const [inputChatId, setInputChatId] = useState(telegramChatId);
@@ -227,7 +234,19 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [autoDetectMsg, setAutoDetectMsg] = useState(null);
   const [copyToast, setCopyToast] = useState('');
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
-  const [showTelegramGuide, setShowTelegramGuide] = useState(true);
+  const [showTelegramGuide, setShowTelegramGuide] = useState(false);
+
+  // State Cài đặt Facebook Messenger
+  const [inputFbPageId, setInputFbPageId] = useState(facebookSettings?.pageId || 'tiemhoaflorabloom');
+  const [inputFbPageName, setInputFbPageName] = useState(facebookSettings?.pageName || 'Flora & Bloom - Tiệm Hoa Tươi');
+  const [inputFbToken, setInputFbToken] = useState(facebookSettings?.pageAccessToken || '');
+  const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026');
+  const [inputFbRecipientId, setInputFbRecipientId] = useState(facebookSettings?.adminRecipientId || '');
+  const [inputFbEnabled, setInputFbEnabled] = useState(facebookSettings?.isEnabled !== false);
+  const [inputFbWelcomeMsg, setInputFbWelcomeMsg] = useState(facebookSettings?.welcomeMessage || 'Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn.');
+  const [inputFbAutoReply, setInputFbAutoReply] = useState(facebookSettings?.autoReplyEnabled !== false);
+  const [showFbGuide, setShowFbGuide] = useState(false);
+  const [facebookStatus, setFacebookStatus] = useState(null);
 
   // Đồng bộ giá trị từ localStorage/Context vào Form
   useEffect(() => {
@@ -241,6 +260,19 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   useEffect(() => {
     if (shopZaloPhone) setInputShopPhone(shopZaloPhone);
   }, [shopZaloPhone]);
+
+  useEffect(() => {
+    if (facebookSettings) {
+      if (facebookSettings.pageId) setInputFbPageId(facebookSettings.pageId);
+      if (facebookSettings.pageName) setInputFbPageName(facebookSettings.pageName);
+      if (facebookSettings.pageAccessToken !== undefined) setInputFbToken(facebookSettings.pageAccessToken);
+      if (facebookSettings.verifyToken) setInputFbVerifyToken(facebookSettings.verifyToken);
+      if (facebookSettings.adminRecipientId !== undefined) setInputFbRecipientId(facebookSettings.adminRecipientId);
+      if (facebookSettings.isEnabled !== undefined) setInputFbEnabled(facebookSettings.isEnabled);
+      if (facebookSettings.welcomeMessage) setInputFbWelcomeMsg(facebookSettings.welcomeMessage);
+      if (facebookSettings.autoReplyEnabled !== undefined) setInputFbAutoReply(facebookSettings.autoReplyEnabled);
+    }
+  }, [facebookSettings]);
 
   // Cập nhật trạng thái quyền thông báo trình duyệt
   const handleRequestBrowserNotif = async () => {
@@ -315,6 +347,20 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setShopZaloPhone(cleanPhone);
     setTelegramBotToken(cleanToken);
     setTelegramChatId(cleanChatId);
+
+    if (updateFacebookSettings) {
+      updateFacebookSettings({
+        pageId: (inputFbPageId || '').trim(),
+        pageName: (inputFbPageName || '').trim(),
+        pageAccessToken: (inputFbToken || '').trim(),
+        verifyToken: (inputFbVerifyToken || '').trim(),
+        adminRecipientId: (inputFbRecipientId || '').trim(),
+        isEnabled: inputFbEnabled,
+        welcomeMessage: (inputFbWelcomeMsg || '').trim(),
+        autoReplyEnabled: inputFbAutoReply
+      });
+    }
+
     setSaveZaloSuccess(true);
     setTimeout(() => setSaveZaloSuccess(false), 3000);
   };
@@ -350,6 +396,24 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       setTelegramStatus({ success: true, message: res.message });
     } catch (err) {
       setTelegramStatus({ success: false, message: err.message });
+    }
+  };
+
+  const handleTestFacebook = async () => {
+    setFacebookStatus({ loading: true, message: 'Đang gửi tin nhắn test qua Facebook Messenger...' });
+    try {
+      const res = await sendFacebookTestApi({
+        pageId: inputFbPageId,
+        pageAccessToken: inputFbToken,
+        recipientId: inputFbRecipientId
+      });
+      setFacebookStatus({ 
+        success: true, 
+        message: res.message || 'Kết nối Facebook Messenger thành công!',
+        messengerUrl: res.messengerUrl 
+      });
+    } catch (err) {
+      setFacebookStatus({ success: false, message: err.message || 'Lỗi khi kiểm tra kết nối Facebook' });
     }
   };
 
@@ -602,7 +666,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 groupTitle: 'CÀI ĐẶT CỬA HÀNG',
                 items: [
                   { id: 'shipping_config', label: 'Phí Giao Hoa & Freeship', icon: Truck },
-                  { id: 'zalo_config', label: 'Cấu Hình Zalo & Telegram', icon: Smartphone }
+                  { id: 'zalo_config', label: 'Cấu Hình Kênh Chat & MXH', icon: Smartphone }
                 ]
               }
             ].map((group, gIdx) => (
@@ -719,7 +783,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   {activeTab === 'reviews' && '⭐ Quản Lý Đánh Giá & Feedback Khách Hàng'}
                   {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
                   {activeTab === 'shipping_config' && '🚚 Cấu Hình Phí Giao Hoa & Freeship'}
-                  {activeTab === 'zalo_config' && '💬 Cấu Hình Zalo OA & Telegram Nhận Đơn'}
+                  {activeTab === 'zalo_config' && '💬 Cấu Hình Kênh Chat & MXH (Zalo, Telegram, Messenger)'}
                 </h1>
                 <span className="text-[10px] text-gray-400 hidden sm:block">Flora & Bloom Atelier • Bảng Điều Hành Trung Tâm</span>
               </div>
@@ -1868,48 +1932,306 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     )}
                   </div>
 
+                  {/* PHẦN 3: CẤU HÌNH FACEBOOK FANPAGE & MESSENGER API */}
+                  <div className="pt-4 border-t border-gray-100 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#0084FF] to-[#00C6FF] flex items-center justify-center text-white shadow-xs">
+                          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.727 7.195V22l3.414-1.874c.915.253 1.884.39 2.859.39 5.523 0 10-4.145 10-9.257C22 6.145 17.523 2 12 2zm1.066 12.441l-2.718-2.899-5.305 2.899 5.834-6.195 2.784 2.899 5.239-2.899-5.834 6.195z"/>
+                          </svg>
+                        </div>
+                        <label className="font-bold text-gray-800 text-xs">
+                          3. Cấu Hình Facebook Fanpage & Messenger (Meta Webhook & Chatbot):
+                        </label>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowFbGuide(!showFbGuide)}
+                        className="text-[#0084FF] hover:underline flex items-center gap-1 font-semibold text-[11px]"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        <span>{showFbGuide ? 'Ẩn Hướng Dẫn' : 'Hướng Dẫn Kết Nối Meta'}</span>
+                        {showFbGuide ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                    </div>
+
+                    {/* Toggles Bật Kênh & Tự Động Phản Hồi */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 bg-gray-50/80 rounded-2xl border border-gray-200">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={inputFbEnabled}
+                          onChange={(e) => setInputFbEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#0084FF] focus:ring-[#0084FF]"
+                        />
+                        <span className="text-[11px] font-semibold text-gray-700">
+                          Bật nút tư vấn Messenger trên Web
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={inputFbAutoReply}
+                          onChange={(e) => setInputFbAutoReply(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#0084FF] focus:ring-[#0084FF]"
+                        />
+                        <span className="text-[11px] font-semibold text-gray-700">
+                          Tự động tra cứu mã đơn FB-XXXXX
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* BOX HƯỚNG DẪN KẾT NỐI META DEVELOPER WEBHOOK */}
+                    {showFbGuide && (
+                      <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-2xl text-[11px] text-gray-700 space-y-3 animate-fade-in">
+                        <strong className="text-blue-900 block font-serif text-xs">
+                          📖 Hướng Dẫn Kết Nối Fanpage & Webhook Meta for Developers:
+                        </strong>
+
+                        <div className="space-y-2.5 pl-1">
+                          <div className="flex items-start gap-2">
+                            <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</span>
+                            <div>
+                              <span><strong>Lấy Fanpage ID hoặc Username:</strong> Mở Fanpage của bạn trên Facebook → Sao chép Username (VD: <code>tiemhoaflorabloom</code>) hoặc ID Fanpage dán vào ô bên dưới.</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2">
+                            <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">2</span>
+                            <div className="space-y-1">
+                              <span><strong>Cấu hình Webhook trên Meta for Developers:</strong></span>
+                              <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
+                                🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://tiemhoaflorabloom.vn/api/facebook/webhook'}</span>
+                              </p>
+                              <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
+                                🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || 'flora_bloom_webhook_secret_2026'}</span>
+                              </p>
+                              <span className="text-gray-600 block text-[10px]">Trường sự kiện cần tick: <code>messages</code>, <code>messaging_postbacks</code></span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2">
+                            <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">3</span>
+                            <div>
+                              <span><strong>Page Access Token (Tùy chọn cho Graph Send API):</strong> Tạo mã Token truy cập trang trong Meta App để gửi tin nhắn thông báo đẩy trực tiếp tới khách hàng. Nếu để trống, hệ thống sẽ mở ứng dụng Messenger hoặc link <code>m.me</code> trực tiếp.</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[11px] text-gray-700 font-bold block mb-1">Facebook Page ID / Username:</span>
+                        <input
+                          type="text"
+                          value={inputFbPageId}
+                          onChange={(e) => setInputFbPageId(e.target.value)}
+                          placeholder="VD: tiemhoaflorabloom"
+                          className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0084FF] font-mono text-[11px]"
+                        />
+                        <span className="text-[10px] text-gray-400 mt-0.5 block">
+                          Link chat: <a href={`https://m.me/${cleanFacebookPageId(inputFbPageId)}`} target="_blank" rel="noreferrer" className="text-[#0084FF] hover:underline font-semibold">m.me/{cleanFacebookPageId(inputFbPageId)}</a>
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[11px] text-gray-700 font-bold block mb-1">Tên Hiển Thị Fanpage:</span>
+                        <input
+                          type="text"
+                          value={inputFbPageName}
+                          onChange={(e) => setInputFbPageName(e.target.value)}
+                          placeholder="VD: Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật"
+                          className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0084FF] text-[11px]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[11px] text-gray-700 font-bold block mb-1">Webhook Verify Token:</span>
+                        <input
+                          type="text"
+                          value={inputFbVerifyToken}
+                          onChange={(e) => setInputFbVerifyToken(e.target.value)}
+                          placeholder="flora_bloom_webhook_secret_2026"
+                          className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-[11px]"
+                        />
+                      </div>
+
+                      <div>
+                        <span className="text-[11px] text-gray-700 font-bold block mb-1">Admin Recipient ID (PSID nhận tin - tùy chọn):</span>
+                        <input
+                          type="text"
+                          value={inputFbRecipientId}
+                          onChange={(e) => setInputFbRecipientId(e.target.value)}
+                          placeholder="VD: 748920193821092"
+                          className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-[11px]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-gray-700 font-bold block mb-1">Meta Page Access Token (Tùy chọn):</span>
+                      <input
+                        type="password"
+                        value={inputFbToken}
+                        onChange={(e) => setInputFbToken(e.target.value)}
+                        placeholder="EAABw... (Để trống nếu dùng liên kết m.me trực tiếp)"
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-[11px]"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-gray-700 font-bold block mb-1">Tin Nhắn Chào Mừng / Phản Hồi Mặc Định:</span>
+                      <textarea
+                        rows="2"
+                        value={inputFbWelcomeMsg}
+                        onChange={(e) => setInputFbWelcomeMsg(e.target.value)}
+                        placeholder="Nội dung lời chào khi khách nhắn tin vào Fanpage..."
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none text-[11px]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleTestFacebook}
+                        className="bg-gradient-to-r from-[#0084FF] to-[#00C6FF] hover:opacity-90 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                      >
+                        <MessageSquareShare className="w-3.5 h-3.5" />
+                        <span>🧪 Thử Nghiệm Kết Nối Facebook Messenger</span>
+                      </button>
+
+                      <a
+                        href={`https://m.me/${cleanFacebookPageId(inputFbPageId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs flex items-center gap-1 transition-all"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Mở Chat m.me</span>
+                      </a>
+                    </div>
+
+                    {facebookStatus && (
+                      <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${facebookStatus.success ? 'bg-blue-50 text-blue-900 border border-blue-200' : 'bg-red-50 text-red-800 border border-red-200'} animate-fade-in`}>
+                        {facebookStatus.success ? <CheckCircle2 className="w-4 h-4 text-[#0084FF] flex-shrink-0" /> : <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                        <div className="flex-1 flex items-center justify-between gap-2">
+                          <span>{facebookStatus.message}</span>
+                          {facebookStatus.messengerUrl && (
+                            <a
+                              href={facebookStatus.messengerUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#0084FF] underline font-bold text-[11px] flex-shrink-0 flex items-center gap-0.5"
+                            >
+                              Mở Chat <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 text-xs"
                   >
-                    Lưu Cài Đặt Thông Báo
+                    Lưu Cài Đặt Thông Báo & Kênh Chat
                   </button>
 
                   {saveZaloSuccess && (
                     <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium animate-fade-in">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Đã lưu thành công cài đặt!</span>
+                      <span>Đã lưu thành công cài đặt Zalo, Telegram & Facebook Messenger!</span>
                     </div>
                   )}
                 </form>
               </div>
 
-              {/* QR Code Zalo Cá Nhân & Test Âm Thanh (5 Cột) */}
-              <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-col items-center justify-between text-center space-y-4">
-                <h4 className="font-serif text-base font-bold text-[#1B3B2B]">
-                  Mã QR Kết Bạn Zalo Cá Nhân
-                </h4>
+              {/* QR Code Zalo Cá Nhân & Thẻ Messenger & Test Âm Thanh (5 Cột) */}
+              <div className="lg:col-span-5 space-y-5">
+                
+                {/* Thẻ Kết Nối Facebook Fanpage Trực Quan */}
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#0084FF] to-[#00C6FF] flex items-center justify-center text-white shadow-xs">
+                      <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.727 7.195V22l3.414-1.874c.915.253 1.884.39 2.859.39 5.523 0 10-4.145 10-9.257C22 6.145 17.523 2 12 2zm1.066 12.441l-2.718-2.899-5.305 2.899 5.834-6.195 2.784 2.899 5.239-2.899-5.834 6.195z"/>
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="font-bold text-gray-900 text-xs truncate">{inputFbPageName || 'Flora & Bloom Fanpage'}</h5>
+                      <span className="text-[10px] text-gray-500 font-mono">@{cleanFacebookPageId(inputFbPageId)}</span>
+                    </div>
+                  </div>
 
-                <div className="w-36 h-36 bg-gray-50 p-2.5 rounded-2xl border-2 border-dashed border-[#0068FF] shadow-sm flex items-center justify-center">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://zalo.me/${shopZaloPhone.replace(/\s+/g, '')}`}
-                    alt="Zalo QR"
-                    className="w-full h-full object-contain"
-                  />
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50/70 to-indigo-50/40 border border-blue-100 text-[11px] space-y-1.5">
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>Nút Messenger trên Web:</span>
+                      <span className={`font-bold ${inputFbEnabled ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {inputFbEnabled ? '● Đang hiển thị' : '○ Đang ẩn'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>Chatbot tra cứu đơn hoa:</span>
+                      <span className={`font-bold ${inputFbAutoReply ? 'text-blue-600' : 'text-gray-400'}`}>
+                        {inputFbAutoReply ? '● Tự động trả lời' : '○ Đang tắt'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>Chế độ kết nối:</span>
+                      <span className="font-bold text-[#0084FF]">
+                        {inputFbToken ? '● Graph Send API' : '● Direct m.me Link'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <a
+                    href={`https://m.me/${cleanFacebookPageId(inputFbPageId)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 bg-gradient-to-r from-[#0084FF] to-[#00C6FF] hover:opacity-95 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
+                  >
+                    <span>💬 Mở Chat Messenger Thử Nghiệm</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
 
-                <div className="w-full p-4 bg-[#FAF8F5] rounded-2xl text-xs space-y-2 text-left">
-                  <strong className="text-gray-800 block">🔊 Kiểm tra âm thanh chuông báo:</strong>
-                  <div className="flex items-center justify-between">
-                    <span>Chuông Web Audio API:</span>
+                {/* QR Code Zalo Cá Nhân */}
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-col items-center text-center space-y-3">
+                  <h4 className="font-serif text-sm font-bold text-[#1B3B2B]">
+                    Mã QR Kết Bạn Zalo Tư Vấn
+                  </h4>
+
+                  <div className="w-32 h-32 bg-gray-50 p-2 rounded-2xl border-2 border-dashed border-[#0068FF] shadow-xs flex items-center justify-center">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://zalo.me/${shopZaloPhone.replace(/\s+/g, '')}`}
+                      alt="Zalo QR"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-400">Khách quét mã sẽ kết bạn Zalo trực tiếp với chủ tiệm</span>
+                </div>
+
+                {/* Test Âm Thanh Chuông Báo */}
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-2 text-left">
+                  <strong className="text-gray-800 text-xs block">🔊 Kiểm tra âm thanh chuông báo:</strong>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Chuông Web Audio API:</span>
                     <button
                       onClick={playTestChime}
-                      className="px-3 py-1 bg-[#1B3B2B] text-white rounded-lg text-[11px] font-bold"
+                      className="px-3 py-1.5 bg-[#1B3B2B] hover:bg-[#264A37] text-white rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-xs"
                     >
                       Phát Thử Chuông
                     </button>
                   </div>
                 </div>
+
               </div>
 
             </div>

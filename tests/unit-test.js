@@ -92,6 +92,33 @@ const zipBytes = testZip.generateUint8Array();
 assert(zipBytes.length > 50, 'Bộ nén SimpleZip tạo thành công mảng binary');
 assert(zipBytes[0] === 0x50 && zipBytes[1] === 0x4B, 'Header file đúng chuẩn PKZip signature (0x504B)');
 
+// 7. Facebook Messenger Integration & Deep Linking
+import { 
+  cleanFacebookPageId, 
+  getMessengerUrl, 
+  generateMessengerProductInquiry, 
+  generateMessengerOrderInquiry 
+} from '../src/services/facebookService.js';
+
+const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'settings.json'), 'utf-8'));
+assert(Boolean(settings.facebookSettings), 'Cấu hình facebookSettings tồn tại trong settings.json');
+assert(Boolean(settings.facebookSettings?.pageId), 'Facebook Page ID được cấu hình mặc định');
+assert(Boolean(settings.facebookSettings?.verifyToken), 'Facebook Webhook Verify Token được thiết lập');
+
+assert(cleanFacebookPageId('https://facebook.com/tiemhoaflorabloom') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch URL https://facebook.com/...');
+assert(cleanFacebookPageId('https://m.me/tiemhoaflorabloom/') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch link m.me/...');
+assert(cleanFacebookPageId('@tiemhoaflorabloom') === 'tiemhoaflorabloom', 'cleanFacebookPageId loại bỏ ký tự @');
+assert(cleanFacebookPageId('') === 'tiemhoaflorabloom', 'cleanFacebookPageId fallback về fanpage mặc định nếu rỗng');
+
+const messengerUrl = getMessengerUrl('tiemhoaflorabloom', 'Tư vấn hoa');
+assert(messengerUrl.startsWith('https://m.me/tiemhoaflorabloom?text='), 'getMessengerUrl tạo link m.me với param text đúng chuẩn');
+
+const orderInquiryUrl = generateMessengerOrderInquiry('tiemhoaflorabloom', 'FB-99881');
+assert(orderInquiryUrl.includes('FB-99881'), 'generateMessengerOrderInquiry kèm chính xác mã đơn hàng');
+
+const productInquiryUrl = generateMessengerProductInquiry('tiemhoaflorabloom', { name: 'Bó Hoa Hồng Juliet', price: 850000 });
+assert(productInquiryUrl.includes('B%C3%B3%20Hoa%20H%E1%BB%93ng%20Juliet') || productInquiryUrl.includes('Juliet'), 'generateMessengerProductInquiry mã hóa đúng tên sản phẩm');
+
 console.log('\n====================================================');
 console.log(`🏁 KẾT QUẢ KIỂM THỬ: ${passedTests} ĐẠT / ${passedTests + failedTests} BÀI TEST`);
 console.log('====================================================');

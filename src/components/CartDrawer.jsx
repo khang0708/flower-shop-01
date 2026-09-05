@@ -1,6 +1,7 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
 import { openPersonalZaloChat } from '../services/zaloService';
+import { openFacebookMessenger } from '../services/facebookService';
 import { X, Trash2, Plus, Minus, ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
 
 export const CartDrawer = () => {
@@ -16,7 +17,8 @@ export const CartDrawer = () => {
     applyCoupon,
     removeCoupon,
     setIsCheckoutOpen,
-    shopZaloPhone
+    shopZaloPhone,
+    facebookSettings
   } = useShop();
 
   const [couponInput, setCouponInput] = React.useState('');
@@ -255,20 +257,45 @@ export const CartDrawer = () => {
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const itemsSummary = cart.map(it => it.name).join(', ');
-                  openPersonalZaloChat(
-                    shopZaloPhone,
-                    `Chào shop, tôi đang chọn các mẫu hoa: ${itemsSummary}. Tôi muốn nhờ shop tư vấn thêm!`
-                  );
-                }}
-                className="w-full py-2 px-3 bg-blue-50/80 hover:bg-blue-100 text-[#0068FF] rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors border border-blue-100"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Cần đổi hoa / viết thiệp riêng? Chat Zalo ({shopZaloPhone})</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                {facebookSettings?.isEnabled !== false && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const itemsSummary = cart.map(it => it.name).join(', ');
+                      openFacebookMessenger(
+                        facebookSettings?.pageId,
+                        `Chào Flora & Bloom, tôi đang chọn các mẫu hoa trong giỏ: ${itemsSummary}. Tôi muốn nhờ tiệm tư vấn đổi hoa / viết thiệp riêng giúp tôi nhé!`
+                      );
+                    }}
+                    className="py-2 px-2.5 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 text-[#7B3FE4] border border-purple-200 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all"
+                    title="Tư vấn giỏ hàng qua Facebook Messenger"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
+                    </svg>
+                    <span>Messenger</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const itemsSummary = cart.map(it => it.name).join(', ');
+                    openPersonalZaloChat(
+                      shopZaloPhone,
+                      `Chào shop, tôi đang chọn các mẫu hoa: ${itemsSummary}. Tôi muốn nhờ shop tư vấn thêm!`
+                    );
+                  }}
+                  className={`py-2 px-2.5 bg-blue-50/80 hover:bg-blue-100 text-[#0068FF] rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors border border-blue-100 ${
+                    facebookSettings?.isEnabled === false ? 'col-span-2' : ''
+                  }`}
+                  title={`Chat Zalo (${shopZaloPhone})`}
+                >
+                  <span className="font-extrabold text-xs">Z</span>
+                  <span>Chat Zalo</span>
+                </button>
+              </div>
 
               <button
                 onClick={() => {

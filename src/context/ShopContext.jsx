@@ -160,6 +160,35 @@ export const ShopProvider = ({ children }) => {
     });
   };
 
+  // 3.2. Cấu hình Facebook Fanpage & Messenger
+  const [facebookSettings, setFacebookSettingsState] = useState(() => {
+    try {
+      const cached = localStorage.getItem('flora_facebook_settings');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return {
+      pageId: 'tiemhoaflorabloom',
+      pageName: 'Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật',
+      pageAccessToken: '',
+      verifyToken: 'flora_bloom_webhook_secret_2026',
+      adminRecipientId: '',
+      isEnabled: true,
+      welcomeMessage: 'Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.',
+      autoReplyEnabled: true
+    };
+  });
+
+  const updateFacebookSettings = (newSettings) => {
+    setFacebookSettingsState(prev => {
+      const merged = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('flora_facebook_settings', JSON.stringify(merged));
+      } catch (e) {}
+      saveSettingsApi({ facebookSettings: merged }).catch(() => {});
+      return merged;
+    });
+  };
+
   const getShippingFee = useCallback((type = 'timeslot', subtotal = 0) => {
     const { 
       shippingMode = 'admin_confirm', 
@@ -508,6 +537,7 @@ export const ShopProvider = ({ children }) => {
             if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
             if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
             if (apiSettings.shippingSettings) setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
+            if (apiSettings.facebookSettings) setFacebookSettingsState(prev => ({ ...prev, ...apiSettings.facebookSettings }));
           }
         }
       } catch (err) {
@@ -976,6 +1006,8 @@ export const ShopProvider = ({ children }) => {
         setIsSoundEnabled,
         shippingSettings,
         updateShippingSettings,
+        facebookSettings,
+        updateFacebookSettings,
         getShippingFee,
         updateOrderShippingFee,
         unreadOrdersCount,

@@ -3,10 +3,11 @@ import { useShop } from '../context/ShopContext';
 import { BOUQUET_SIZES, WRAPPING_PAPERS, ADDONS } from '../data/flowers';
 import { CardPreviewer } from './CardPreviewer';
 import { openPersonalZaloChat } from '../services/zaloService';
+import { generateMessengerProductInquiry } from '../services/facebookService';
 import { X, Check, Star, ShoppingBag, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { quickViewProduct, setQuickViewProduct, addToCart, shopZaloPhone } = useShop();
+  const { quickViewProduct, setQuickViewProduct, addToCart, shopZaloPhone, facebookSettings } = useShop();
 
   if (!quickViewProduct) return null;
 
@@ -223,6 +224,25 @@ export const ProductDetailModal = () => {
               </div>
 
               <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                {/* Nút Chat Messenger */}
+                {facebookSettings?.isEnabled !== false && (
+                  <button
+                    type="button"
+                    onClick={() => generateMessengerProductInquiry(facebookSettings?.pageId, {
+                      name: `${quickViewProduct.name} (${selectedSize.name})`,
+                      price: finalPrice
+                    })}
+                    className="px-3.5 py-3 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 text-[#7B3FE4] border border-purple-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                    title="Tư vấn mẫu hoa này qua Facebook Messenger"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
+                    </svg>
+                    <span>Messenger</span>
+                  </button>
+                )}
+
+                {/* Nút Tư Vấn Zalo */}
                 <button
                   type="button"
                   onClick={() => {
@@ -231,16 +251,16 @@ export const ProductDetailModal = () => {
                       `Chào shop, tôi muốn hỏi thêm thông tin về mẫu hoa "${quickViewProduct.name}" (Kích thước: ${selectedSize.name}, Giá: ${finalPrice.toLocaleString('vi-VN')}đ)`
                     );
                   }}
-                  className="px-4 py-3.5 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  className="px-3.5 py-3 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
                   title={`Tư vấn mẫu này qua Zalo (${shopZaloPhone})`}
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Tư Vấn Zalo</span>
+                  <span className="font-extrabold text-xs">Z</span>
+                  <span>Zalo</span>
                 </button>
 
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   <ShoppingBag className="w-4 h-4 text-[#F5D6CE]" />
                   <span>Thêm Vào Giỏ & Đặt Ngay</span>
