@@ -140,6 +140,7 @@ app.post('/api/products', (req, res) => {
     products.unshift(newProduct);
     writeJson('products.json', products);
 
+    broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: newProduct });
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: newProduct });
     res.status(201).json({ success: true, data: newProduct });
   } catch (error) {
@@ -151,22 +152,45 @@ app.post('/api/products', (req, res) => {
 app.put('/api/products/:id', (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json');
-    const index = products.findIndex(p => p.id === id);
+    let products = readJson('products.json') || [];
+    let index = products.findIndex(p => p.id === id);
 
     if (index === -1) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu hoa' });
+      // Nếu sản phẩm chưa có trong file products.json nhưng được sửa
+      const newEntry = {
+        id,
+        name: req.body.name || 'Mẫu Hoa',
+        subtitle: req.body.subtitle || '',
+        price: Number(req.body.price) || 500000,
+        originalPrice: Number(req.body.originalPrice) || Number(req.body.price) || 500000,
+        occasion: req.body.occasion || 'love',
+        colorTone: req.body.colorTone || 'pastel',
+        image: req.body.image || '',
+        tags: req.body.tags || ['Mẫu Mới'],
+        meaning: req.body.meaning || '',
+        flowerTypes: req.body.flowerTypes || [],
+        rating: 5.0,
+        reviewsCount: 0,
+        freshDays: Number(req.body.freshDays) || 4,
+        isAvailable: req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : true,
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+      products.push(newEntry);
+      index = products.length - 1;
+    } else {
+      products[index] = {
+        ...products[index],
+        ...req.body,
+        price: req.body.price ? Number(req.body.price) : products[index].price,
+        originalPrice: req.body.originalPrice ? Number(req.body.originalPrice) : products[index].originalPrice,
+        isAvailable: req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : products[index].isAvailable,
+        updatedAt: new Date().toISOString()
+      };
     }
 
-    products[index] = {
-      ...products[index],
-      ...req.body,
-      price: req.body.price ? Number(req.body.price) : products[index].price,
-      originalPrice: req.body.originalPrice ? Number(req.body.originalPrice) : products[index].originalPrice,
-      updatedAt: new Date().toISOString()
-    };
-
     writeJson('products.json', products);
+    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
     res.json({ success: true, data: products[index] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -177,7 +201,7 @@ app.put('/api/products/:id', (req, res) => {
 app.patch('/api/products/:id/toggle', (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json');
+    let products = readJson('products.json') || [];
     const index = products.findIndex(p => p.id === id);
 
     if (index === -1) {
@@ -185,8 +209,10 @@ app.patch('/api/products/:id/toggle', (req, res) => {
     }
 
     products[index].isAvailable = products[index].isAvailable === false ? true : false;
+    products[index].updatedAt = new Date().toISOString();
     writeJson('products.json', products);
 
+    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
     res.json({ success: true, data: products[index] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -197,7 +223,7 @@ app.patch('/api/products/:id/toggle', (req, res) => {
 app.delete('/api/products/:id', (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json');
+    let products = readJson('products.json') || [];
     const filtered = products.filter(p => p.id !== id);
 
     if (filtered.length === products.length) {
@@ -205,11 +231,13 @@ app.delete('/api/products/:id', (req, res) => {
     }
 
     writeJson('products.json', filtered);
+    broadcastAdminEvent({ type: 'PRODUCT_DELETED', productId: id });
     res.json({ success: true, message: 'Đã xóa mẫu hoa thành công' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 // ----------------------------------------------------
 // 2. ORDERS REST API (Quản Lý Đơn Hàng & Vận Hành Florist)

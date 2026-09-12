@@ -96,16 +96,59 @@ export const broadcastOrderUpdateToTabs = (orderId, updates) => {
 };
 
 /**
- * Lắng nghe sự kiện đơn mới & cập nhật đơn từ các tab khác
+ * Phát sự kiện cập nhật thông tin mẫu hoa qua các tab khác
  */
-export const listenToCrossTabOrders = (onNewOrder, onUpdateOrder) => {
+export const broadcastProductUpdateToTabs = (product) => {
+  if (broadcastChannel) {
+    broadcastChannel.postMessage({ type: 'PRODUCT_UPDATED', product });
+  }
+};
+
+/**
+ * Phát sự kiện thêm mẫu hoa mới qua các tab khác
+ */
+export const broadcastProductAddToTabs = (product) => {
+  if (broadcastChannel) {
+    broadcastChannel.postMessage({ type: 'PRODUCT_ADDED', product });
+  }
+};
+
+/**
+ * Phát sự kiện xóa mẫu hoa qua các tab khác
+ */
+export const broadcastProductDeleteToTabs = (productId) => {
+  if (broadcastChannel) {
+    broadcastChannel.postMessage({ type: 'PRODUCT_DELETED', productId });
+  }
+};
+
+/**
+ * Lắng nghe sự kiện đơn mới, cập nhật đơn & thay đổi mẫu hoa từ các tab khác
+ */
+export const listenToCrossTabOrders = (onNewOrder, onUpdateOrder, productHandlers = {}) => {
   if (!broadcastChannel) return () => {};
   const handler = (event) => {
-    if (event.data?.type === 'NEW_ORDER' && event.data.order) {
+    if (!event.data) return;
+    if (event.data.type === 'NEW_ORDER' && event.data.order) {
       if (typeof onNewOrder === 'function') onNewOrder(event.data.order);
     }
-    if (event.data?.type === 'UPDATE_ORDER' && event.data.orderId) {
+    if (event.data.type === 'UPDATE_ORDER' && event.data.orderId) {
       if (typeof onUpdateOrder === 'function') onUpdateOrder(event.data.orderId, event.data.updates);
+    }
+    if (event.data.type === 'PRODUCT_UPDATED' && event.data.product) {
+      if (typeof productHandlers.onProductUpdated === 'function') {
+        productHandlers.onProductUpdated(event.data.product);
+      }
+    }
+    if (event.data.type === 'PRODUCT_ADDED' && event.data.product) {
+      if (typeof productHandlers.onProductAdded === 'function') {
+        productHandlers.onProductAdded(event.data.product);
+      }
+    }
+    if (event.data.type === 'PRODUCT_DELETED' && event.data.productId) {
+      if (typeof productHandlers.onProductDeleted === 'function') {
+        productHandlers.onProductDeleted(event.data.productId);
+      }
     }
   };
   broadcastChannel.addEventListener('message', handler);
@@ -113,3 +156,4 @@ export const listenToCrossTabOrders = (onNewOrder, onUpdateOrder) => {
     broadcastChannel.removeEventListener('message', handler);
   };
 };
+

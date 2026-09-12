@@ -316,27 +316,34 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setIsProductModalOpen(true);
   };
 
-  const handleSaveProduct = (e) => {
+  const handleSaveProduct = async (e) => {
     e.preventDefault();
     const flowerTypesArray = formData.flowerTypes.split(',').map(s => s.trim()).filter(Boolean);
+    const payload = {
+      ...formData,
+      price: Number(formData.price),
+      originalPrice: Number(formData.originalPrice),
+      flowerTypes: flowerTypesArray,
+      freshDays: Number(formData.freshDays) || 4,
+    };
 
     if (editingProductId) {
-      updateProduct(editingProductId, {
-        ...formData,
-        price: Number(formData.price),
-        originalPrice: Number(formData.originalPrice),
-        flowerTypes: flowerTypesArray,
+      const existing = products.find(p => p.id === editingProductId) || {};
+      await updateProduct(editingProductId, {
+        ...existing,
+        ...payload,
+        id: editingProductId,
+        isAvailable: existing.isAvailable !== undefined ? existing.isAvailable : true,
+        rating: existing.rating || 5.0,
+        reviewsCount: existing.reviewsCount || 0
       });
     } else {
-      addProduct({
-        ...formData,
-        price: Number(formData.price),
-        originalPrice: Number(formData.originalPrice),
-        flowerTypes: flowerTypesArray,
-      });
+      await addProduct(payload);
     }
     setIsProductModalOpen(false);
+    setEditingProductId(null);
   };
+
 
   const handleSaveZaloSettings = (e) => {
     e.preventDefault();

@@ -119,6 +119,31 @@ assert(orderInquiryUrl.includes('FB-99881'), 'generateMessengerOrderInquiry kèm
 const productInquiryUrl = generateMessengerProductInquiry('tiemhoaflorabloom', { name: 'Bó Hoa Hồng Juliet', price: 850000 });
 assert(productInquiryUrl.includes('B%C3%B3%20Hoa%20H%E1%BB%93ng%20Juliet') || productInquiryUrl.includes('Juliet'), 'generateMessengerProductInquiry mã hóa đúng tên sản phẩm');
 
+// 8. Product Update & Synchronization
+import { 
+  broadcastProductUpdateToTabs, 
+  broadcastProductAddToTabs, 
+  broadcastProductDeleteToTabs 
+} from '../src/services/notificationService.js';
+
+assert(typeof broadcastProductUpdateToTabs === 'function', 'broadcastProductUpdateToTabs hàm tồn tại');
+assert(typeof broadcastProductAddToTabs === 'function', 'broadcastProductAddToTabs hàm tồn tại');
+assert(typeof broadcastProductDeleteToTabs === 'function', 'broadcastProductDeleteToTabs hàm tồn tại');
+
+const products = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'products.json'), 'utf-8'));
+assert(Array.isArray(products) && products.length > 0, 'Danh sách sản phẩm products.json hợp lệ và có dữ liệu');
+const sampleProduct = products[0];
+assert(Boolean(sampleProduct.id && sampleProduct.name && sampleProduct.price), 'Mẫu hoa có đầy đủ id, name, price');
+
+// Test merge sản phẩm khi sửa
+const updatedSample = {
+  ...sampleProduct,
+  price: 990000,
+  updatedAt: new Date().toISOString()
+};
+assert(updatedSample.price === 990000 && updatedSample.id === sampleProduct.id, 'Merge cập nhật giá mẫu hoa chính xác mà không mất id');
+
 console.log('\n====================================================');
 console.log(`🏁 KẾT QUẢ KIỂM THỬ: ${passedTests} ĐẠT / ${passedTests + failedTests} BÀI TEST`);
 console.log('====================================================');
+

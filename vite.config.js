@@ -126,10 +126,24 @@ function fullstackApiPlugin() {
           return;
         }
 
-        // Helper to read JSON body
+        // Helper to read JSON body safely
         const readBody = () => new Promise((resolve) => {
+          if (req.body && typeof req.body === 'object') {
+            return resolve(req.body);
+          }
           let body = '';
-          req.on('data', chunk => { body += chunk; });
+          let chunk;
+          while (null !== (chunk = req.read())) {
+            body += chunk;
+          }
+          if (req.readableEnded || req.complete) {
+            try {
+              return resolve(body ? JSON.parse(body) : {});
+            } catch (e) {
+              return resolve({});
+            }
+          }
+          req.on('data', c => { body += c; });
           req.on('end', () => {
             try {
               resolve(body ? JSON.parse(body) : {});
@@ -137,6 +151,7 @@ function fullstackApiPlugin() {
               resolve({});
             }
           });
+          req.on('error', () => resolve({}));
         });
 
         // 3. Settings API (Lưu Token & Cấu hình máy chủ)
@@ -189,6 +204,7 @@ function fullstackApiPlugin() {
             };
             products.unshift(newProduct);
             writeJson('products.json', products);
+            broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: newProduct });
             broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: newProduct });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success: true, data: newProduct }));
@@ -197,35 +213,83 @@ function fullstackApiPlugin() {
         }
 
         if (url.startsWith('/api/products/')) {
-          const id = url.replace('/api/products/', '').split('/')[0];
-          const products = readJson('products.json') || [];
-          const index = products.findIndex(p => p.id === id);
+          const id = decodeURIComponent(url.replace('/api/products/', '').split('/')[0].split('?')[0]);
+          let products = readJson('products.json') || [];
+          let index = products.findIndex(p => p.id === id);
 
-          if (req.method === 'PUT' && index !== -1) {
+          if (req.method === 'PUT') {
             const body = await readBody();
-            products[index] = { ...products[index], ...body };
+            if (index === -1) {
+              const newEntry = {
+                id,
+                name: body.name || 'Mẫu Hoa',
+                subtitle: body.subtitle || '',
+                price: Number(body.price) || 500000,
+                originalPrice: Number(body.originalPrice) || Number(body.price) || 500000,
+                occasion: body.occasion || 'love',
+                colorTone: body.colorTone || 'pastel',
+                image: body.image || '',
+                tags: body.tags || ['Mẫu Mới'],
+                meaning: body.meaning || '',
+                flowerTypes: body.flowerTypes || [],
+                rating: 5.0,
+                reviewsCount: 0,
+                freshDays: Number(body.freshDays) || 4,
+                isAvailable: body.isAvailable !== undefined ? Boolean(body.isAvailable) : true,
+                ...body,
+                updatedAt: new Date().toISOString()
+              };
+              products.push(newEntry);
+              index = products.length - 1;
+            } else {
+              products[index] = {
+                ...products[index],
+                ...body,
+                price: body.price ? Number(body.price) : products[index].price,
+                originalPrice: body.originalPrice ? Number(body.originalPrice) : products[index].originalPrice,
+                isAvailable: body.isAvailable !== undefined ? Boolean(body.isAvailable) : products[index].isAvailable,
+                updatedAt: new Date().toISOString()
+              };
+            }
             writeJson('products.json', products);
+            broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success: true, data: products[index] }));
             return;
           }
 
-          if (req.method === 'PATCH' && url.endsWith('/toggle') && index !== -1) {
-            products[index].isAvailable = !products[index].isAvailable;
+          if (req.method === 'PATCH' && url.endsWith('/toggle')) {
+            if (index === -1) {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: false, message: 'Không tìm thấy mẫu hoa' }));
+              return;
+            }
+            products[index].isAvailable = products[index].isAvailable === false ? true : false;
+            products[index].updatedAt = new Date().toISOString();
             writeJson('products.json', products);
+            broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success: true, data: products[index] }));
             return;
           }
 
-          if (req.method === 'DELETE' && index !== -1) {
+          if (req.method === 'DELETE') {
+            if (index === -1) {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: false, message: 'Không tìm thấy mẫu hoa' }));
+              return;
+            }
             const filtered = products.filter(p => p.id !== id);
             writeJson('products.json', filtered);
+            broadcastAdminEvent({ type: 'PRODUCT_DELETED', productId: id });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success: true, message: 'Đã xóa' }));
             return;
           }
         }
+
 
         // 5. Orders API
         if (url === '/api/orders') {

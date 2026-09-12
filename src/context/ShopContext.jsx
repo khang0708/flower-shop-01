@@ -30,6 +30,9 @@ import {
   showBrowserOrderNotification, 
   broadcastNewOrderToTabs, 
   broadcastOrderUpdateToTabs,
+  broadcastProductUpdateToTabs,
+  broadcastProductAddToTabs,
+  broadcastProductDeleteToTabs,
   listenToCrossTabOrders 
 } from '../services/notificationService';
 
@@ -86,8 +89,35 @@ const INITIAL_ORDERS = [
 ];
 
 export const ShopProvider = ({ children }) => {
-  // 1. Quản lý danh mục mẫu hoa
-  const [products, setProducts] = useState(FLOWERS_DATA);
+  // 1. Quản lý danh mục mẫu hoa (Ưu tiên cache LocalStorage để storefront cập nhật ngay, fallback FLOWERS_DATA)
+  const [products, setProductsState] = useState(() => {
+    try {
+      const cached = localStorage.getItem('flora_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc cache flora_products:', e);
+    }
+    return FLOWERS_DATA;
+  });
+
+  const updateProductsLocalAndBroadcast = useCallback((updater, broadcastAction = null) => {
+    setProductsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        localStorage.setItem('flora_products', JSON.stringify(next));
+      } catch (e) {
+        console.warn('Lỗi lưu flora_products vào localStorage:', e);
+      }
+      return next;
+    });
+    if (typeof broadcastAction === 'function') {
+      broadcastAction();
+    }
+  }, []);
+
   const [isApiConnected, setIsApiConnected] = useState(false);
 
   // 2. Cài đặt kết nối Zalo Cá Nhân / Telegram (Lưu bền vững vào LocalStorage & Backend Settings)
@@ -524,7 +554,9 @@ export const ShopProvider = ({ children }) => {
             fetchReviewsApi().catch(() => null),
             fetchSettingsApi().catch(() => null)
           ]);
-          if (apiProducts?.length > 0) setProducts(apiProducts);
+          if (apiProducts?.length > 0) {
+            updateProductsLocalAndBroadcast(apiProducts);
+          }
           if (apiOrders?.length > 0) {
             setOrders(apiOrders);
             setActiveOrder(apiOrders[0]);
@@ -566,11 +598,30 @@ export const ShopProvider = ({ children }) => {
             setOrders(prev => prev.map(o => (o.id === payload.order.id ? payload.order : o)));
             setActiveOrder(prev => (prev && prev.id === payload.order.id ? payload.order : prev));
           }
+          if (payload.type === 'PRODUCT_UPDATED' && payload.product) {
+            updateProductsLocalAndBroadcast(prev => {
+              const exists = prev.some(p => p.id === payload.product.id);
+              if (exists) {
+                return prev.map(p => p.id === payload.product.id ? { ...p, ...payload.product } : p);
+              }
+              return [payload.product, ...prev];
+            });
+          }
+          if (payload.type === 'PRODUCT_ADDED' && payload.product) {
+            updateProductsLocalAndBroadcast(prev => {
+              const exists = prev.some(p => p.id === payload.product.id);
+              if (exists) return prev;
+              return [payload.product, ...prev];
+            });
+          }
+          if (payload.type === 'PRODUCT_DELETED' && payload.productId) {
+            updateProductsLocalAndBroadcast(prev => prev.filter(p => p.id !== payload.productId));
+          }
         } catch (err) {}
       };
     } catch (err) {}
 
-    // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới & Cập nhật ảnh thật)
+    // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới, Cập nhật ảnh thật, Đồng bộ mẫu hoa)
     const cleanupTabListener = listenToCrossTabOrders(
       (incomingOrder) => {
         setOrders(prev => {
@@ -583,6 +634,27 @@ export const ShopProvider = ({ children }) => {
       (orderId, updates) => {
         setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, ...updates } : o)));
         setActiveOrder(prev => (prev && prev.id === orderId ? { ...prev, ...updates } : prev));
+      },
+      {
+        onProductUpdated: (product) => {
+          updateProductsLocalAndBroadcast(prev => {
+            const exists = prev.some(p => p.id === product.id);
+            if (exists) {
+              return prev.map(p => p.id === product.id ? { ...p, ...product } : p);
+            }
+            return [product, ...prev];
+          });
+        },
+        onProductAdded: (product) => {
+          updateProductsLocalAndBroadcast(prev => {
+            const exists = prev.some(p => p.id === product.id);
+            if (exists) return prev;
+            return [product, ...prev];
+          });
+        },
+        onProductDeleted: (productId) => {
+          updateProductsLocalAndBroadcast(prev => prev.filter(p => p.id !== productId));
+        }
       }
     );
 
@@ -591,44 +663,80 @@ export const ShopProvider = ({ children }) => {
       if (eventSource) eventSource.close();
       cleanupTabListener();
     };
-  }, [triggerAdminOrderAlert]);
+  }, [triggerAdminOrderAlert, updateProductsLocalAndBroadcast]);
 
   // CRUD SẢN PHẨM MẪU HOA
   const addProduct = async (newProduct) => {
+    let finalProduct = null;
     try {
-      const saved = await createProductApi(newProduct);
-      setProducts(prev => [saved, ...prev]);
+      finalProduct = await createProductApi(newProduct);
     } catch (e) {
-      const id = `fl-${Date.now()}`;
-      const productToAdd = { ...newProduct, id, rating: 5.0, reviewsCount: 0, isAvailable: true };
-      setProducts(prev => [productToAdd, ...prev]);
+      console.warn('Lỗi API createProduct, fallback local:', e);
+      const id = newProduct.id || `fl-${Date.now()}`;
+      finalProduct = { ...newProduct, id, rating: 5.0, reviewsCount: 0, isAvailable: true };
     }
+    if (finalProduct) {
+      updateProductsLocalAndBroadcast(
+        prev => [finalProduct, ...prev.filter(p => p.id !== finalProduct.id)],
+        () => broadcastProductAddToTabs(finalProduct)
+      );
+    }
+    return finalProduct;
   };
 
   const updateProduct = async (productId, updatedFields) => {
+    let finalProduct = null;
     try {
-      const saved = await updateProductApi(productId, updatedFields);
-      setProducts(prev => prev.map(p => p.id === productId ? saved : p));
+      finalProduct = await updateProductApi(productId, updatedFields);
     } catch (e) {
-      setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updatedFields } : p));
+      console.warn('Lỗi API updateProduct, fallback local:', e);
+      const current = products.find(p => p.id === productId) || {};
+      finalProduct = { ...current, ...updatedFields, id: productId };
     }
+    if (finalProduct) {
+      updateProductsLocalAndBroadcast(
+        prev => prev.map(p => p.id === productId ? { ...p, ...finalProduct } : p),
+        () => broadcastProductUpdateToTabs(finalProduct)
+      );
+    }
+    return finalProduct;
   };
 
   const deleteProduct = async (productId) => {
     try {
       await deleteProductApi(productId);
-    } catch (e) {}
-    setProducts(prev => prev.filter(p => p.id !== productId));
+    } catch (e) {
+      console.warn('Lỗi API deleteProduct, fallback local:', e);
+    }
+    updateProductsLocalAndBroadcast(
+      prev => prev.filter(p => p.id !== productId),
+      () => broadcastProductDeleteToTabs(productId)
+    );
   };
 
   const toggleProductAvailability = async (productId) => {
+    let finalProduct = null;
     try {
-      const saved = await toggleProductApi(productId);
-      setProducts(prev => prev.map(p => p.id === productId ? saved : p));
+      finalProduct = await toggleProductApi(productId);
     } catch (e) {
-      setProducts(prev => prev.map(p => p.id === productId ? { ...p, isAvailable: !p.isAvailable } : p));
+      console.warn('Lỗi API toggleProduct, fallback local:', e);
+      const current = products.find(p => p.id === productId);
+      if (current) {
+        finalProduct = { ...current, isAvailable: current.isAvailable === false ? true : false };
+      }
+    }
+    if (finalProduct) {
+      updateProductsLocalAndBroadcast(
+        prev => prev.map(p => p.id === productId ? { ...p, ...finalProduct } : p),
+        () => broadcastProductUpdateToTabs(finalProduct)
+      );
+    } else {
+      updateProductsLocalAndBroadcast(
+        prev => prev.map(p => p.id === productId ? { ...p, isAvailable: p.isAvailable === false ? true : false } : p)
+      );
     }
   };
+
 
   // GIỎ HÀNG
   const addToCart = (product, customOptions = {}) => {
