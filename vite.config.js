@@ -500,6 +500,125 @@ function fullstackApiPlugin() {
           return;
         }
 
+        // 10. Facebook Messenger Webhook & Send API trong Vite
+        const queryParams = new URLSearchParams(rawUrl.split('?')[1] || '');
+
+        // 10.1. Meta Webhook Verification
+        if (url === '/api/facebook/webhook' && req.method === 'GET') {
+          const mode = queryParams.get('hub.mode');
+          const token = queryParams.get('hub.verify_token');
+          const challenge = queryParams.get('hub.challenge');
+
+          const settings = readJson('settings.json') || {};
+          const expectedToken = settings.facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026';
+
+          if (mode && token) {
+            if (mode === 'subscribe' && token === expectedToken) {
+              console.log('✅ [Facebook Webhook Vite] Xác thực thành công Webhook với Meta for Developers!');
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'text/plain');
+              res.end(challenge || '');
+              return;
+            } else {
+              res.statusCode = 403;
+              res.end('Forbidden: Token mismatch');
+              return;
+            }
+          }
+          res.statusCode = 400;
+          res.end('Bad Request');
+          return;
+        }
+
+        // 10.2. Meta Webhook Event (Incoming Messages & Chatbot)
+        if (url === '/api/facebook/webhook' && req.method === 'POST') {
+          const body = await readBody();
+          if (body.object === 'page') {
+            const settings = readJson('settings.json') || {};
+            const fbConfig = settings.facebookSettings || {};
+
+            for (const entry of (body.entry || [])) {
+              const webhookEvent = entry.messaging?.[0];
+              if (!webhookEvent) continue;
+
+              const senderPsid = webhookEvent.sender?.id;
+              const userMessage = webhookEvent.message?.text?.trim() || '';
+
+              if (fbConfig.autoReplyEnabled !== false && senderPsid && userMessage) {
+                const lowerText = userMessage.toLowerCase();
+                const orderMatch = userMessage.match(/FB-[\w\d]+/i);
+                let replyText = '';
+
+                if (orderMatch) {
+                  const searchedCode = orderMatch[0].toUpperCase();
+                  const orders = readJson('orders.json') || [];
+                  const found = orders.find(o => (o.orderCode || o.id || '').toUpperCase() === searchedCode);
+                  if (found) {
+                    const statusMap = {
+                      ARRANGING: 'Đang cắm tại xưởng',
+                      PHOTO_READY: 'Đã cắm xong - Chờ khách duyệt ảnh',
+                      DELIVERING: 'Đang trên đường giao hoa',
+                      COMPLETED: 'Đã giao hoa thành công'
+                    };
+                    replyText = `🌸 Thông tin đơn hàng #${found.orderCode}:\n` +
+                      `• Người nhận: ${found.receiverName}\n` +
+                      `• Mẫu hoa: ${found.productName}\n` +
+                      `• Trạng thái: ${statusMap[found.status] || found.status}\n` +
+                      `• Khung giờ: ${found.deliverySlot || 'Hỏa tốc'}\n` +
+                      (found.proofPhotoUrl ? `📸 Xem ảnh hoa: ${found.proofPhotoUrl}\n` : '') +
+                      `👉 Cần hỗ trợ thêm hãy nhắn ngay tại đây bạn nhé!`;
+                  } else {
+                    replyText = `🌸 Chưa tìm thấy mã đơn #${searchedCode} trên hệ thống. Quý khách vui lòng kiểm tra lại mã hoặc để lại SĐT nhé!`;
+                  }
+                } else if (lowerText.includes('hoa') || lowerText.includes('menu') || lowerText.includes('mẫu')) {
+                  const products = readJson('products.json') || [];
+                  const top = products.slice(0, 3).map(p => `• ${p.name}: ${Number(p.price).toLocaleString('vi-VN')}đ`).join('\n');
+                  replyText = `🌸 Các mẫu hoa thiết kế thịnh hành hôm nay:\n\n${top}\n\n💐 Tặng kèm thiệp thiết kế & túi cao cấp!`;
+                } else {
+                  replyText = fbConfig.welcomeMessage || 'Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn. Bạn cần tư vấn mẫu hoa nào ạ? 🌸';
+                }
+
+                // Gửi phản hồi
+                if (fbConfig.pageAccessToken) {
+                  try {
+                    await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(fbConfig.pageAccessToken)}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        recipient: { id: senderPsid },
+                        message: { text: replyText }
+                      })
+                    });
+                  } catch (err) {
+                    console.warn('Lỗi gửi Facebook Send API:', err.message);
+                  }
+                }
+              }
+            }
+
+            res.statusCode = 200;
+            res.end('EVENT_RECEIVED');
+            return;
+          }
+
+          res.statusCode = 404;
+          res.end('Not Found');
+          return;
+        }
+
+        // 10.3. Facebook Test Connection
+        if (url === '/api/facebook/test-connection' && req.method === 'POST') {
+          const body = await readBody();
+          const cleanId = (body.pageId || 'tiemhoaflorabloom').trim();
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            success: true,
+            message: `🎉 Kết nối Fanpage @${cleanId} thành công! Link chat: https://m.me/${cleanId}`,
+            messengerUrl: `https://m.me/${cleanId}`
+          }));
+          return;
+        }
+
         next();
       });
     }
@@ -510,7 +629,8 @@ export default defineConfig({
   plugins: [react(), fullstackApiPlugin()],
   server: {
     port: 5173,
-    host: '127.0.0.1',
+    host: true,
+    allowedHosts: true,
   },
   build: {
     cssMinify: true,

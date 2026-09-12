@@ -17,18 +17,36 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (e) {}
 }
+
+// In-memory cache for serverless environments (e.g. Vercel)
+const memoryDb = new Map();
 
 // Helpers for JSON Database persistence
 const readJson = (fileName) => {
+  if (memoryDb.has(fileName)) {
+    return memoryDb.get(fileName);
+  }
+  const tmpPath = path.join('/tmp', fileName);
+  if (fs.existsSync(tmpPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
+      memoryDb.set(fileName, data);
+      return data;
+    } catch (err) {}
+  }
   const filePath = path.join(DATA_DIR, fileName);
   if (!fs.existsSync(filePath)) {
     return [];
   }
   const raw = fs.readFileSync(filePath, 'utf-8');
   try {
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    memoryDb.set(fileName, data);
+    return data;
   } catch (err) {
     console.error(`Lỗi đọc file ${fileName}:`, err);
     return [];
@@ -36,8 +54,19 @@ const readJson = (fileName) => {
 };
 
 const writeJson = (fileName, data) => {
-  const filePath = path.join(DATA_DIR, fileName);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  memoryDb.set(fileName, data);
+  try {
+    const filePath = path.join(DATA_DIR, fileName);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    // Fallback to /tmp if filesystem is read-only (e.g. Vercel Serverless)
+    try {
+      const tmpPath = path.join('/tmp', fileName);
+      fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (tmpErr) {
+      console.warn(`Không thể ghi file ${fileName}:`, tmpErr.message);
+    }
+  }
 };
 
 // ----------------------------------------------------
@@ -776,9 +805,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌸 Flora & Bloom API Server đang chạy tại: http://127.0.0.1:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🌸 Flora & Bloom API Server đang chạy tại: http://127.0.0.1:${PORT}`);
+  });
 
-process.on('SIGTERM', () => server.close());
-process.on('SIGINT', () => server.close());
+  process.on('SIGTERM', () => server.close());
+  process.on('SIGINT', () => server.close());
+}
+
+export default app;

@@ -11,14 +11,14 @@
     "freeShippingNote": "Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ"
   },
   "facebookSettings": {
-    "pageId": "tiemhoaflorabloom",
+    "pageId": "myphamstart",
     "pageName": "Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật",
-    "pageAccessToken": "",
+    "pageAccessToken": "EAAebyjYVXGUBSZA6PF90KPMUsAUyURwI0X28D1zJqoLipxcGhqmuyNGeZB1n2rfs2NXJ8tgEAYPOaUmTGrZAUBmPjuJvy0LZBpR4uhH6RQRkgdtjIZB9Ixty8LQarRlr0pRQrXmm2fgnKtskZA8OTMfsBQ4ZBfZCyFaG8Vr6PN96qR5lrV8Pg6wMzm3OHGf6AKHvLs95zca5T25asOgzSM8RGtiIAQZDZD",
     "verifyToken": "flora_bloom_webhook_secret_2026",
     "adminRecipientId": "",
     "isEnabled": true,
     "welcomeMessage": "Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.",
     "autoReplyEnabled": true
   },
-  "updatedAt": "2026-09-05T12:38:00.000Z"
+  "updatedAt": "2026-09-05T07:57:48.683Z"
 }
