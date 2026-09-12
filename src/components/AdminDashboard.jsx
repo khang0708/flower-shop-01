@@ -61,8 +61,10 @@ import {
   Upload,
   Image as ImageIcon,
   Truck,
-  Menu
+  Menu,
+  RefreshCw
 } from 'lucide-react';
+
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const { 
@@ -101,8 +103,18 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     latestNewOrder,
     setLatestNewOrder,
     facebookSettings,
-    updateFacebookSettings
+    updateFacebookSettings,
+    refreshShopData
   } = useShop();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    if (typeof refreshShopData === 'function') {
+      await refreshShopData(false);
+    }
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products_cms' | 'discounts' | 'zalo_config' | 'inventory' | 'shipping_config'
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -799,6 +811,17 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
             {/* Right: Sound controls, Bell & Profile */}
             <div className="flex items-center gap-2 sm:gap-3">
               
+              {/* Nút Đồng Bộ Dữ Liệu Máy Chủ (Smart Sync) */}
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold shadow-2xs"
+                title="Làm mới và đồng bộ dữ liệu từ máy chủ đám mây"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#1B3B2B] ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
+                <span className="hidden md:inline">{isRefreshing ? 'Đang đồng bộ...' : 'Đồng bộ'}</span>
+              </button>
+
               {/* Nút Bật/Tắt Chuông Báo */}
               <button
                 onClick={() => {

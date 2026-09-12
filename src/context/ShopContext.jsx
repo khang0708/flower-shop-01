@@ -539,6 +539,43 @@ export const ShopProvider = ({ children }) => {
     }
   ]);
 
+  // Đồng bộ lại toàn bộ dữ liệu từ API Server (Dùng cho Focus, Polling & thủ công)
+  const refreshShopData = useCallback(async (isSilent = true) => {
+    try {
+      const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiReviews, apiSettings] = await Promise.all([
+        fetchProductsApi().catch(() => null),
+        fetchOrdersApi().catch(() => null),
+        fetchInventoryApi().catch(() => null),
+        fetchDiscountsApi().catch(() => null),
+        fetchReviewsApi().catch(() => null),
+        fetchSettingsApi().catch(() => null)
+      ]);
+
+      if (apiProducts?.length > 0) {
+        updateProductsLocalAndBroadcast(apiProducts);
+      }
+      if (apiOrders?.length > 0) {
+        setOrders(apiOrders);
+        setActiveOrder(prev => (prev ? apiOrders.find(o => o.id === prev.id) || apiOrders[0] : apiOrders[0]));
+      }
+      if (apiInventory?.length > 0) setInventory(apiInventory);
+      if (apiDiscounts?.length > 0) setDiscounts(apiDiscounts);
+      if (apiReviews?.length > 0) setReviews(apiReviews);
+      if (apiSettings) {
+        if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
+        if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
+        if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
+        if (apiSettings.shippingSettings) setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
+        if (apiSettings.facebookSettings) setFacebookSettingsState(prev => ({ ...prev, ...apiSettings.facebookSettings }));
+      }
+      setIsApiConnected(true);
+      return true;
+    } catch (err) {
+      if (!isSilent) console.warn('Lỗi refreshShopData:', err);
+      return false;
+    }
+  }, [updateProductsLocalAndBroadcast]);
+
   // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel (trì hoãn sau first paint)
   useEffect(() => {
     const initDataFromApi = async () => {
@@ -546,31 +583,7 @@ export const ShopProvider = ({ children }) => {
         const health = await checkHealthApi();
         if (health.status === 'ONLINE') {
           setIsApiConnected(true);
-          const [apiProducts, apiOrders, apiInventory, apiDiscounts, apiReviews, apiSettings] = await Promise.all([
-            fetchProductsApi().catch(() => null),
-            fetchOrdersApi().catch(() => null),
-            fetchInventoryApi().catch(() => null),
-            fetchDiscountsApi().catch(() => null),
-            fetchReviewsApi().catch(() => null),
-            fetchSettingsApi().catch(() => null)
-          ]);
-          if (apiProducts?.length > 0) {
-            updateProductsLocalAndBroadcast(apiProducts);
-          }
-          if (apiOrders?.length > 0) {
-            setOrders(apiOrders);
-            setActiveOrder(apiOrders[0]);
-          }
-          if (apiInventory?.length > 0) setInventory(apiInventory);
-          if (apiDiscounts?.length > 0) setDiscounts(apiDiscounts);
-          if (apiReviews?.length > 0) setReviews(apiReviews);
-          if (apiSettings) {
-            if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
-            if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
-            if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
-            if (apiSettings.shippingSettings) setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
-            if (apiSettings.facebookSettings) setFacebookSettingsState(prev => ({ ...prev, ...apiSettings.facebookSettings }));
-          }
+          await refreshShopData(true);
         }
       } catch (err) {
         // Fallback local mode
@@ -578,6 +591,38 @@ export const ShopProvider = ({ children }) => {
     };
 
     const timer = setTimeout(initDataFromApi, 60);
+
+    // ----------------------------------------------------
+    // SMART BACKGROUND SYNC & TAB FOCUS LISTENER (HƯỚNG 2)
+    // Tự động đồng bộ ngầm khi khách quay lại tab hoặc mỗi 30s
+    // ----------------------------------------------------
+    let lastSyncTime = Date.now();
+
+    const handleVisibilityOrFocus = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        const elapsed = Date.now() - lastSyncTime;
+        // Chỉ fetch lại nếu đã cách lần fetch gần nhất ít nhất 8 giây (chống spam request)
+        if (elapsed > 8000) {
+          lastSyncTime = Date.now();
+          refreshShopData(true);
+        }
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleVisibilityOrFocus);
+    }
+
+    // Smart Polling: Tự động làm mới ngầm mỗi 30 giây (khi tab đang mở)
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        lastSyncTime = Date.now();
+        refreshShopData(true);
+      }
+    }, 30000);
 
     // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
     let eventSource = null;
@@ -662,8 +707,16 @@ export const ShopProvider = ({ children }) => {
       clearTimeout(timer);
       if (eventSource) eventSource.close();
       cleanupTabListener();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleVisibilityOrFocus);
+      }
+      clearInterval(pollInterval);
     };
-  }, [triggerAdminOrderAlert, updateProductsLocalAndBroadcast]);
+  }, [triggerAdminOrderAlert, updateProductsLocalAndBroadcast, refreshShopData]);
+
 
   // CRUD SẢN PHẨM MẪU HOA
   const addProduct = async (newProduct) => {
@@ -1123,6 +1176,7 @@ export const ShopProvider = ({ children }) => {
         latestNewOrder,
         setLatestNewOrder,
         triggerAdminOrderAlert,
+        refreshShopData,
         isApiConnected,
         cart,
         wishlist,
