@@ -752,6 +752,17 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <span>← Về Cửa Hàng</span>
             </button>
 
+            {/* Nút xem trực tiếp Cẩm Nang PDF */}
+            <a
+              href="/Huong_Dan_Su_Dung_Flora_Bloom.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-[#E8998D]/20 hover:bg-[#E8998D]/30 text-[#F5D6CE] hover:text-white py-2 rounded-xl text-xs font-bold transition-all border border-[#E8998D]/30"
+              title="Mở cẩm nang hướng dẫn sử dụng file PDF (9 trang)"
+            >
+              <span>📖 Cẩm Nang HDSD (.PDF)</span>
+            </a>
+
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2 min-w-0">
                 <img

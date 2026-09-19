@@ -64,6 +64,17 @@ export const Header = () => {
               <span>{isZaloMode ? '⚡ Zalo Mini App' : 'Mô phỏng Zalo'}</span>
             </button>
 
+            {/* Nút xem & tải Cẩm Nang Hướng Dẫn Sử Dụng PDF */}
+            <a
+              href="/Huong_Dan_Su_Dung_Flora_Bloom.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white transition-all"
+              title="Xem cẩm nang hướng dẫn sử dụng hệ thống đầy đủ 9 trang (.PDF)"
+            >
+              <span>📖 Cẩm Nang PDF</span>
+            </a>
+
             <span className="hidden sm:inline text-white/40">|</span>
 
             <a 
