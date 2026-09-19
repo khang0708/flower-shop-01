@@ -331,12 +331,14 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     const flowerTypesArray = formData.flowerTypes.split(',').map(s => s.trim()).filter(Boolean);
+    const now = new Date().toISOString();
     const payload = {
       ...formData,
       price: Number(formData.price),
       originalPrice: Number(formData.originalPrice),
       flowerTypes: flowerTypesArray,
       freshDays: Number(formData.freshDays) || 4,
+      updatedAt: now
     };
 
     if (editingProductId) {
@@ -347,7 +349,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         id: editingProductId,
         isAvailable: existing.isAvailable !== undefined ? existing.isAvailable : true,
         rating: existing.rating || 5.0,
-        reviewsCount: existing.reviewsCount || 0
+        reviewsCount: existing.reviewsCount || 0,
+        updatedAt: now
       });
     } else {
       await addProduct(payload);

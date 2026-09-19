@@ -88,6 +88,24 @@ const INITIAL_ORDERS = [
   }
 ];
 
+// ----------------------------------------------------
+// LOCAL-FIRST & CONFLICT RESOLUTION UTILITIES
+// Ngăn stale server container Vercel ghi đè dữ liệu mới
+// ----------------------------------------------------
+import { 
+  getDeletedProductIds, 
+  markProductDeletedLocal, 
+  unmarkProductDeletedLocal, 
+  mergeProductsWithConflictResolution 
+} from '../utils/conflictResolution';
+
+export { 
+  getDeletedProductIds, 
+  markProductDeletedLocal, 
+  unmarkProductDeletedLocal, 
+  mergeProductsWithConflictResolution 
+};
+
 export const ShopProvider = ({ children }) => {
   // 1. Quản lý danh mục mẫu hoa (Ưu tiên cache LocalStorage để storefront cập nhật ngay, fallback FLOWERS_DATA)
   const [products, setProductsState] = useState(() => {
@@ -120,6 +138,15 @@ export const ShopProvider = ({ children }) => {
 
   const [isApiConnected, setIsApiConnected] = useState(false);
 
+  // Helper quản lý mốc thời gian cập nhật cài đặt
+  const updateSettingsTimestamp = () => {
+    const now = new Date().toISOString();
+    try {
+      localStorage.setItem('flora_settings_updated_at', now);
+    } catch (e) {}
+    return now;
+  };
+
   // 2. Cài đặt kết nối Zalo Cá Nhân / Telegram (Lưu bền vững vào LocalStorage & Backend Settings)
   const [shopZaloPhone, setShopZaloPhoneState] = useState(() => {
     return localStorage.getItem('flora_shop_zalo_phone') || '0843066604';
@@ -135,21 +162,24 @@ export const ShopProvider = ({ children }) => {
 
   const setShopZaloPhone = (val) => {
     const clean = (val || '').trim();
+    const now = updateSettingsTimestamp();
     setShopZaloPhoneState(clean);
     localStorage.setItem('flora_shop_zalo_phone', clean);
-    saveSettingsApi({ shopZaloPhone: clean }).catch(() => {});
+    saveSettingsApi({ shopZaloPhone: clean, updatedAt: now }).catch(() => {});
   };
 
   const setTelegramBotToken = (val) => {
+    const now = updateSettingsTimestamp();
     setTelegramBotTokenState(val);
     localStorage.setItem('flora_tg_token', val);
-    saveSettingsApi({ telegramBotToken: val }).catch(() => {});
+    saveSettingsApi({ telegramBotToken: val, updatedAt: now }).catch(() => {});
   };
 
   const setTelegramChatId = (val) => {
+    const now = updateSettingsTimestamp();
     setTelegramChatIdState(val);
     localStorage.setItem('flora_tg_chat_id', val);
-    saveSettingsApi({ telegramChatId: val }).catch(() => {});
+    saveSettingsApi({ telegramChatId: val, updatedAt: now }).catch(() => {});
   };
 
   // 3. Quản lý thông báo Admin Real-time
@@ -158,9 +188,10 @@ export const ShopProvider = ({ children }) => {
   });
 
   const setIsSoundEnabled = (val) => {
+    const now = updateSettingsTimestamp();
     setIsSoundEnabledState(val);
     localStorage.setItem('flora_sound_enabled', String(val));
-    saveSettingsApi({ isSoundEnabled: val }).catch(() => {});
+    saveSettingsApi({ isSoundEnabled: val, updatedAt: now }).catch(() => {});
   };
 
   // 3.1. Cấu hình Phí Giao Hoa & Freeship (Xử lý linh hoạt qua Admin hoặc Tự Động)
@@ -180,12 +211,13 @@ export const ShopProvider = ({ children }) => {
   });
 
   const updateShippingSettings = (newSettings) => {
+    const now = updateSettingsTimestamp();
     setShippingSettingsState(prev => {
       const merged = { ...prev, ...newSettings };
       try {
         localStorage.setItem('flora_shipping_settings', JSON.stringify(merged));
       } catch (e) {}
-      saveSettingsApi({ shippingSettings: merged }).catch(() => {});
+      saveSettingsApi({ shippingSettings: merged, updatedAt: now }).catch(() => {});
       return merged;
     });
   };
@@ -209,12 +241,13 @@ export const ShopProvider = ({ children }) => {
   });
 
   const updateFacebookSettings = (newSettings) => {
+    const now = updateSettingsTimestamp();
     setFacebookSettingsState(prev => {
       const merged = { ...prev, ...newSettings };
       try {
         localStorage.setItem('flora_facebook_settings', JSON.stringify(merged));
       } catch (e) {}
-      saveSettingsApi({ facebookSettings: merged }).catch(() => {});
+      saveSettingsApi({ facebookSettings: merged, updatedAt: now }).catch(() => {});
       return merged;
     });
   };
@@ -551,30 +584,103 @@ export const ShopProvider = ({ children }) => {
         fetchSettingsApi().catch(() => null)
       ]);
 
-      if (apiProducts?.length > 0) {
-        updateProductsLocalAndBroadcast(apiProducts);
+      // 1. Đồng bộ Mẫu Hoa với Conflict Resolution & Auto-Rehydration
+      if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+        updateProductsLocalAndBroadcast(currentProducts => {
+          const merged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
+          // Tự động re-push các sản phẩm local mới hơn lên container server ngầm (để bù đắp cho container cold start)
+          merged.forEach(mp => {
+            const sp = apiProducts.find(p => p.id === mp.id);
+            const localTime = mp.updatedAt ? new Date(mp.updatedAt).getTime() : 0;
+            const serverTime = sp?.updatedAt ? new Date(sp.updatedAt).getTime() : 0;
+            if (localTime > serverTime) {
+              updateProductApi(mp.id, mp).catch(() => {});
+            }
+          });
+          return merged;
+        });
       }
-      if (apiOrders?.length > 0) {
-        setOrders(apiOrders);
-        setActiveOrder(prev => (prev ? apiOrders.find(o => o.id === prev.id) || apiOrders[0] : apiOrders[0]));
+
+      // 2. Đồng bộ Đơn Hàng an toàn
+      if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+        setOrders(currentOrders => {
+          const orderMap = new Map();
+          (currentOrders || []).forEach(co => orderMap.set(co.id || co.orderCode, co));
+          apiOrders.forEach(ao => {
+            const key = ao.id || ao.orderCode;
+            const co = orderMap.get(key);
+            if (!co) {
+              orderMap.set(key, ao);
+            } else {
+              // Bảo vệ trạng thái duyệt ảnh hoặc xác nhận ship cục bộ nếu server chưa kịp nhận
+              if (co.isApproved && !ao.isApproved) {
+                orderMap.set(key, { ...ao, isApproved: true, status: co.status || ao.status });
+              } else if (co.isShippingConfirmed && !ao.isShippingConfirmed) {
+                orderMap.set(key, { ...ao, shippingFee: co.shippingFee, totalAmount: co.totalAmount, isShippingConfirmed: true });
+              } else {
+                orderMap.set(key, { ...co, ...ao });
+              }
+            }
+          });
+          return Array.from(orderMap.values());
+        });
+        setActiveOrder(prev => (prev ? apiOrders.find(o => o.id === prev.id) || prev : apiOrders[0]));
       }
+
       if (apiInventory?.length > 0) setInventory(apiInventory);
       if (apiDiscounts?.length > 0) setDiscounts(apiDiscounts);
       if (apiReviews?.length > 0) setReviews(apiReviews);
+
+      // 3. Đồng bộ Cài Đặt (Zalo, Telegram, Shipping, Facebook) với so sánh Timestamp
       if (apiSettings) {
-        if (apiSettings.shopZaloPhone) setShopZaloPhoneState(apiSettings.shopZaloPhone);
-        if (apiSettings.telegramBotToken) setTelegramBotTokenState(apiSettings.telegramBotToken);
-        if (apiSettings.telegramChatId) setTelegramChatIdState(apiSettings.telegramChatId);
-        if (apiSettings.shippingSettings) setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
-        if (apiSettings.facebookSettings) setFacebookSettingsState(prev => ({ ...prev, ...apiSettings.facebookSettings }));
+        const localSettingsTimestamp = typeof localStorage !== 'undefined' ? localStorage.getItem('flora_settings_updated_at') : null;
+        const localSettingsTime = localSettingsTimestamp ? new Date(localSettingsTimestamp).getTime() : 0;
+        const serverSettingsTime = apiSettings.updatedAt ? new Date(apiSettings.updatedAt).getTime() : 0;
+
+        if (serverSettingsTime > localSettingsTime) {
+          // Server thực sự mới hơn -> Chấp nhận cài đặt mới từ server
+          if (apiSettings.shopZaloPhone) {
+            setShopZaloPhoneState(apiSettings.shopZaloPhone);
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_shop_zalo_phone', apiSettings.shopZaloPhone);
+          }
+          if (apiSettings.telegramBotToken) {
+            setTelegramBotTokenState(apiSettings.telegramBotToken);
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_tg_token', apiSettings.telegramBotToken);
+          }
+          if (apiSettings.telegramChatId) {
+            setTelegramChatIdState(apiSettings.telegramChatId);
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_tg_chat_id', apiSettings.telegramChatId);
+          }
+          if (apiSettings.shippingSettings) {
+            setShippingSettingsState(prev => ({ ...prev, ...apiSettings.shippingSettings }));
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_shipping_settings', JSON.stringify(apiSettings.shippingSettings));
+          }
+          if (apiSettings.facebookSettings) {
+            setFacebookSettingsState(prev => ({ ...prev, ...apiSettings.facebookSettings }));
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_facebook_settings', JSON.stringify(apiSettings.facebookSettings));
+          }
+          if (typeof localStorage !== 'undefined') localStorage.setItem('flora_settings_updated_at', apiSettings.updatedAt);
+        } else if (localSettingsTime > serverSettingsTime) {
+          // Local mới hơn server -> GIỮ NGUYÊN LOCAL & Rehydrate container server ngầm!
+          const localSettingsPayload = {
+            shopZaloPhone: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_shop_zalo_phone') : undefined,
+            telegramBotToken: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_tg_token') : undefined,
+            telegramChatId: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_tg_chat_id') : undefined,
+            shippingSettings: shippingSettings,
+            facebookSettings: facebookSettings,
+            updatedAt: localSettingsTimestamp
+          };
+          saveSettingsApi(localSettingsPayload).catch(() => {});
+        }
       }
+
       setIsApiConnected(true);
       return true;
     } catch (err) {
       if (!isSilent) console.warn('Lỗi refreshShopData:', err);
       return false;
     }
-  }, [updateProductsLocalAndBroadcast]);
+  }, [updateProductsLocalAndBroadcast, shippingSettings, facebookSettings]);
 
   // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel (trì hoãn sau first paint)
   useEffect(() => {
@@ -720,42 +826,62 @@ export const ShopProvider = ({ children }) => {
 
   // CRUD SẢN PHẨM MẪU HOA
   const addProduct = async (newProduct) => {
+    const now = new Date().toISOString();
+    const id = newProduct.id || `fl-${Date.now()}`;
+    const productWithTimestamp = {
+      ...newProduct,
+      id,
+      rating: newProduct.rating || 5.0,
+      reviewsCount: newProduct.reviewsCount || 0,
+      isAvailable: newProduct.isAvailable !== undefined ? newProduct.isAvailable : true,
+      updatedAt: now
+    };
+    unmarkProductDeletedLocal(id);
+
     let finalProduct = null;
     try {
-      finalProduct = await createProductApi(newProduct);
+      finalProduct = await createProductApi(productWithTimestamp);
     } catch (e) {
       console.warn('Lỗi API createProduct, fallback local:', e);
-      const id = newProduct.id || `fl-${Date.now()}`;
-      finalProduct = { ...newProduct, id, rating: 5.0, reviewsCount: 0, isAvailable: true };
+      finalProduct = productWithTimestamp;
     }
     if (finalProduct) {
+      const mergedProduct = { ...productWithTimestamp, ...finalProduct, updatedAt: now };
       updateProductsLocalAndBroadcast(
-        prev => [finalProduct, ...prev.filter(p => p.id !== finalProduct.id)],
-        () => broadcastProductAddToTabs(finalProduct)
+        prev => [mergedProduct, ...prev.filter(p => p.id !== mergedProduct.id)],
+        () => broadcastProductAddToTabs(mergedProduct)
       );
+      return mergedProduct;
     }
     return finalProduct;
   };
 
   const updateProduct = async (productId, updatedFields) => {
+    const now = new Date().toISOString();
+    const payload = { ...updatedFields, id: productId, updatedAt: now };
+    unmarkProductDeletedLocal(productId);
+
     let finalProduct = null;
     try {
-      finalProduct = await updateProductApi(productId, updatedFields);
+      finalProduct = await updateProductApi(productId, payload);
     } catch (e) {
       console.warn('Lỗi API updateProduct, fallback local:', e);
       const current = products.find(p => p.id === productId) || {};
-      finalProduct = { ...current, ...updatedFields, id: productId };
+      finalProduct = { ...current, ...payload };
     }
     if (finalProduct) {
+      const mergedProduct = { ...payload, ...finalProduct, updatedAt: now };
       updateProductsLocalAndBroadcast(
-        prev => prev.map(p => p.id === productId ? { ...p, ...finalProduct } : p),
-        () => broadcastProductUpdateToTabs(finalProduct)
+        prev => prev.map(p => p.id === productId ? { ...p, ...mergedProduct } : p),
+        () => broadcastProductUpdateToTabs(mergedProduct)
       );
+      return mergedProduct;
     }
     return finalProduct;
   };
 
   const deleteProduct = async (productId) => {
+    markProductDeletedLocal(productId);
     try {
       await deleteProductApi(productId);
     } catch (e) {
@@ -768,6 +894,7 @@ export const ShopProvider = ({ children }) => {
   };
 
   const toggleProductAvailability = async (productId) => {
+    const now = new Date().toISOString();
     let finalProduct = null;
     try {
       finalProduct = await toggleProductApi(productId);
@@ -775,17 +902,19 @@ export const ShopProvider = ({ children }) => {
       console.warn('Lỗi API toggleProduct, fallback local:', e);
       const current = products.find(p => p.id === productId);
       if (current) {
-        finalProduct = { ...current, isAvailable: current.isAvailable === false ? true : false };
+        finalProduct = { ...current, isAvailable: current.isAvailable === false ? true : false, updatedAt: now };
       }
     }
     if (finalProduct) {
+      const mergedProduct = { ...finalProduct, updatedAt: now };
       updateProductsLocalAndBroadcast(
-        prev => prev.map(p => p.id === productId ? { ...p, ...finalProduct } : p),
-        () => broadcastProductUpdateToTabs(finalProduct)
+        prev => prev.map(p => p.id === productId ? { ...p, ...mergedProduct } : p),
+        () => broadcastProductUpdateToTabs(mergedProduct)
       );
+      return mergedProduct;
     } else {
       updateProductsLocalAndBroadcast(
-        prev => prev.map(p => p.id === productId ? { ...p, isAvailable: p.isAvailable === false ? true : false } : p)
+        prev => prev.map(p => p.id === productId ? { ...p, isAvailable: p.isAvailable === false ? true : false, updatedAt: now } : p)
       );
     }
   };

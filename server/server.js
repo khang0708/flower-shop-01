@@ -134,7 +134,8 @@ app.post('/api/products', (req, res) => {
       reviewsCount: 0,
       freshDays: Number(req.body.freshDays) || 4,
       isAvailable: true,
-      createdAt: new Date().toISOString()
+      createdAt: req.body.createdAt || new Date().toISOString(),
+      updatedAt: req.body.updatedAt || new Date().toISOString()
     };
 
     products.unshift(newProduct);
@@ -174,7 +175,7 @@ app.put('/api/products/:id', (req, res) => {
         freshDays: Number(req.body.freshDays) || 4,
         isAvailable: req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : true,
         ...req.body,
-        updatedAt: new Date().toISOString()
+        updatedAt: req.body.updatedAt || new Date().toISOString()
       };
       products.push(newEntry);
       index = products.length - 1;
@@ -185,7 +186,7 @@ app.put('/api/products/:id', (req, res) => {
         price: req.body.price ? Number(req.body.price) : products[index].price,
         originalPrice: req.body.originalPrice ? Number(req.body.originalPrice) : products[index].originalPrice,
         isAvailable: req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : products[index].isAvailable,
-        updatedAt: new Date().toISOString()
+        updatedAt: req.body.updatedAt || new Date().toISOString()
       };
     }
 
@@ -578,7 +579,7 @@ app.post('/api/settings', (req, res) => {
     const updated = {
       ...current,
       ...req.body,
-      updatedAt: new Date().toISOString()
+      updatedAt: req.body.updatedAt || new Date().toISOString()
     };
     writeJson('settings.json', updated);
     res.json({ success: true, data: updated, message: 'Đã lưu cấu hình cài đặt thành công!' });
