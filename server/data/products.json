@@ -1,7 +1,7 @@
 [
   {
     "id": "fl-1787735321783",
-    "name": "Hoa test 1",
+    "name": "Hoa Hồng đỏ Ý",
     "subtitle": "Hoa hồng ",
     "price": 750000,
     "originalPrice": 850000,
@@ -21,7 +21,8 @@
     "reviewsCount": 0,
     "freshDays": 4,
     "isAvailable": true,
-    "createdAt": "2026-08-26T09:08:41.784Z"
+    "createdAt": "2026-08-26T09:08:41.784Z",
+    "updatedAt": "2026-09-12T06:57:56.046Z"
   },
   {
     "id": "fl-01",
