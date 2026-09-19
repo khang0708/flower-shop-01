@@ -4,6 +4,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
+dotenv.config();
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local', override: true });
+}
+import { neon } from '@neondatabase/serverless';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,14 +29,64 @@ if (!fs.existsSync(DATA_DIR)) {
   } catch (e) {}
 }
 
-// In-memory cache for serverless environments (e.g. Vercel)
+// ----------------------------------------------------
+// SHARED PERSISTENT STORAGE (Neon Database & In-Memory Fallback)
+// Giải quyết dứt điểm vấn đề mất dữ liệu giữa các Vercel container
+// ----------------------------------------------------
+let sql = null;
+if (process.env.DATABASE_URL) {
+  try {
+    sql = neon(process.env.DATABASE_URL);
+  } catch (e) {
+    console.warn('Neon client initialization note:', e.message);
+  }
+}
+
+let isTableInitialized = false;
+const ensureTable = async () => {
+  if (!sql || isTableInitialized) return;
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS flora_store (
+        key VARCHAR(50) PRIMARY KEY,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    isTableInitialized = true;
+  } catch (err) {
+    console.warn('ensureTable note:', err.message);
+  }
+};
+
+// In-memory cache for fast access within warm container instances
 const memoryDb = new Map();
 
 // Helpers for JSON Database persistence
-const readJson = (fileName) => {
+const readJson = async (fileName) => {
+  const key = fileName.replace('.json', '');
+
+  // 1. Neon Database (Lưu trữ dùng chung giữa tất cả container Vercel & mọi thiết bị)
+  if (sql) {
+    try {
+      await ensureTable();
+      const rows = await sql`SELECT data FROM flora_store WHERE key = ${key}`;
+      if (rows && rows.length > 0 && rows[0].data !== undefined) {
+        const data = rows[0].data;
+        memoryDb.set(fileName, data);
+        return data;
+      }
+    } catch (dbErr) {
+      console.warn(`[Neon DB] Lỗi đọc ${key}:`, dbErr.message);
+    }
+  }
+
+  // 2. In-memory cache
   if (memoryDb.has(fileName)) {
     return memoryDb.get(fileName);
   }
+
+  // 3. Fallback /tmp container local
   const tmpPath = path.join('/tmp', fileName);
   if (fs.existsSync(tmpPath)) {
     try {
@@ -38,28 +95,47 @@ const readJson = (fileName) => {
       return data;
     } catch (err) {}
   }
+
+  // 4. Fallback DATA_DIR (tệp bundle gốc)
   const filePath = path.join(DATA_DIR, fileName);
   if (!fs.existsSync(filePath)) {
-    return [];
+    return fileName.includes('settings') ? {} : [];
   }
-  const raw = fs.readFileSync(filePath, 'utf-8');
   try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(raw);
     memoryDb.set(fileName, data);
     return data;
   } catch (err) {
     console.error(`Lỗi đọc file ${fileName}:`, err);
-    return [];
+    return fileName.includes('settings') ? {} : [];
   }
 };
 
-const writeJson = (fileName, data) => {
+const writeJson = async (fileName, data) => {
+  const key = fileName.replace('.json', '');
   memoryDb.set(fileName, data);
+
+  // 1. Lưu vào Neon Database (Đồng bộ tức thì lên đám mây cho mọi container)
+  if (sql) {
+    try {
+      await ensureTable();
+      const jsonStr = JSON.stringify(data);
+      await sql`
+        INSERT INTO flora_store (key, data, updated_at)
+        VALUES (${key}, ${jsonStr}, NOW())
+        ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
+      `;
+    } catch (dbErr) {
+      console.error(`[Neon DB] Lỗi ghi ${key}:`, dbErr.message);
+    }
+  }
+
+  // 2. Ghi fallback vào filesystem cục bộ
   try {
     const filePath = path.join(DATA_DIR, fileName);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
-    // Fallback to /tmp if filesystem is read-only (e.g. Vercel Serverless)
     try {
       const tmpPath = path.join('/tmp', fileName);
       fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
@@ -105,9 +181,10 @@ app.get('/api/admin/events', (req, res) => {
 // ----------------------------------------------------
 
 // GET /api/products
-app.get('/api/products', (req, res) => {
+app.get('/api/products', async (req, res) => {
   try {
-    const products = readJson('products.json');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const products = await readJson('products.json');
     res.json({ success: true, data: products, total: products.length });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -115,9 +192,9 @@ app.get('/api/products', (req, res) => {
 });
 
 // POST /api/products (Thêm mẫu hoa mới)
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => {
   try {
-    const products = readJson('products.json');
+    const products = (await readJson('products.json')) || [];
     const newProduct = {
       id: req.body.id || `fl-${Date.now()}`,
       name: req.body.name || 'Bó Hoa Mới',
@@ -139,7 +216,7 @@ app.post('/api/products', (req, res) => {
     };
 
     products.unshift(newProduct);
-    writeJson('products.json', products);
+    await writeJson('products.json', products);
 
     broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: newProduct });
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: newProduct });
@@ -150,10 +227,10 @@ app.post('/api/products', (req, res) => {
 });
 
 // PUT /api/products/:id (Cập nhật mẫu hoa)
-app.put('/api/products/:id', (req, res) => {
+app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json') || [];
+    let products = (await readJson('products.json')) || [];
     let index = products.findIndex(p => p.id === id);
 
     if (index === -1) {
@@ -190,7 +267,7 @@ app.put('/api/products/:id', (req, res) => {
       };
     }
 
-    writeJson('products.json', products);
+    await writeJson('products.json', products);
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
     res.json({ success: true, data: products[index] });
   } catch (error) {
@@ -199,10 +276,10 @@ app.put('/api/products/:id', (req, res) => {
 });
 
 // PATCH /api/products/:id/toggle (Bật/Tắt hiển thị)
-app.patch('/api/products/:id/toggle', (req, res) => {
+app.patch('/api/products/:id/toggle', async (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json') || [];
+    let products = (await readJson('products.json')) || [];
     const index = products.findIndex(p => p.id === id);
 
     if (index === -1) {
@@ -211,7 +288,7 @@ app.patch('/api/products/:id/toggle', (req, res) => {
 
     products[index].isAvailable = products[index].isAvailable === false ? true : false;
     products[index].updatedAt = new Date().toISOString();
-    writeJson('products.json', products);
+    await writeJson('products.json', products);
 
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
     res.json({ success: true, data: products[index] });
@@ -221,17 +298,17 @@ app.patch('/api/products/:id/toggle', (req, res) => {
 });
 
 // DELETE /api/products/:id (Xóa mẫu hoa)
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    let products = readJson('products.json') || [];
+    let products = (await readJson('products.json')) || [];
     const filtered = products.filter(p => p.id !== id);
 
     if (filtered.length === products.length) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu hoa' });
     }
 
-    writeJson('products.json', filtered);
+    await writeJson('products.json', filtered);
     broadcastAdminEvent({ type: 'PRODUCT_DELETED', productId: id });
     res.json({ success: true, message: 'Đã xóa mẫu hoa thành công' });
   } catch (error) {
@@ -245,9 +322,10 @@ app.delete('/api/products/:id', (req, res) => {
 // ----------------------------------------------------
 
 // GET /api/orders
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', async (req, res) => {
   try {
-    const orders = readJson('orders.json');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const orders = await readJson('orders.json');
     res.json({ success: true, data: orders, total: orders.length });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -261,7 +339,9 @@ app.post('/api/orders', async (req, res) => {
     const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
     const currentTime = `${timeStr} (${dateStr})`;
+    const newOrderCode = req.body.orderCode || req.body.id || ('FB-' + Math.floor(10000 + Math.random() * 90000));
 
+    const orders = (await readJson('orders.json')) || [];
     const newOrder = {
       id: newOrderCode,
       orderCode: newOrderCode,
@@ -286,7 +366,7 @@ app.post('/api/orders', async (req, res) => {
     };
 
     orders.unshift(newOrder);
-    writeJson('orders.json', orders);
+    await writeJson('orders.json', orders);
 
     broadcastAdminEvent({
       type: 'NEW_ORDER',
@@ -301,10 +381,10 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // PATCH /api/orders/:id/status
-app.patch('/api/orders/:id/status', (req, res) => {
+app.patch('/api/orders/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    let orders = readJson('orders.json');
+    let orders = (await readJson('orders.json')) || [];
     const index = orders.findIndex(o => o.id === id || o.orderCode === id);
 
     if (index === -1) {
@@ -317,7 +397,7 @@ app.patch('/api/orders/:id/status', (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    writeJson('orders.json', orders);
+    await writeJson('orders.json', orders);
 
     broadcastAdminEvent({
       type: 'ORDER_STATUS_CHANGED',
@@ -462,19 +542,20 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
 // ----------------------------------------------------
 // 4. INVENTORY API
 // ----------------------------------------------------
-app.get('/api/inventory', (req, res) => {
+app.get('/api/inventory', async (req, res) => {
   try {
-    const inventory = readJson('inventory.json');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const inventory = await readJson('inventory.json');
     res.json({ success: true, data: inventory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.put('/api/inventory', (req, res) => {
+app.put('/api/inventory', async (req, res) => {
   try {
     const newInventory = req.body;
-    writeJson('inventory.json', newInventory);
+    await writeJson('inventory.json', newInventory);
     res.json({ success: true, data: newInventory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -482,7 +563,48 @@ app.put('/api/inventory', (req, res) => {
 });
 
 // ----------------------------------------------------
-// 5. AI FLORIST VISION API
+// 5. DISCOUNTS & REVIEWS API
+// ----------------------------------------------------
+app.get('/api/discounts', async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const discounts = await readJson('discounts.json');
+    res.json({ success: true, data: discounts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/api/reviews', async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const reviews = await readJson('reviews.json');
+    res.json({ success: true, data: reviews });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const reviews = (await readJson('reviews.json')) || [];
+    const newReview = {
+      id: req.body.id || `REV-${Date.now()}`,
+      ...req.body,
+      createdAt: req.body.createdAt || new Date().toISOString().split('T')[0],
+      likes: req.body.likes || 0,
+      isVisible: true
+    };
+    reviews.unshift(newReview);
+    await writeJson('reviews.json', reviews);
+    res.status(201).json({ success: true, data: newReview });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ----------------------------------------------------
+// 6. AI FLORIST VISION API
 // ----------------------------------------------------
 app.post('/api/ai/analyze-flower', async (req, res) => {
   try {
@@ -514,7 +636,7 @@ app.post('/api/ai/analyze-flower', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 6. ZALO ZNS & NOTIFICATION API
+// 7. ZALO ZNS & NOTIFICATION API
 // ----------------------------------------------------
 app.post('/api/zalo/send-zns', async (req, res) => {
   try {
@@ -562,26 +684,27 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 7. SETTINGS API
+// 8. SETTINGS API
 // ----------------------------------------------------
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', async (req, res) => {
   try {
-    const settings = readJson('settings.json');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const settings = await readJson('settings.json');
     res.json({ success: true, data: settings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', async (req, res) => {
   try {
-    const current = readJson('settings.json') || {};
+    const current = (await readJson('settings.json')) || {};
     const updated = {
       ...current,
       ...req.body,
       updatedAt: req.body.updatedAt || new Date().toISOString()
     };
-    writeJson('settings.json', updated);
+    await writeJson('settings.json', updated);
     res.json({ success: true, data: updated, message: 'Đã lưu cấu hình cài đặt thành công!' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -631,13 +754,13 @@ const callFacebookSendApi = async (pageAccessToken, recipientId, messageText, qu
 };
 
 // 8.1. Meta Webhook Verification (Xác thực Webhook với Meta Developer Portal)
-app.get('/api/facebook/webhook', (req, res) => {
+app.get('/api/facebook/webhook', async (req, res) => {
   try {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    const settings = readJson('settings.json') || {};
+    const settings = (await readJson('settings.json')) || {};
     const expectedToken = settings.facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026';
 
     if (mode && token) {
@@ -661,7 +784,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
     const body = req.body;
 
     if (body.object === 'page') {
-      const settings = readJson('settings.json') || {};
+      const settings = (await readJson('settings.json')) || {};
       const fbConfig = settings.facebookSettings || {};
 
       for (const entry of (body.entry || [])) {
@@ -688,7 +811,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
           // 1. Trường hợp khách hỏi mã đơn hàng (VD: "Kiểm tra đơn FB-89241")
           if (orderMatch) {
             const searchedCode = orderMatch[0].toUpperCase();
-            const orders = readJson('orders.json') || [];
+            const orders = (await readJson('orders.json')) || [];
             const found = orders.find(o => (o.orderCode || o.id || '').toUpperCase() === searchedCode);
 
             if (found) {
@@ -711,7 +834,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
           } 
           // 2. Trường hợp khách hỏi Menu / Mẫu hoa
           else if (lowerText.includes('hoa') || lowerText.includes('menu') || lowerText.includes('mẫu') || lowerText.includes('giá')) {
-            const products = readJson('products.json') || [];
+            const products = (await readJson('products.json')) || [];
             const topProducts = products.slice(0, 3).map(p => `• ${p.name}: ${Number(p.price).toLocaleString('vi-VN')}đ`).join('\n');
             replyText = `🌸 Dạ chào bạn! Các mẫu hoa thiết kế đang được yêu thích nhất hôm nay tại Flora & Bloom Studio:\n\n` +
               `${topProducts}\n\n` +
@@ -746,7 +869,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
 app.post('/api/facebook/send-message', async (req, res) => {
   try {
     const { recipientId, message, pageAccessToken, quickReplies } = req.body;
-    const settings = readJson('settings.json') || {};
+    const settings = (await readJson('settings.json')) || {};
     const token = pageAccessToken || settings.facebookSettings?.pageAccessToken;
     const targetRecipient = recipientId || settings.facebookSettings?.adminRecipientId;
 

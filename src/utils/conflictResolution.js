@@ -62,12 +62,12 @@ export const mergeProductsWithConflictResolution = (localProducts, serverProduct
       const localTime = lp.updatedAt ? new Date(lp.updatedAt).getTime() : 0;
       const serverTime = sp.updatedAt ? new Date(sp.updatedAt).getTime() : 0;
 
-      if (serverTime > localTime) {
-        // Server có bản cập nhật mới hơn (từ máy khác) -> chấp nhận server
+      if (!lp.updatedAt || localTime === 0 || serverTime > localTime) {
+        // Server có bản cập nhật mới hơn (từ máy khác) hoặc local là dữ liệu mẫu chưa sửa -> chấp nhận server
         productMap.set(sp.id, sp);
       } else {
-        // Local mới hơn hoặc bằng -> GIỮ NGUYÊN BẢN LOCAL!
-        // Không ghi đè text và giá của user vừa sửa!
+        // Local có timestamp mới hơn hoặc bằng -> GIỮ NGUYÊN BẢN LOCAL!
+        // Không ghi đè text và giá của user vừa sửa trên máy này!
       }
     }
   });

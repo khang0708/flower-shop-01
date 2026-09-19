@@ -92,6 +92,32 @@ test('Last-Write-Wins: Bản server mới hơn (updatedAt lớn hơn) ĐƯỢC C
   assert.strictEqual(merged[0].price, 580000);
 });
 
+// 2b. Kiểm tra khi local là dữ liệu mẫu chưa sửa (không có updatedAt hoặc localTime = 0), server phải thắng
+test('Default Local Yields to Server: Local mẫu chưa sửa (updatedAt undefined) nhường chỗ cho server', () => {
+  const localDefault = [
+    {
+      id: 'fl-01',
+      name: 'Bó Hoa Juliet Nắng Ban Mai (Mẫu cứng mặc định)',
+      price: 850000
+      // không có updatedAt
+    }
+  ];
+
+  const serverUpdated = [
+    {
+      id: 'fl-01',
+      name: 'Bó Hoa Juliet Sang Trọng VIP',
+      price: 1200000,
+      updatedAt: '2026-09-19T10:00:00.000Z'
+    }
+  ];
+
+  const merged = mergeProductsWithConflictResolution(localDefault, serverUpdated);
+  assert.strictEqual(merged.length, 1);
+  assert.strictEqual(merged[0].name, 'Bó Hoa Juliet Sang Trọng VIP');
+  assert.strictEqual(merged[0].price, 1200000);
+});
+
 // 3. Kiểm tra sản phẩm mới từ server được bổ sung vào danh mục
 test('Server Sync: Mẫu hoa mới thêm từ server được đồng bộ vào local', () => {
   const localProducts = [

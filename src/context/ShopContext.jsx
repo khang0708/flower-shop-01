@@ -586,19 +586,27 @@ export const ShopProvider = ({ children }) => {
 
       // 1. Đồng bộ Mẫu Hoa với Conflict Resolution & Auto-Rehydration
       if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+        const itemsToRehydrate = [];
         updateProductsLocalAndBroadcast(currentProducts => {
           const merged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
-          // Tự động re-push các sản phẩm local mới hơn lên container server ngầm (để bù đắp cho container cold start)
+          // Tìm các sản phẩm local có timestamp mới hơn server để re-push ngầm ngoài updater
           merged.forEach(mp => {
             const sp = apiProducts.find(p => p.id === mp.id);
             const localTime = mp.updatedAt ? new Date(mp.updatedAt).getTime() : 0;
             const serverTime = sp?.updatedAt ? new Date(sp.updatedAt).getTime() : 0;
-            if (localTime > serverTime) {
-              updateProductApi(mp.id, mp).catch(() => {});
+            if (localTime > 0 && localTime > serverTime) {
+              itemsToRehydrate.push(mp);
             }
           });
           return merged;
         });
+
+        // Re-push ngoài render lifecycle của React
+        if (itemsToRehydrate.length > 0) {
+          itemsToRehydrate.forEach(mp => {
+            updateProductApi(mp.id, mp).catch(() => {});
+          });
+        }
       }
 
       // 2. Đồng bộ Đơn Hàng an toàn
