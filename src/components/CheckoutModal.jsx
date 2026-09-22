@@ -453,60 +453,6 @@ export const CheckoutModal = () => {
                 </div>
               )}
             </div>
-
-            {/* 4. Phương thức thanh toán */}
-            <div className="bg-[#FAF8F5] p-5 rounded-2xl border border-[#E8EFEA] space-y-3">
-              <h3 className="font-serif text-base font-bold text-[#1B3B2B] flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#1B3B2B] text-white text-[11px] flex items-center justify-center font-sans">4</span>
-                Phương Thức Thanh Toán
-              </h3>
-
-              <div className="space-y-2">
-                {[
-                  { id: 'qr_transfer', label: 'Quét mã VietQR chuyển khoản tức thì (Miễn phí)', badge: 'Khuyên dùng', icon: '📱' },
-                  { id: 'momo', label: 'Ví MoMo / ZaloPay', badge: 'Tiện lợi', icon: '🟣' },
-                  { id: 'card', label: 'Thẻ Quốc tế Visa / Mastercard', badge: 'Quốc tế', icon: '💳' },
-                ].map((m) => (
-                  <label
-                    key={m.id}
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${
-                      paymentMethod === m.id 
-                        ? 'border-[#1B3B2B] bg-white ring-1 ring-[#1B3B2B] shadow-sm' 
-                        : 'border-gray-200 bg-white/70 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">{m.icon}</span>
-                      <span className="font-semibold text-gray-800">{m.label}</span>
-                    </div>
-                    <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                      {m.badge}
-                    </span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Dynamic VietQR Preview Mockup */}
-              {paymentMethod === 'qr_transfer' && (
-                <div className="p-4 bg-white rounded-xl border border-dashed border-[#5C8A70] flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center p-1.5 flex-shrink-0">
-                    <img 
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=NGOCFLOWER_ORDER_PAYMENT" 
-                      alt="VietQR" 
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="text-[11px] text-gray-600 space-y-1">
-                    <span className="font-bold text-[#1B3B2B] block text-xs">Mã QR VietQR Tự Động</span>
-                    <p>Ngân hàng: <strong>Techcombank (1903 888 666)</strong></p>
-                    <p>Chủ TK: <strong>NGỌC FLOWER</strong></p>
-                    <p className="text-emerald-700 font-semibold">Tự động kích hoạt đơn ngay khi quét</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
 
           {/* CỘT PHẢI: TÓM TẮT ĐƠN HÀNG (5 Cột) */}
