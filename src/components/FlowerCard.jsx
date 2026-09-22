@@ -16,7 +16,7 @@ export const FlowerCard = ({ flower }) => {
       >
         <img
           src={flower.image}
-          alt={`Mẫu hoa tươi ${flower.name} - Flora & Bloom`}
+          alt={`Mẫu hoa tươi ${flower.name} - Ngọc Flower`}
           width="320"
           height="400"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"

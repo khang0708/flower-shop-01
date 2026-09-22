@@ -299,7 +299,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateFileStr}.xlsx`);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Ngoc_Flower_${dateFileStr}.xlsx`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -341,7 +341,7 @@ export const SalesAnalyticsView = ({ orders = [], products = [] }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Flora_Bloom_${dateFileStr}.csv`);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_Ngoc_Flower_${dateFileStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { Printer, X, Sparkles, FileText, Heart, CheckCircle2 } from 'lucide-react';
+import { NgocFlowerEmblem } from './BrandLogo';
 
 export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
-  const { shopZaloPhone } = useShop();
+  const { shopZaloPhone, shopAddress } = useShop();
   const [printSection, setPrintSection] = useState('all'); // 'all' | 'invoice_only' | 'card_only'
 
   if (!isOpen || !order) return null;
@@ -156,12 +157,15 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
               
               {/* Header Shop & Mã Đơn */}
               <div className="flex justify-between items-start border-b-2 border-gray-900 pb-3">
-                <div>
-                  <h2 className="font-serif text-xl sm:text-2xl font-black text-gray-950 tracking-tight">
-                    FLORA & BLOOM ATELIER
-                  </h2>
-                  <p className="text-[11px] text-gray-600 italic">Tiệm Hoa Tươi Nghệ Thuật & Thiết Kế Quà Tặng</p>
-                  <p className="text-[10px] text-gray-700 mt-0.5 font-medium">📍 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM • Hotline/Zalo: {shopZaloPhone}</p>
+                <div className="flex items-center gap-3">
+                  <NgocFlowerEmblem size={46} />
+                  <div>
+                    <h2 className="font-serif text-xl sm:text-2xl font-black text-gray-950 tracking-tight leading-none">
+                      NGỌC FLOWER
+                    </h2>
+                    <p className="text-[11px] text-gray-600 italic mt-1">Tiệm Hoa Tươi Nghệ Thuật & Thiết Kế Quà Tặng</p>
+                    <p className="text-[10px] text-gray-700 mt-0.5 font-medium">📍 {shopAddress || '44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk'} • Hotline/Zalo: {shopZaloPhone}</p>
+                  </div>
                 </div>
 
                 <div className="text-right">
@@ -227,7 +231,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                     <tr className="bg-gray-50 text-gray-800">
                       <td className="p-2 text-center font-mono border-r border-gray-200">#</td>
                       <td className="p-2 font-medium border-r border-gray-200">
-                        🚚 Phí giao hoa tận tay (Flora Express)
+                        🚚 Phí giao hoa tận tay (Ngọc Flower Express)
                         {order.isShippingConfirmed && <span className="text-[10px] text-emerald-800 font-bold ml-1.5">(Xưởng đã xác nhận)</span>}
                       </td>
                       <td className="p-2 text-right font-mono font-bold text-gray-900">
@@ -268,7 +272,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                 </div>
                 <div>
                   <span className="font-bold block text-gray-900">Shipper Giao Hàng</span>
-                  <span className="text-[10px] italic">Flora Express (Ký nhận)</span>
+                  <span className="text-[10px] italic">Ngọc Flower Express (Ký nhận)</span>
                 </div>
                 <div>
                   <span className="font-bold block text-gray-900">Khách Hàng Nhận Hoa</span>
@@ -292,7 +296,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                     Thiệp Chúc Mừng Nghệ Thuật
                   </span>
                 </div>
-                <span className="text-[10px] text-gray-500 font-serif italic">Flora & Bloom Handwritten Card</span>
+                <span className="text-[10px] text-gray-500 font-serif italic">Ngọc Flower Handwritten Card</span>
               </div>
 
               <div className="py-5 px-4 sm:px-8 text-center space-y-3.5">
@@ -312,7 +316,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
               </div>
 
               <div className="text-center border-t border-gray-300 pt-2 text-[10px] text-gray-500 italic font-serif">
-                🌸 "Mỗi đóa hoa là một sứ giả của tình yêu thương trọn vẹn" • florabloom.vn
+                🌸 "Mỗi đóa hoa là một sứ giả của tình yêu thương trọn vẹn" • ngocflower.vn
               </div>
 
             </div>

@@ -9,6 +9,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
+import { BrandLogo } from './BrandLogo';
 
 export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const { telegramChatId } = useShop();
@@ -30,7 +31,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       const googleAdminUser = {
         id: 'admin_google_01',
         name: 'Quản Trị Viên (Google)',
-        email: 'admin.flora@gmail.com',
+        email: 'admin.ngocflower@gmail.com',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
         provider: 'google',
         role: 'SUPER_ADMIN',
@@ -52,8 +53,8 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     setTimeout(() => {
       const fbAdminUser = {
         id: 'admin_fb_02',
-        name: 'Chủ Shop Flora (Facebook)',
-        email: 'shop.owner@flora.vn',
+        name: 'Chủ Shop Ngọc Flower (Facebook)',
+        email: 'shop.owner@ngocflower.vn',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
         provider: 'facebook',
         role: 'STUDIO_DIRECTOR',
@@ -78,7 +79,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       const tgAdminUser = {
         id: `tg_${tgId}`,
         name: `Admin Telegram (#${tgId.slice(-4)})`,
-        email: `telegram_${tgId}@flora.vn`,
+        email: `telegram_${tgId}@ngocflower.vn`,
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
         provider: 'telegram',
         telegramChatId: tgId,
@@ -104,7 +105,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         const pinAdminUser = {
           id: 'admin_pin_00',
           name: 'Nghệ Nhân Điều Hành',
-          email: 'atelier@florabloom.vn',
+          email: 'atelier@ngocflower.vn',
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
           provider: 'pin',
           role: 'ADMIN',
@@ -129,11 +130,8 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         
         {/* Header */}
         <div className="bg-gradient-to-br from-[#1B3B2B] to-[#264A37] text-white p-6 text-center relative">
-          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3 border border-white/20 shadow-inner">
-            <Lock className="w-6 h-6 text-[#F5D6CE]" />
-          </div>
-          <h3 className="font-serif text-xl font-bold">Flora Atelier Portal</h3>
-          <p className="text-[11px] text-emerald-200 mt-1">Cổng đăng nhập điều hành xưởng hoa</p>
+          <BrandLogo variant="stacked" size="md" theme="light" showTagline={false} className="mb-1" />
+          <p className="text-[11px] text-emerald-200 mt-1">Cổng điều hành & quản trị xưởng hoa</p>
           
           <button
             onClick={onClose}

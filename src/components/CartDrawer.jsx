@@ -3,6 +3,7 @@ import { useShop } from '../context/ShopContext';
 import { openPersonalZaloChat } from '../services/zaloService';
 import { openFacebookMessenger } from '../services/facebookService';
 import { X, Trash2, Plus, Minus, ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
+import { ZaloIcon } from './ZaloIcon';
 
 export const CartDrawer = () => {
   const { 
@@ -265,7 +266,7 @@ export const CartDrawer = () => {
                       const itemsSummary = cart.map(it => it.name).join(', ');
                       openFacebookMessenger(
                         facebookSettings?.pageId,
-                        `Chào Flora & Bloom, tôi đang chọn các mẫu hoa trong giỏ: ${itemsSummary}. Tôi muốn nhờ tiệm tư vấn đổi hoa / viết thiệp riêng giúp tôi nhé!`
+                        `Chào Ngọc Flower, tôi đang chọn các mẫu hoa trong giỏ: ${itemsSummary}. Tôi muốn nhờ tiệm tư vấn đổi hoa / viết thiệp riêng giúp tôi nhé!`
                       );
                     }}
                     className="py-2 px-2.5 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 text-[#7B3FE4] border border-purple-200 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all"
@@ -292,7 +293,7 @@ export const CartDrawer = () => {
                   }`}
                   title={`Chat Zalo (${shopZaloPhone})`}
                 >
-                  <span className="font-extrabold text-xs">Z</span>
+                  <ZaloIcon className="w-3.5 h-3.5" variant="blue" />
                   <span>Chat Zalo</span>
                 </button>
               </div>

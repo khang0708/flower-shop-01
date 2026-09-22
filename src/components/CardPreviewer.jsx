@@ -116,8 +116,8 @@ export const CardPreviewer = ({
         
         <div className="p-6 bg-[#FFFDF9] rounded-2xl border-2 border-dashed border-[#E8998D] shadow-sm relative overflow-hidden">
           {/* Watermark Logo */}
-          <div className="absolute -right-4 -bottom-4 text-[#F5D6CE]/40 font-serif text-7xl select-none pointer-events-none italic">
-            Flora
+          <div className="absolute -right-4 -bottom-4 text-[#F5D6CE]/40 font-serif text-6xl select-none pointer-events-none italic">
+            Ngọc Flower
           </div>
 
           <div className="text-center font-script text-xl sm:text-2xl text-[#1B3B2B] leading-relaxed min-h-[60px] flex items-center justify-center">

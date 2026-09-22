@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { openPersonalZaloChat } from '../services/zaloService';
 import { MessageCircle, X, Sparkles, Send, PhoneCall } from 'lucide-react';
+import { ZaloIcon } from './ZaloIcon';
 
 export const ZaloChatFloatingButton = () => {
   const { shopZaloPhone } = useShop();
   const [isOpen, setIsOpen] = useState(false);
-  const [quickMessage, setQuickMessage] = useState('Chào Flora & Bloom, tôi muốn tư vấn mẫu bó hoa...');
+  const [quickMessage, setQuickMessage] = useState('Chào Ngọc Flower, tôi muốn tư vấn mẫu bó hoa...');
 
   const handleOpenZalo = () => {
     openPersonalZaloChat(shopZaloPhone);
@@ -21,8 +22,8 @@ export const ZaloChatFloatingButton = () => {
           {/* Header */}
           <div className="bg-[#0068FF] text-white p-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-white text-[#0068FF] flex items-center justify-center font-bold text-sm">
-                Z
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-xs">
+                <ZaloIcon className="w-5 h-5" variant="blue" />
               </div>
               <div>
                 <h4 className="text-xs font-bold leading-tight">Chat Zalo Cá Nhân Chủ Shop</h4>
@@ -74,7 +75,7 @@ export const ZaloChatFloatingButton = () => {
         title={`Chat Zalo Cá Nhân (${shopZaloPhone})`}
         aria-label={`Chat Zalo tư vấn hoa tươi với shop số ${shopZaloPhone}`}
       >
-        <span className="font-extrabold text-xl font-sans">Z</span>
+        <ZaloIcon className="w-7 h-7" variant="white" />
         <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" />
       </button>
 

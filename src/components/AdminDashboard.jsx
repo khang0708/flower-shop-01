@@ -18,6 +18,7 @@ import {
 import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
+import { NgocFlowerEmblem } from './BrandLogo';
 import { 
   ShoppingBag, 
   Flower2, 
@@ -89,6 +90,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     deleteReview,
     shopZaloPhone,
     setShopZaloPhone,
+    shopAddress,
+    setShopAddress,
     telegramBotToken,
     setTelegramBotToken,
     telegramChatId,
@@ -236,8 +239,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     freshDays: 4,
   });
 
-  // State Cài đặt Zalo & Telegram
+  // State Cài đặt Zalo, Địa Chỉ & Telegram
   const [inputShopPhone, setInputShopPhone] = useState(shopZaloPhone);
+  const [inputShopAddress, setInputShopAddress] = useState(shopAddress || '44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk');
   const [inputBotToken, setInputBotToken] = useState(telegramBotToken);
   const [inputChatId, setInputChatId] = useState(telegramChatId);
   const [saveZaloSuccess, setSaveZaloSuccess] = useState(false);
@@ -250,12 +254,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
 
   // State Cài đặt Facebook Messenger
   const [inputFbPageId, setInputFbPageId] = useState(facebookSettings?.pageId || 'tiemhoaflorabloom');
-  const [inputFbPageName, setInputFbPageName] = useState(facebookSettings?.pageName || 'Flora & Bloom - Tiệm Hoa Tươi');
+  const [inputFbPageName, setInputFbPageName] = useState(facebookSettings?.pageName || 'Ngọc Flower - Tiệm Hoa Tươi');
   const [inputFbToken, setInputFbToken] = useState(facebookSettings?.pageAccessToken || '');
   const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026');
   const [inputFbRecipientId, setInputFbRecipientId] = useState(facebookSettings?.adminRecipientId || '');
   const [inputFbEnabled, setInputFbEnabled] = useState(facebookSettings?.isEnabled !== false);
-  const [inputFbWelcomeMsg, setInputFbWelcomeMsg] = useState(facebookSettings?.welcomeMessage || 'Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn.');
+  const [inputFbWelcomeMsg, setInputFbWelcomeMsg] = useState(facebookSettings?.welcomeMessage || 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn.');
   const [inputFbAutoReply, setInputFbAutoReply] = useState(facebookSettings?.autoReplyEnabled !== false);
   const [showFbGuide, setShowFbGuide] = useState(false);
   const [facebookStatus, setFacebookStatus] = useState(null);
@@ -272,6 +276,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   useEffect(() => {
     if (shopZaloPhone) setInputShopPhone(shopZaloPhone);
   }, [shopZaloPhone]);
+
+  useEffect(() => {
+    if (shopAddress) setInputShopAddress(shopAddress);
+  }, [shopAddress]);
 
   useEffect(() => {
     if (facebookSettings) {
@@ -365,8 +373,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     const cleanToken = (inputBotToken || '').trim();
     const cleanChatId = (inputChatId || '').trim();
     const cleanPhone = (inputShopPhone || '').trim();
+    const cleanAddress = (inputShopAddress || '').trim();
 
     setShopZaloPhone(cleanPhone);
+    if (setShopAddress) setShopAddress(cleanAddress);
     setTelegramBotToken(cleanToken);
     setTelegramChatId(cleanChatId);
 
@@ -449,7 +459,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const handleSendShippingZaloQuote = (order) => {
     const shipFee = Number(order.shippingFee || 0);
     const shipText = shipFee === 0 ? 'Miễn phí giao hoa (Freeship 0đ)' : `${shipFee.toLocaleString('vi-VN')}đ`;
-    const message = `🌸 Chào ${order.customerName}, Flora & Bloom Studio xin gửi thông tin xác nhận & báo giá đơn hoa #${order.orderCode || order.id}:\n\n` +
+    const message = `🌸 Chào ${order.customerName}, Ngọc Flower xin gửi thông tin xác nhận & báo giá đơn hoa #${order.orderCode || order.id}:\n\n` +
       `💐 Mẫu hoa: ${order.productName}\n` +
       `📍 Giao đến: ${order.receiverAddress}\n` +
       `⏱️ Khung giờ hẹn: ${order.deliverySlot}\n` +
@@ -640,11 +650,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           {/* Sidebar Top: Brand Header */}
           <div className="p-5 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-[#F5D6CE] font-serif text-lg font-bold border border-white/10 shadow-xs">
-                🌸
-              </div>
+              <NgocFlowerEmblem size={36} />
               <div>
-                <h2 className="font-serif text-base font-bold text-white leading-tight">Flora & Bloom</h2>
+                <h2 className="font-serif text-base font-bold text-white leading-tight">Ngọc Flower</h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-[10px] text-emerald-200 uppercase font-bold tracking-wider">Admin Portal</span>
@@ -752,17 +760,6 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <span>← Về Cửa Hàng</span>
             </button>
 
-            {/* Nút xem trực tiếp Cẩm Nang PDF */}
-            <a
-              href="/Huong_Dan_Su_Dung_Flora_Bloom.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-[#E8998D]/20 hover:bg-[#E8998D]/30 text-[#F5D6CE] hover:text-white py-2 rounded-xl text-xs font-bold transition-all border border-[#E8998D]/30"
-              title="Mở cẩm nang hướng dẫn sử dụng file PDF (9 trang)"
-            >
-              <span>📖 Cẩm Nang HDSD (.PDF)</span>
-            </a>
-
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2 min-w-0">
                 <img
@@ -818,7 +815,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   {activeTab === 'shipping_config' && '🚚 Cấu Hình Phí Giao Hoa & Freeship'}
                   {activeTab === 'zalo_config' && '💬 Cấu Hình Kênh Chat & MXH (Zalo, Telegram, Messenger)'}
                 </h1>
-                <span className="text-[10px] text-gray-400 hidden sm:block">Flora & Bloom Atelier • Bảng Điều Hành Trung Tâm</span>
+                <span className="text-[10px] text-gray-400 hidden sm:block">Ngọc Flower • Bảng Điều Hành Trung Tâm</span>
               </div>
             </div>
 
@@ -1844,18 +1841,34 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 </h4>
 
                 <form onSubmit={handleSaveZaloSettings} className="space-y-5 text-xs">
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">
-                      1. Số Điện Thoại Zalo Cá Nhân Của Bạn:
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={inputShopPhone}
-                      onChange={(e) => setInputShopPhone(e.target.value)}
-                      placeholder="Ví dụ: 0909123456"
-                      className="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0068FF] text-sm font-semibold"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">
+                        1. Số Điện Thoại Zalo / Hotline Của Shop:
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={inputShopPhone}
+                        onChange={(e) => setInputShopPhone(e.target.value)}
+                        placeholder="Ví dụ: 0387970583"
+                        className="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0068FF] text-sm font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">
+                        Địa Chỉ Xưởng Hoa / Cửa Hàng:
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={inputShopAddress}
+                        onChange={(e) => setInputShopAddress(e.target.value)}
+                        placeholder="Ví dụ: 44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk"
+                        className="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0068FF] text-sm font-semibold"
+                      />
+                    </div>
                   </div>
 
                   <div className="pt-3 border-t border-gray-100 space-y-3">
@@ -2088,7 +2101,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           type="text"
                           value={inputFbPageName}
                           onChange={(e) => setInputFbPageName(e.target.value)}
-                          placeholder="VD: Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật"
+                          placeholder="VD: Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật"
                           className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0084FF] text-[11px]"
                         />
                       </div>
@@ -2209,7 +2222,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h5 className="font-bold text-gray-900 text-xs truncate">{inputFbPageName || 'Flora & Bloom Fanpage'}</h5>
+                      <h5 className="font-bold text-gray-900 text-xs truncate">{inputFbPageName || 'Ngọc Flower Fanpage'}</h5>
                       <span className="text-[10px] text-gray-500 font-mono">@{cleanFacebookPageId(inputFbPageId)}</span>
                     </div>
                   </div>
@@ -2735,13 +2748,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     required
                     value={discountFormData.code}
                     onChange={(e) => setDiscountFormData({ ...discountFormData, code: e.target.value.toUpperCase() })}
-                    placeholder="VD: FLORA2026"
+                    placeholder="VD: NGOCFLOWER2026"
                     className="flex-1 p-2.5 rounded-xl border border-gray-300 focus:outline-none uppercase font-mono font-bold"
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      const randomCode = `FLORA${Math.floor(10 + Math.random() * 90)}`;
+                      const randomCode = `NGOC${Math.floor(10 + Math.random() * 90)}`;
                       setDiscountFormData({ ...discountFormData, code: randomCode });
                     }}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium"
@@ -3008,7 +3021,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   <div className="aspect-[4/3] rounded-xl overflow-hidden border-2 border-white shadow-sm relative">
                     <img src={proofPhotoInput} alt="Preview ảnh hoa thật" className="w-full h-full object-cover" />
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] px-2.5 py-1 rounded-md">
-                      Chụp lúc {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • Xưởng Flora Studio
+                      Chụp lúc {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • Xưởng Ngọc Flower Studio
                     </div>
                   </div>
                 </div>

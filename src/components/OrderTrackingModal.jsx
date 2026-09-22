@@ -19,6 +19,7 @@ import {
 
 import { openPersonalZaloChat } from '../services/zaloService';
 import { generateMessengerOrderInquiry } from '../services/facebookService';
+import { ZaloIcon } from './ZaloIcon';
 
 export const OrderTrackingModal = () => {
   const { isTrackingOpen, setIsTrackingOpen, activeOrder, approvePhotoProof, shopZaloPhone, facebookSettings } = useShop();
@@ -121,7 +122,7 @@ export const OrderTrackingModal = () => {
                 className="p-2.5 bg-[#0068FF] text-white rounded-full hover:bg-blue-600 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
                 title={`Chat Zalo Với Xưởng Hoa (${shopZaloPhone})`}
               >
-                <span className="font-bold text-xs">Z</span>
+                <ZaloIcon className="w-4 h-4" variant="white" />
               </button>
             </div>
           </div>
@@ -195,7 +196,7 @@ export const OrderTrackingModal = () => {
                   />
                   <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <Sparkles className="w-3.5 h-3.5 text-[#F5D6CE]" />
-                    <span>Chụp thực tế lúc {activeOrder.proofPhotoTime || activeOrder.createdAt} • Xưởng Flora Studio</span>
+                    <span>Chụp thực tế lúc {activeOrder.proofPhotoTime || activeOrder.createdAt} • Xưởng Ngọc Flower Studio</span>
                   </div>
                 </div>
 
@@ -237,7 +238,7 @@ export const OrderTrackingModal = () => {
                 ) : (
                   <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium border border-emerald-200">
                     <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>Bạn đã duyệt mẫu hoa thực tế! Shipper Flora Express đang di chuyển đến địa chỉ nhận.</span>
+                    <span>Bạn đã duyệt mẫu hoa thực tế! Shipper Ngọc Flower Express đang di chuyển đến địa chỉ nhận.</span>
                   </div>
                 )}
               </div>

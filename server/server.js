@@ -509,7 +509,7 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
       `💰 <b>Tổng tiền:</b> ${Number(order.totalAmount).toLocaleString('vi-VN')}đ\n` +
       `⏱️ <b>Khung giờ:</b> ${order.deliverySlot}\n` +
       `📍 <b>Giao tới:</b> ${order.receiverAddress}\n\n` +
-      `👉 <i>Hãy mở Bảng Điều Hành Admin Flora & Bloom để duyệt ảnh và cắm hoa nhé!</i>`;
+      `👉 <i>Hãy mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
 
     const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
     const tgRes = await fetch(telegramUrl, {
@@ -829,21 +829,21 @@ app.post('/api/facebook/webhook', async (req, res) => {
                 (found.proofPhotoUrl ? `📸 Xem ảnh hoa thực tế: ${found.proofPhotoUrl}\n` : '') +
                 `👉 Nếu quý khách cần thay đổi nội dung thiệp hoặc hỗ trợ gấp, vui lòng nhắn tin ngay tại đây nhé!`;
             } else {
-              replyText = `🌸 Flora & Bloom đã tìm kiếm nhưng chưa thấy mã đơn #${searchedCode} trên hệ thống. Quý khách vui lòng kiểm tra lại mã đơn hoặc để lại số điện thoại đặt hoa để tiệm tra cứu nhé!`;
+              replyText = `🌸 Ngọc Flower đã tìm kiếm nhưng chưa thấy mã đơn #${searchedCode} trên hệ thống. Quý khách vui lòng kiểm tra lại mã đơn hoặc để lại số điện thoại đặt hoa để tiệm tra cứu nhé!`;
             }
           } 
           // 2. Trường hợp khách hỏi Menu / Mẫu hoa
           else if (lowerText.includes('hoa') || lowerText.includes('menu') || lowerText.includes('mẫu') || lowerText.includes('giá')) {
             const products = (await readJson('products.json')) || [];
             const topProducts = products.slice(0, 3).map(p => `• ${p.name}: ${Number(p.price).toLocaleString('vi-VN')}đ`).join('\n');
-            replyText = `🌸 Dạ chào bạn! Các mẫu hoa thiết kế đang được yêu thích nhất hôm nay tại Flora & Bloom Studio:\n\n` +
+            replyText = `🌸 Dạ chào bạn! Các mẫu hoa thiết kế đang được yêu thích nhất hôm nay tại Ngọc Flower Studio:\n\n` +
               `${topProducts}\n\n` +
               `💐 Tất cả mẫu hoa đều được tặng kèm thiệp thiết kế & túi xách cao cấp. Bạn muốn tiệm tư vấn hoa cho dịp nào ạ?`;
           } 
           // 3. Chào mừng mặc định
           else {
             replyText = fbConfig.welcomeMessage || 
-              'Dạ chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn. Bạn muốn tư vấn đặt hoa theo dịp hay cần tra cứu tiến trình đơn hàng đã đặt ạ? 🌸';
+              'Dạ chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn. Bạn muốn tư vấn đặt hoa theo dịp hay cần tra cứu tiến trình đơn hàng đã đặt ạ? 🌸';
           }
 
           // Gửi phản hồi qua Graph API nếu có Token, hoặc log nếu mock
@@ -911,7 +911,7 @@ app.post('/api/facebook/test-connection', async (req, res) => {
       deliverySlot: 'Hỏa tốc 90 phút'
     };
 
-    const notificationMessage = `🌸 [FLORA & BLOOM] THÔNG BÁO TEST KẾT NỐI MESSENGER!\n\n` +
+    const notificationMessage = `🌸 [NGỌC FLOWER] THÔNG BÁO TEST KẾT NỐI MESSENGER!\n\n` +
       `👤 Khách hàng: ${order.customerName}\n` +
       `💐 Mẫu hoa: ${order.productName}\n` +
       `💰 Tổng tiền: ${Number(order.totalAmount).toLocaleString('vi-VN')}đ\n` +
@@ -951,7 +951,7 @@ app.post('/api/facebook/test-connection', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ONLINE',
-    service: 'Flora & Bloom Atelier Backend API',
+    service: 'Ngọc Flower Atelier Backend API',
     time: new Date().toISOString(),
     version: '1.0.0'
   });
@@ -959,7 +959,7 @@ app.get('/api/health', (req, res) => {
 
 if (!process.env.VERCEL) {
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🌸 Flora & Bloom API Server đang chạy tại: http://127.0.0.1:${PORT}`);
+    console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
   });
 
   process.on('SIGTERM', () => server.close());

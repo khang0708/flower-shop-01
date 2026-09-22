@@ -5,11 +5,12 @@ import {
   Heart, 
   Sparkles, 
   Search, 
-  Smartphone, 
+  Phone, 
   PackageCheck,
   Menu,
   X
 } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 export const Header = () => {
   const { 
@@ -18,8 +19,6 @@ export const Header = () => {
     setIsCartOpen, 
     setIsAIFloristOpen, 
     setIsTrackingOpen,
-    isZaloMode,
-    setIsZaloMode,
     searchQuery,
     setSearchQuery,
     activeOrder,
@@ -50,33 +49,6 @@ export const Header = () => {
 
           {/* Hotline & Zalo Actions */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Nút bật/tắt chế độ Zalo Mini App cho khách */}
-            <button
-              onClick={() => setIsZaloMode(!isZaloMode)}
-              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
-                isZaloMode 
-                  ? 'bg-[#0068FF] text-white shadow-sm' 
-                  : 'bg-white/10 hover:bg-white/20 text-white'
-              }`}
-              title="Chuyển đổi góc nhìn mô phỏng Zalo Mini App"
-            >
-              <Smartphone className="w-3 h-3" />
-              <span>{isZaloMode ? '⚡ Zalo Mini App' : 'Mô phỏng Zalo'}</span>
-            </button>
-
-            {/* Nút xem & tải Cẩm Nang Hướng Dẫn Sử Dụng PDF */}
-            <a
-              href="/Huong_Dan_Su_Dung_Flora_Bloom.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white transition-all"
-              title="Xem cẩm nang hướng dẫn sử dụng hệ thống đầy đủ 9 trang (.PDF)"
-            >
-              <span>📖 Cẩm Nang PDF</span>
-            </a>
-
-            <span className="hidden sm:inline text-white/40">|</span>
-
             <a 
               href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`} 
               className="hover:text-white font-semibold flex items-center gap-1 text-[11px] sm:text-xs whitespace-nowrap bg-white/10 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-full"
@@ -104,13 +76,8 @@ export const Header = () => {
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           
-          <a href="#" className="flex flex-col" aria-label="Trang chủ Flora & Bloom">
-            <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#1B3B2B] leading-none">
-              Flora & Bloom
-            </span>
-            <span className="text-[9px] uppercase tracking-[0.25em] text-[#C4685A] font-semibold mt-0.5">
-              Botanical Atelier
-            </span>
+          <a href="#" aria-label="Trang chủ Ngọc Flower" className="group">
+            <BrandLogo variant="horizontal" size="md" theme="dark" />
           </a>
         </div>
 
@@ -131,17 +98,6 @@ export const Header = () => {
 
         {/* Action Buttons Cho Khách Hàng */}
         <div className="flex items-center gap-2 sm:gap-3">
-          
-          {/* Nút Trợ lý AI Florist Vision */}
-          <button
-            onClick={() => setIsAIFloristOpen(true)}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-[#1B3B2B] to-[#345543] hover:to-[#1B3B2B] text-white text-xs font-semibold px-3.5 py-2 rounded-full shadow-sm hover:shadow-md transition-all active:scale-95 group"
-            aria-label="Trợ lý thẩm định hoa AI"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#F5D6CE] group-hover:rotate-12 transition-transform" />
-            <span className="hidden sm:inline">Thẩm định hoa AI</span>
-            <span className="sm:hidden">AI</span>
-          </button>
 
           {/* Nút Theo dõi đơn hàng (Live Tracking) */}
           <button
@@ -199,20 +155,14 @@ export const Header = () => {
 
           {/* Quick Action Badges on Mobile */}
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              onClick={() => {
-                setIsZaloMode(!isZaloMode);
-                setMobileMenuOpen(false);
-              }}
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border ${
-                isZaloMode 
-                  ? 'bg-[#0068FF] text-white border-[#0068FF]' 
-                  : 'bg-[#FAF8F5] text-gray-700 border-gray-200'
-              }`}
+            <a
+              href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200"
             >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{isZaloMode ? '⚡ Zalo Mini App' : 'Mô Phỏng Zalo'}</span>
-            </button>
+              <Phone className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Hotline: {shopZaloPhone}</span>
+            </a>
 
             <button
               onClick={() => {

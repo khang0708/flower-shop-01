@@ -692,7 +692,8 @@ function fullstackApiPlugin() {
 export default defineConfig({
   plugins: [react(), fullstackApiPlugin()],
   server: {
-    port: 5173,
+    port: Number(process.env.VITE_PORT) || 5180,
+    strictPort: false,
     host: true,
     allowedHosts: true,
   },

@@ -1,9 +1,9 @@
-import React from 'react';
+import { ShieldCheck, Clock, ArrowRight, HeartHandshake, MessageCircle } from 'lucide-react';
+import { openPersonalZaloChat } from '../services/zaloService';
 import { useShop } from '../context/ShopContext';
-import { Sparkles, ShieldCheck, Clock, ArrowRight, HeartHandshake } from 'lucide-react';
 
 export const HeroSection = () => {
-  const { setIsAIFloristOpen, setSelectedOccasion } = useShop();
+  const { setSelectedOccasion, shopZaloPhone } = useShop();
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#FAF8F5] via-[#F4F7F5] to-[#FAF8F5] py-12 md:py-16">
@@ -29,7 +29,7 @@ export const HeroSection = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-sans font-light">
-              Mỗi bó hoa tại <strong>Flora & Bloom</strong> là một tác phẩm thủ công độc bản. Chúng tôi cam kết chụp ảnh duyệt trước khi giao, miễn phí thiệp in nghệ thuật và giao hỏa tốc chỉ từ 60 phút.
+              Mỗi bó hoa tại <strong>Ngọc Flower</strong> là một tác phẩm thủ công độc bản. Chúng tôi cam kết chụp ảnh duyệt trước khi giao, miễn phí thiệp in nghệ thuật và giao hỏa tốc chỉ từ 60 phút.
             </p>
 
             {/* Action Buttons */}
@@ -44,11 +44,12 @@ export const HeroSection = () => {
               </a>
 
               <button
-                onClick={() => setIsAIFloristOpen(true)}
-                className="bg-white hover:bg-[#FAF4F0] text-[#1B3B2B] border border-[#E8998D] text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-sm transition-all flex items-center gap-2 active:scale-95 group"
+                type="button"
+                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn được tư vấn thiết kế mẫu hoa tươi theo yêu cầu riêng!')}
+                className="bg-white hover:bg-[#FAF4F0] text-[#1B3B2B] border border-[#D1DFD6] hover:border-[#1B3B2B] text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-xs transition-all flex items-center gap-2 active:scale-95 group"
               >
-                <Sparkles className="w-4 h-4 text-[#C4685A] group-hover:rotate-12 transition-transform" />
-                <span>Thẩm Định Ảnh Mẫu Với AI</span>
+                <MessageCircle className="w-4 h-4 text-[#0068FF]" />
+                <span>Tư Vấn Thiết Kế Hoa Riêng</span>
               </button>
             </div>
 
@@ -95,7 +96,7 @@ export const HeroSection = () => {
               <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white">
                 <img
                   src="https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80"
-                  alt="Bó hoa nghệ thuật Juliet Nắng Ban Mai - Flora & Bloom"
+                  alt="Bó hoa nghệ thuật Juliet Nắng Ban Mai - Ngọc Flower"
                   width="400"
                   height="500"
                   fetchPriority="high"
