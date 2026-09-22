@@ -113,7 +113,15 @@ export const ShopProvider = ({ children }) => {
       const cached = localStorage.getItem('flora_products');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const migrated = parsed.map(p => ({
+            ...p,
+            category: p.category || 'flowers'
+          }));
+          const existingIds = new Set(migrated.map(p => p.id));
+          const missingNewItems = FLOWERS_DATA.filter(item => !existingIds.has(item.id));
+          return [...migrated, ...missingNewItems];
+        }
       }
     } catch (e) {
       console.warn('Lỗi đọc cache flora_products:', e);
@@ -293,8 +301,11 @@ export const ShopProvider = ({ children }) => {
   // 4. Giỏ hàng & Sản phẩm
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('flowers'); // 'flowers' | 'weddings' | 'fruits'
   const [selectedOccasion, setSelectedOccasion] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
+  const [selectedWeddingType, setSelectedWeddingType] = useState('all');
+  const [selectedFruitType, setSelectedFruitType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price_asc' | 'price_desc' | 'rating_desc' | 'newest' | 'name_asc'
   
@@ -1335,10 +1346,16 @@ export const ShopProvider = ({ children }) => {
         isApiConnected,
         cart,
         wishlist,
+        activeCategory,
+        setActiveCategory,
         selectedOccasion,
         setSelectedOccasion,
         selectedColor,
         setSelectedColor,
+        selectedWeddingType,
+        setSelectedWeddingType,
+        selectedFruitType,
+        setSelectedFruitType,
         searchQuery,
         setSearchQuery,
         sortBy,

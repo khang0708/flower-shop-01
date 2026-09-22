@@ -1,4 +1,35 @@
-// Dữ liệu danh mục hoa tươi và sản phẩm
+// Dữ liệu 3 Trụ Cột Danh Mục Chính (UI/UX Pro Max)
+export const SHOP_CATEGORIES = [
+  {
+    id: 'flowers',
+    name: 'Hoa Tươi Nghệ Thuật',
+    shortName: 'Hoa Tươi',
+    icon: '🌸',
+    badge: 'Cắm Mới Mỗi Sáng',
+    tagline: 'Gửi gắm yêu thương qua từng cánh hoa thủ công độc bản',
+    description: 'Bó hoa, lẵng hoa, hoa sinh nhật, hoa tình yêu và hoa chúc mừng giao hỏa tốc 60-90 phút.'
+  },
+  {
+    id: 'weddings',
+    name: 'Rạp Cưới Hỏi & Gia Tiên',
+    shortName: 'Rạp Cưới Hỏi',
+    icon: '🎪',
+    badge: 'Khảo Sát Tận Nơi 0đ',
+    tagline: 'Không gian cưới hỏi trang trọng, trọn vẹn ngày hạnh phúc',
+    description: 'Thi công rạp cưới cao cấp, trang trí gia tiên, cổng hoa cưới nghệ thuật và bàn ghế sự kiện trọn gói.'
+  },
+  {
+    id: 'fruits',
+    name: 'Giỏ Trái Cây & Quà Tặng',
+    shortName: 'Giỏ Trái Cây',
+    icon: '🍇',
+    badge: '100% Trái Cây Nhập Khẩu',
+    tagline: 'Món quà sức khỏe tinh tế, kết hợp hoa tươi sang trọng',
+    description: 'Nho mẫu đơn, táo Envy, lê Hàn Quốc kết hoa tươi cao cấp tặng đối tác, thăm hỏi, dạm ngõ.'
+  }
+];
+
+// Bộ lọc Hoa Tươi
 export const OCCASIONS = [
   { id: 'all', label: 'Tất cả mẫu', icon: '✨' },
   { id: 'birthday', label: 'Sinh Nhật', icon: '🎂' },
@@ -15,6 +46,26 @@ export const COLOR_TONES = [
   { id: 'white', label: 'Trắng Thuần Khiết', color: '#FFFFFF' },
   { id: 'yellow', label: 'Vàng Nắng Ấm Áp', color: '#F6D268' },
   { id: 'purple', label: 'Tím Lavender Thơ', color: '#D4BCE8' },
+];
+
+// Bộ lọc Rạp Cưới Hỏi & Gia Tiên
+export const WEDDING_TYPES = [
+  { id: 'all', label: 'Tất cả gói', icon: '✨' },
+  { id: 'giatien', label: 'Bàn Thờ Gia Tiên', icon: '🏛️' },
+  { id: 'rapcuoi', label: 'Rạp Cưới Ngoài Trời', icon: '🎪' },
+  { id: 'conghoa', label: 'Cổng Hoa Nghệ Thuật', icon: '💐' },
+  { id: 'trapcuoi', label: 'Tráp Cưới Rồng Phụng', icon: '🐲' },
+  { id: 'combo', label: 'Combo Trọn Gói VIP', icon: '👑' },
+];
+
+// Bộ lọc Giỏ Trái Cây & Quà Tặng
+export const FRUIT_OCCASIONS = [
+  { id: 'all', label: 'Tất cả mẫu', icon: '✨' },
+  { id: 'gift_vip', label: 'Biếu Đối Tác / Sếp', icon: '🎁' },
+  { id: 'health', label: 'Thăm Bệnh / Sức Khỏe', icon: '🌿' },
+  { id: 'wedding_fruit', label: 'Dạm Ngõ / Cưới Hỏi', icon: '💍' },
+  { id: 'ancestor', label: 'Lễ Chùa / Gia Tiên', icon: '🕊️' },
+  { id: 'birthday_fruit', label: 'Sinh Nhật Ngọt Ngào', icon: '🎂' },
 ];
 
 export const WRAPPING_PAPERS = [
@@ -39,8 +90,10 @@ export const ADDONS = [
 ];
 
 export const FLOWERS_DATA = [
+  // 1. HOA TƯƠI NGHỆ THUẬT (Fresh Flowers)
   {
     id: 'fl-01',
+    category: 'flowers',
     name: 'Bó Hoa "Juliet Nắng Ban Mai"',
     subtitle: 'Hồng Juliet Anh Quốc phối cùng Hoa Baby & Lá Khuynh Diệp',
     price: 850000,
@@ -57,6 +110,7 @@ export const FLOWERS_DATA = [
   },
   {
     id: 'fl-02',
+    category: 'flowers',
     name: 'Hộp Hoa "Pastel Dream Sonata"',
     subtitle: 'Cẩm tú cầu xanh lam kết hợp hoa hồng kem dâu và cúc tana',
     price: 920000,
@@ -73,6 +127,7 @@ export const FLOWERS_DATA = [
   },
   {
     id: 'fl-03',
+    category: 'flowers',
     name: 'Bó Hoa "Ruby Velvet Passion"',
     subtitle: 'Hoa hồng đỏ Ecuador 99 bông phối ren ruy băng nhung đỏ rượu',
     price: 1650000,
@@ -89,6 +144,7 @@ export const FLOWERS_DATA = [
   },
   {
     id: 'fl-04',
+    category: 'flowers',
     name: 'Giỏ Hoa "Ánh Kim Khai Vận"',
     subtitle: 'Hoa hướng dương rực rỡ, lan vũ nữ vàng và hồng cam spirit',
     price: 1250000,
@@ -105,6 +161,7 @@ export const FLOWERS_DATA = [
   },
   {
     id: 'fl-05',
+    category: 'flowers',
     name: 'Bó Hoa "Pure Alabaster White"',
     subtitle: 'Hoa mẫu đơn trắng phối cùng hồng môn trắng và tulip kem',
     price: 1450000,
@@ -121,6 +178,7 @@ export const FLOWERS_DATA = [
   },
   {
     id: 'fl-06',
+    category: 'flowers',
     name: 'Bình Hoa "Lavender Twilight"',
     subtitle: 'Hoa phi yến tím, hoa hồng tím lãng mạn và hoa cát tường',
     price: 1100000,
@@ -129,10 +187,215 @@ export const FLOWERS_DATA = [
     colorTone: 'purple',
     image: 'https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=800&q=80',
     tags: ['Tri Ân', 'Tươi Lâu'],
-    meaning: 'Bày tỏ lòng tri ân sâu sắc, sự ngưỡng mộ và tình cảm trân quý.',
+    meaning: 'Bày tỏ lòng tri ấn sâu sắc, sự ngưỡng mộ và tình cảm trân quý.',
     flowerTypes: ['Phi Yến Tím', 'Hồng Tím Cổ', 'Cát Tường Tím', 'Oải Hương'],
     rating: 4.88,
     reviewsCount: 65,
     freshDays: 5,
+  },
+
+  // 2. RẠP CƯỚI HỎI & GIA TIÊN (Wedding Marquee & Ceremonies)
+  {
+    id: 'wd-01',
+    category: 'weddings',
+    weddingType: 'rapcuoi',
+    name: 'Gói Rạp Cưới Hoàng Gia "Versailles Palace"',
+    subtitle: 'Khung rạp nhôm kiên cố, voan lụa trần 2 lớp, bàn ghế Tiffany nơ nhung & dàn đèn led fairy light',
+    price: 18500000,
+    originalPrice: 22000000,
+    scale: 'Quy mô: 10 - 25 bàn tiệc',
+    setupTime: 'Thi công: 24 - 36 giờ trước lễ',
+    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+    tags: ['Khảo Sát 0đ', 'Thi Công Trọn Gói'],
+    meaning: 'Mang không gian tiệc cưới cổ tích châu Âu sang trọng về sân nhà của bạn.',
+    includedItems: [
+      'Khung nhà bạt nhôm khẩu độ 8m - 12m kiên cố chống mưa nắng',
+      'Trần phủ lụa voan 2 lớp cao cấp kết hợp thả đèn fairy lights',
+      'Bàn ghế nệm Tiffany bọc nơ nhung cùng tone màu chủ đạo',
+      'Cổng hoa cưới nghệ thuật đón khách & thảm đỏ lối đi',
+      'Hệ thống quạt làm mát công suất lớn & đèn chiếu sáng toàn rạp'
+    ],
+    rating: 5.0,
+    reviewsCount: 42,
+  },
+  {
+    id: 'wd-02',
+    category: 'weddings',
+    weddingType: 'giatien',
+    name: 'Trang Trí Bàn Thờ Gia Tiên "Song Hỷ Lâm Môn"',
+    subtitle: 'Phông nền nhung đỏ thêu chữ Hỷ dát vàng, bộ lư đồng cao cấp kết hoa tươi hoa sen & hồng phấn',
+    price: 6500000,
+    originalPrice: 7800000,
+    scale: 'Gói tư gia: Họ hàng 12 - 24 người',
+    setupTime: 'Thi công: 6 - 8 giờ trước giờ đón dâu',
+    image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+    tags: ['Truyền Thống', 'Hoa Sen Tươi'],
+    meaning: 'Không gian gia tiên trang nghiêm, thành kính báo cáo tổ tiên ngày tân hôn.',
+    includedItems: [
+      'Phông nền gia tiên hoa văn Song Hỷ dát kim tuyến cao cấp',
+      'Bàn thờ gia tiên phủ gấm kèm bộ lư đồng đại phong thủy',
+      'Cụm hoa tươi cắm bàn thờ & 2 bình hoa đôi dáng sen tao nhã',
+      'Bàn họ dài 12 - 16 ghế Tiffany kèm ấm chén trà sen cao cấp',
+      'Bảng Welcome lễ vu quy/đính hôn in tên cô dâu chú rể nghệ thuật'
+    ],
+    rating: 4.95,
+    reviewsCount: 58,
+  },
+  {
+    id: 'wd-03',
+    category: 'weddings',
+    weddingType: 'conghoa',
+    name: 'Cổng Hoa Cưới Nghệ Thuật "Flora Blooming Arch"',
+    subtitle: 'Vòm hoa cong nghệ thuật phối hoa hồng nhập khẩu, cẩm tú cầu và lá rủ tự nhiên phong cách Hàn Quốc',
+    price: 4200000,
+    originalPrice: 5000000,
+    scale: 'Kích thước: Cao 2.6m x Rộng 2.8m',
+    setupTime: 'Lắp đặt: 3 giờ hoàn thiện',
+    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+    tags: ['Hot Trend', 'Check-in Triệu View'],
+    meaning: 'Cánh cửa mở ra hành trình hôn nhân đơm hoa kết trái ngọt ngào.',
+    includedItems: [
+      'Khung sắt mỹ thuật sơn tĩnh điện uốn vòm organic mềm mại',
+      'Kết hợp 80% hoa tươi cao cấp (Hồng Juliet, Tú Cầu, Lan Hồ Điệp)',
+      'Bảng tên đón khách thiết kế typography hiện đại có đèn rọi',
+      'Thảm cỏ hoặc bục lót chân cổng hoa sạch sẽ chỉn chu'
+    ],
+    rating: 4.92,
+    reviewsCount: 37,
+  },
+  {
+    id: 'wd-04',
+    category: 'weddings',
+    weddingType: 'trapcuoi',
+    name: 'Bộ 6 Tráp Cưới Rồng Phụng Nghệ Thuật Cao Cấp',
+    subtitle: 'Kết rồng phượng 3D tỉ mỉ bằng ớt, cau bắp, nho mẫu đơn & hoa tươi thủ công truyền thống',
+    price: 5800000,
+    originalPrice: 6800000,
+    scale: 'Bộ 6 tráp sơn mài dát chỉ vàng',
+    setupTime: 'Bàn giao: Sáng sớm ngày làm lễ',
+    image: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80',
+    tags: ['Nghệ Nhân Lâu Năm', 'Tráp Rồng Phượng'],
+    meaning: 'Long Phụng sum vầy, phú quý viên mãn cho đôi uyên ương trăm năm hạnh phúc.',
+    includedItems: [
+      'Tráp Trầu Cau kết phụng xòe cánh tinh xảo',
+      'Tráp Rượu Ngoại & Trà sen thượng hạng kết hoa',
+      'Tráp Bánh Cốm Hàng Than gia truyền thơm dẻo',
+      'Tráp Bánh Phu Thê truyền thống hình Song Hỷ',
+      'Tráp Hoa Quả Rồng bay lượn kết hoa tươi nhập khẩu',
+      'Tráp Hạt Sen & Xôi Gấc Song Hỷ đỗ xanh ấm áp'
+    ],
+    rating: 4.98,
+    reviewsCount: 64,
+  },
+  {
+    id: 'wd-05',
+    category: 'weddings',
+    weddingType: 'combo',
+    name: 'Combo Ngày Cưới Hạnh Phúc VIP (Rạp + Gia Tiên + Cổng Hoa)',
+    subtitle: 'Trọn gói trang trí cưới hỏi từ ngoài cổng vào trong nhà: Rạp 15 bàn + Gia tiên VIP + Cổng hoa check-in',
+    price: 26500000,
+    originalPrice: 32000000,
+    scale: 'Trọn gói đầy đủ cho ngày trọng đại',
+    setupTime: 'Đội ngũ 6 kỹ thuật viên thi công tận nhà',
+    image: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80',
+    tags: ['Tiết Kiệm 5.5Tr', 'Khuyên Dùng Nhất'],
+    meaning: 'Giải pháp hoàn hảo tiết kiệm chi phí & đồng bộ thẩm mỹ tối đa cho gia đình.',
+    includedItems: [
+      'Toàn bộ gói Rạp Cưới Versailles 15 bàn tiệc sang trọng',
+      'Toàn bộ gói Bàn Thờ Gia Tiên Song Hỷ hoa tươi cao cấp',
+      'Cổng hoa đón khách phong cách Hàn Quốc',
+      'Tặng kèm 1 Bó hoa cầm tay cô dâu + Hoa cài áo chú rể',
+      'Miễn phí vận chuyển & dọn dẹp mặt bằng sau tiệc 100%'
+    ],
+    rating: 5.0,
+    reviewsCount: 89,
+  },
+
+  // 3. GIỎ TRÁI CÂY & QUÀ TẶNG (Fruit Baskets & Luxury Gifting)
+  {
+    id: 'fr-01',
+    category: 'fruits',
+    fruitOccasion: 'gift_vip',
+    name: 'Giỏ Trái Cây Hoàng Kim "Phú Quý Đại Cát"',
+    subtitle: 'Nho Mẫu Đơn Shine Muscat Nhật Bản, Táo Envy New Zealand, Lê Nâu Hàn Quốc kết hoa hồng Juliet',
+    price: 1850000,
+    originalPrice: 2100000,
+    occasion: 'opening',
+    image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80',
+    tags: ['100% Nhập Khẩu', 'Kết Hoa Tươi'],
+    meaning: 'Món quà thượng hạng thể hiện sự tôn trọng, đẳng cấp và thịnh vượng.',
+    fruitTypes: ['Nho Mẫu Đơn Nhật', 'Táo Envy Size 24', 'Lê Hàn Quốc 800g', 'Kiwi Vàng Zespri', 'Cam Cara Ruột Đỏ'],
+    rating: 4.96,
+    reviewsCount: 52,
+    freshDays: 7,
+  },
+  {
+    id: 'fr-02',
+    category: 'fruits',
+    fruitOccasion: 'health',
+    name: 'Hộp Quà Trái Cây Sức Khỏe "An Khang Viên Mãn"',
+    subtitle: 'Cherry đỏ Mỹ loại 1, Việt quất Jumbo, Cam vàng Navel Úc kết hoa baby trắng tinh khôi',
+    price: 950000,
+    originalPrice: 1150000,
+    occasion: 'thanks',
+    image: 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80',
+    tags: ['Thăm Bệnh', 'Giàu Vitamin'],
+    meaning: 'Lời chúc sức khỏe chân thành, tiếp thêm nguồn năng lượng tươi mới mỗi ngày.',
+    fruitTypes: ['Cherry Mỹ 9.0', 'Việt Quất Jumbo Hũ', 'Cam Navel Úc', 'Táo Gala Hữu Cơ'],
+    rating: 4.9,
+    reviewsCount: 78,
+    freshDays: 6,
+  },
+  {
+    id: 'fr-03',
+    category: 'fruits',
+    fruitOccasion: 'wedding_fruit',
+    name: 'Tráp Trái Cây Lễ Dạm Ngõ "Song Hỷ Như Ý"',
+    subtitle: 'Mãng cầu Na Dai Đài Loan, Nho ngón tay Mỹ, Lê Tai Nung kết ruy băng nhung đỏ và hoa hồng phấn',
+    price: 1550000,
+    originalPrice: 1750000,
+    occasion: 'wedding',
+    image: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&w=800&q=80',
+    tags: ['Dạm Ngõ', 'Tráp Hỏi Cưới'],
+    meaning: 'Ngọt ngào, gắn kết bền chặt và trọn vẹn tình duyên trăm năm.',
+    fruitTypes: ['Na Dai Đài Loan 900g', 'Nho Ngón Tay Đen Mỹ', 'Táo Rockit Ống', 'Lựu Israel Đỏ Mọng'],
+    rating: 4.94,
+    reviewsCount: 39,
+    freshDays: 6,
+  },
+  {
+    id: 'fr-04',
+    category: 'fruits',
+    fruitOccasion: 'gift_vip',
+    name: 'Giỏ Trái Cây Tri Ân "Doanh Nhân Thịnh Vượng"',
+    subtitle: 'Dưa lưới Huỳnh Long mật ngọt, Mận đỏ Ruby Úc, Bưởi da xanh ruột hồng kết hoa lan hồ điệp',
+    price: 2250000,
+    originalPrice: 2500000,
+    occasion: 'opening',
+    image: 'https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=800&q=80',
+    tags: ['VIP Luxury', 'Hoa Lan Hồ Điệp'],
+    meaning: 'Tôn vinh vị thế đối tác, mở đầu cho sự hợp tác bền vững và phát tài.',
+    fruitTypes: ['Dưa Lưới Mật Nhật Bản', 'Nho Xanh Autumn Crisp', 'Mận Ruby Úc', 'Bưởi Da Xanh Bến Tre Tuyển 1'],
+    rating: 5.0,
+    reviewsCount: 46,
+    freshDays: 8,
+  },
+  {
+    id: 'fr-05',
+    category: 'fruits',
+    fruitOccasion: 'ancestor',
+    name: 'Giỏ Trái Cây Lễ Chùa "Thuần Khiết Thanh Tâm"',
+    subtitle: 'Thanh long ruột trắng Bình Thuận tuyển 1, Táo xanh New Zealand, Xoài cát Hòa Lộc kết hoa sen trắng',
+    price: 850000,
+    originalPrice: 980000,
+    occasion: 'thanks',
+    image: 'https://images.unsplash.com/photo-1577234286642-fc512a5f8f11?auto=format&fit=crop&w=800&q=80',
+    tags: ['Lễ Chùa', 'Hoa Sen Trắng'],
+    meaning: 'Tâm thành kính dâng cúng tổ tiên, nguyện cầu bình an cho gia đạo.',
+    fruitTypes: ['Xoài Cát Hòa Lộc', 'Táo Xanh Granny Smith', 'Thanh Long Hoàng Kim', 'Lê Đường Tuyết'],
+    rating: 4.88,
+    reviewsCount: 63,
+    freshDays: 7,
   }
 ];
+
