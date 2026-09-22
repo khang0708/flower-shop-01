@@ -40,7 +40,7 @@ const PRESET_SAMPLES = [
   {
     id: 'sample-3',
     name: 'Bó Hoa Hướng Dương Nắng Vàng (Ảnh Khai Trương)',
-    image: 'https://images.unsplash.com/photo-1599733589046-10c005739ef9?auto=format&fit=crop&w=600&q=80',
+    image: '/products/hoa_khai_truong.jpg',
     analysis: {
       detectedFlowers: ['Hướng Dương Nhật (7 đóa)', 'Lan Vũ Nữ vàng chùm', 'Lá Đinh Lăng cẩm thạch'],
       colorPalette: ['#F6D268', '#5C8A70', '#D8C7B5'],

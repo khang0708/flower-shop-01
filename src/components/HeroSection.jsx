@@ -139,9 +139,9 @@ export const HeroSection = () => {
                 <img
                   src={
                     activeCategory === 'weddings'
-                      ? 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                      ? '/products/rap_cuoi_versailles.jpg'
                       : activeCategory === 'fruits'
-                      ? 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80'
+                      ? '/products/gio_trai_cay_phu_quy.jpg'
                       : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80'
                   }
                   alt={

@@ -114,13 +114,34 @@ export const ShopProvider = ({ children }) => {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const migrated = parsed.map(p => ({
-            ...p,
-            category: p.category || 'flowers'
-          }));
+          const migrated = parsed.map(p => {
+            const defaultItem = FLOWERS_DATA.find(f => f.id === p.id);
+            let image = p.image;
+            if (defaultItem) {
+              if (
+                defaultItem.image && (
+                  defaultItem.image.startsWith('/products/') || 
+                  !image || 
+                  image.includes('wikimedia.org') || 
+                  image.includes('photo-1599733589046-10c005739ef9')
+                )
+              ) {
+                image = defaultItem.image;
+              }
+            }
+            return {
+              ...p,
+              image: image || defaultItem?.image || '',
+              category: p.category || defaultItem?.category || 'flowers'
+            };
+          });
           const existingIds = new Set(migrated.map(p => p.id));
           const missingNewItems = FLOWERS_DATA.filter(item => !existingIds.has(item.id));
-          return [...migrated, ...missingNewItems];
+          const merged = [...migrated, ...missingNewItems];
+          try {
+            localStorage.setItem('flora_products', JSON.stringify(merged));
+          } catch (_) {}
+          return merged;
         }
       }
     } catch (e) {
@@ -610,7 +631,16 @@ export const ShopProvider = ({ children }) => {
       if (Array.isArray(apiProducts) && apiProducts.length > 0) {
         const itemsToRehydrate = [];
         updateProductsLocalAndBroadcast(currentProducts => {
-          const merged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
+          const rawMerged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
+          const merged = rawMerged.map(mp => {
+            const canonical = FLOWERS_DATA.find(f => f.id === mp.id);
+            if (canonical && canonical.image && canonical.image.startsWith('/products/')) {
+              if (!mp.image || !mp.image.startsWith('data:image/') || mp.image.includes('photo-1599733589046-10c005739ef9')) {
+                return { ...mp, image: canonical.image, category: mp.category || canonical.category };
+              }
+            }
+            return mp;
+          });
           // Tìm các sản phẩm local có timestamp mới hơn server để re-push ngầm ngoài updater
           merged.forEach(mp => {
             const sp = apiProducts.find(p => p.id === mp.id);

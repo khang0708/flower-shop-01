@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   ShoppingBag, 
@@ -29,6 +29,19 @@ export const Header = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const categoryNavRef = useRef(null);
+
+  // Tự động căn chỉnh nhẹ nhàng tab danh mục đang chọn vào tầm nhìn trên mobile mà không cắt đầu cắt đuôi
+  useEffect(() => {
+    if (categoryNavRef.current) {
+      const activeEl = categoryNavRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        const container = categoryNavRef.current;
+        const scrollTarget = activeEl.offsetLeft - (container.clientWidth - activeEl.clientWidth) / 2;
+        container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
+      }
+    }
+  }, [activeCategory]);
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#E8EFEA]">
@@ -141,10 +154,13 @@ export const Header = () => {
         </div>
       </div>
 
-      {/* 3 Trụ Cột Danh Mục Navigation Bar (Desktop & Tablet) */}
-      <div className="border-t border-[#E8EFEA]/80 bg-white/70 backdrop-blur-xs py-2 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-center sm:justify-start gap-2 overflow-x-auto scrollbar-none text-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mr-1 hidden sm:inline">
+      {/* 3 Trụ Cột Danh Mục Navigation Bar (Mobile / Tablet / Desktop) */}
+      <div className="border-t border-[#E8EFEA]/80 bg-white/80 backdrop-blur-xs py-2 px-3 sm:px-4">
+        <div 
+          ref={categoryNavRef}
+          className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scrollbar-none text-xs overscroll-x-contain py-0.5"
+        >
+          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mr-1 hidden sm:inline shrink-0">
             Danh mục:
           </span>
           {[
@@ -157,16 +173,17 @@ export const Header = () => {
               <a
                 key={cat.id}
                 href="#catalog"
+                data-active={isActive ? 'true' : 'false'}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-[#1B3B2B] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-[#1B3B2B] hover:bg-gray-100/80 border border-transparent'
+                    : 'text-gray-600 hover:text-[#1B3B2B] hover:bg-gray-100/80 bg-gray-50/70 border border-transparent'
                 }`}
               >
-                <span>{cat.icon}</span>
+                <span className="shrink-0">{cat.icon}</span>
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-normal hidden md:inline ${
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-normal hidden md:inline shrink-0 ${
                   isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {cat.badge}

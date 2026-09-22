@@ -160,79 +160,76 @@ export const FlowerCard = ({ flower }) => {
         </div>
 
         {/* Price & Action Section */}
-        <div className="mt-4 pt-3 border-t border-[#E8EFEA]">
-          {isWedding ? (
-            // Layout Action cho Rạp Cưới Hỏi
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[11px] text-gray-500 font-medium">Giá trọn gói từ:</span>
+        <div className="mt-4 pt-3 border-t border-[#E8EFEA] space-y-2.5">
+          {/* Price Header */}
+          <div className="flex items-baseline justify-between">
+            <div>
+              <span className="text-[10px] text-gray-400 block font-medium">
+                {isWedding ? 'Giá trọn gói từ' : 'Giá tiêu chuẩn'}
+              </span>
+              <div className="flex items-baseline gap-1.5">
                 <span className="text-base sm:text-lg font-extrabold text-[#1B3B2B] font-sans">
                   {flower.price.toLocaleString('vi-VN')}đ
                 </span>
+                {flower.originalPrice && (
+                  <span className="text-[11px] text-gray-400 line-through">
+                    {flower.originalPrice.toLocaleString('vi-VN')}đ
+                  </span>
+                )}
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
+            {/* Micro badge */}
+            <span className="text-[10px] text-gray-600 bg-[#FAF8F5] border border-[#E8EFEA] px-2 py-0.5 rounded-md font-medium">
+              {isWedding ? 'Khảo sát 0đ' : isFruit ? '100% Nhập khẩu' : 'Chụp ảnh trước'}
+            </span>
+          </div>
+
+          {/* Action Buttons: 2 Symmetrical Columns Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {isWedding ? (
+              <>
                 <button
                   type="button"
                   onClick={() => setQuickViewProduct(flower)}
-                  className="bg-white hover:bg-gray-50 text-[#1B3B2B] border border-[#D1DFD6] text-xs font-semibold py-2.5 px-2 rounded-full transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                  className="w-full bg-white hover:bg-gray-50 text-[#1B3B2B] border border-[#D1DFD6] text-xs font-semibold py-2.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Chi Tiết</span>
+                  <Eye className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Chi Tiết Gói</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleZaloInquiry}
-                  className="bg-[#0068FF] hover:bg-blue-600 text-white text-xs font-bold py-2.5 px-2 rounded-full shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                  className="w-full bg-[#0068FF] hover:bg-blue-600 text-white text-xs font-bold py-2.5 px-2 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
                   title="Nhận báo giá & đặt lịch khảo sát qua Zalo"
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>Báo Giá Zalo</span>
                 </button>
-              </div>
-            </div>
-          ) : (
-            // Layout Action cho Hoa Tươi & Giỏ Trái Cây (Đều có Đặt Nhanh VÀ Báo Giá Zalo)
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <span className="text-[10px] text-gray-400 block font-medium">Giá tiêu chuẩn</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base sm:text-lg font-extrabold text-[#1B3B2B] font-sans">
-                    {flower.price.toLocaleString('vi-VN')}đ
-                  </span>
-                  {flower.originalPrice && (
-                    <span className="text-[11px] text-gray-400 line-through">
-                      {flower.originalPrice.toLocaleString('vi-VN')}đ
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                {/* Nút Nhận Báo Giá Qua Zalo */}
+              </>
+            ) : (
+              <>
                 <button
                   type="button"
                   onClick={handleZaloInquiry}
-                  className="p-2 sm:px-2.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 text-xs font-bold rounded-full transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                  className="w-full py-2.5 px-2 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
                   title="Nhận báo giá mẫu này qua Zalo"
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Báo Giá Zalo</span>
+                  <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Báo Giá Zalo</span>
                 </button>
-
-                {/* Nút Thêm Nhanh Vào Giỏ */}
                 <button
                   type="button"
                   onClick={() => addToCart(flower)}
-                  className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-semibold px-3 py-2 rounded-full shadow-xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                  className="w-full py-2.5 px-2 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
                   title="Thêm nhanh vào giỏ hàng"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Đặt Nhanh</span>
+                  <Plus className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Đặt Nhanh</span>
                 </button>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
       </div>

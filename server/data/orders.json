@@ -236,7 +236,7 @@
     "status": "ARRANGING",
     "florist": "Thợ cắm hoa Minh Thư (Studio A)",
     "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-    "proofPhotoUrl": "https://images.unsplash.com/photo-1599733589046-10c005739ef9?auto=format&fit=crop&w=800&q=80",
+    "proofPhotoUrl": "/products/hoa_khai_truong.jpg",
     "isApproved": false,
     "createdAt": "15:17",
     "items": [
