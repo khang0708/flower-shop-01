@@ -412,64 +412,75 @@ export const ProductDetailModal = () => {
             )}
 
             {/* Footer Nút Thêm Giỏ Hàng & Báo Giá Zalo */}
-            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-xs text-gray-500 block">
-                  {isWedding ? 'Giá trọn gói ước tính:' : 'Tổng thanh toán mẫu này:'}
-                </span>
-                <span className="text-2xl font-extrabold text-[#1B3B2B] font-sans">
-                  {finalPrice.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
+            <div className="pt-4 border-t border-gray-100 space-y-3">
+              {/* Hàng 1: Giá tiền & Kênh tư vấn trực tiếp */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs text-gray-500 block">
+                    {isWedding ? 'Giá trọn gói ước tính:' : 'Tổng thanh toán mẫu này:'}
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold text-[#1B3B2B] font-sans">
+                      {finalPrice.toLocaleString('vi-VN')}đ
+                    </span>
+                    {quickViewProduct.originalPrice && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {quickViewProduct.originalPrice.toLocaleString('vi-VN')}đ
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                {/* Nút Chat Messenger */}
-                {facebookSettings?.isEnabled !== false && (
+                {/* Các nút tư vấn nhanh (Zalo & Messenger) */}
+                <div className="flex items-center gap-2">
+                  {facebookSettings?.isEnabled !== false && (
+                    <button
+                      type="button"
+                      onClick={() => generateMessengerProductInquiry(facebookSettings?.pageId, {
+                        name: `${quickViewProduct.name} (${isWedding ? 'Gói Cưới Hỏi' : selectedSize.name})`,
+                        price: finalPrice
+                      })}
+                      className="px-3.5 py-2.5 bg-purple-50 hover:bg-purple-100 text-[#7B3FE4] border border-purple-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                      title="Tư vấn mẫu này qua Facebook Messenger"
+                    >
+                      <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
+                      </svg>
+                      <span>Messenger</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => generateMessengerProductInquiry(facebookSettings?.pageId, {
-                      name: `${quickViewProduct.name} (${isWedding ? 'Gói Cưới Hỏi' : selectedSize.name})`,
-                      price: finalPrice
-                    })}
-                    className="px-3.5 py-3 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 text-[#7B3FE4] border border-purple-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                    title="Tư vấn mẫu này qua Facebook Messenger"
+                    onClick={handleZaloQuote}
+                    className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                    title={`Nhận báo giá chi tiết qua Zalo (${shopZaloPhone})`}
                   >
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
-                    </svg>
-                    <span>Messenger</span>
+                    <ZaloIcon className="w-4 h-4 shrink-0" variant="blue" />
+                    <span>Báo Giá Zalo</span>
                   </button>
-                )}
+                </div>
+              </div>
 
-                {/* Nút Nhận Báo Giá Qua Zalo (Cả 3 Danh Mục) */}
-                <button
-                  type="button"
-                  onClick={handleZaloQuote}
-                  className="px-4 py-3 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                  title={`Nhận báo giá chi tiết qua Zalo (${shopZaloPhone})`}
-                >
-                  <ZaloIcon className="w-4 h-4" variant="blue" />
-                  <span>Báo Giá Zalo</span>
-                </button>
-
-                {/* Nút Hành Động Chính: Thêm Vào Giỏ hoặc Đặt Lịch Khảo Sát */}
+              {/* Hàng 2: Nút hành động chính toàn chiều ngang (Full-width Primary CTA) */}
+              <div>
                 {isWedding ? (
                   <button
                     type="button"
                     onClick={handleZaloQuote}
-                    className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                    className="w-full bg-[#1B3B2B] hover:bg-[#264A37] text-white text-sm font-bold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer whitespace-nowrap"
                   >
-                    <Calendar className="w-4 h-4 text-[#F5D6CE]" />
-                    <span>Đặt Lịch Khảo Sát 0đ</span>
+                    <Calendar className="w-4 h-4 text-[#F5D6CE] shrink-0" />
+                    <span>Đặt Lịch Khảo Sát Tận Nơi 0đ</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                    className="w-full bg-[#1B3B2B] hover:bg-[#264A37] text-white text-sm font-bold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer whitespace-nowrap"
                   >
-                    <ShoppingBag className="w-4 h-4 text-[#F5D6CE]" />
-                    <span>Thêm Vào Giỏ & Đặt Ngay</span>
+                    <ShoppingBag className="w-4 h-4 text-[#F5D6CE] shrink-0" />
+                    <span>Thêm Vào Giỏ & Đặt Hàng Ngay</span>
                   </button>
                 )}
               </div>
