@@ -22,7 +22,9 @@ export const Header = () => {
     searchQuery,
     setSearchQuery,
     activeOrder,
-    shopZaloPhone
+    shopZaloPhone,
+    activeCategory,
+    setActiveCategory
   } = useShop();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -213,19 +215,51 @@ export const Header = () => {
           </div>
 
           <div className="flex flex-col gap-1 text-xs font-medium text-[#1B3B2B] pt-2 border-t border-gray-100">
-            <a href="#catalog" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between">
-              <span>💐 Tất cả mẫu hoa tươi hôm nay</span>
-              <span className="text-gray-400">→</span>
+            <span className="text-[10px] uppercase font-bold text-gray-400 px-2 pt-1">Danh mục sản phẩm:</span>
+            <a 
+              href="#catalog" 
+              onClick={() => {
+                setActiveCategory('flowers');
+                setMobileMenuOpen(false);
+              }} 
+              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+                activeCategory === 'flowers' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
+              }`}
+            >
+              <span>🌸 Hoa Tươi Nghệ Thuật</span>
+              <span className="text-[11px] opacity-70">Cắm mới mỗi ngày</span>
             </a>
-            <a href="#catalog" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between">
-              <span>🎂 Hoa sinh nhật & Kỷ niệm</span>
-              <span className="text-gray-400">→</span>
+            <a 
+              href="#catalog" 
+              onClick={() => {
+                setActiveCategory('weddings');
+                setMobileMenuOpen(false);
+              }} 
+              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+                activeCategory === 'weddings' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
+              }`}
+            >
+              <span>🎪 Rạp Cưới Hỏi & Gia Tiên</span>
+              <span className="text-[11px] opacity-70">Khảo sát 0đ</span>
             </a>
-            <a href="#catalog" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between">
-              <span>🏢 Hoa khai trương tài lộc</span>
-              <span className="text-gray-400">→</span>
+            <a 
+              href="#catalog" 
+              onClick={() => {
+                setActiveCategory('fruits');
+                setMobileMenuOpen(false);
+              }} 
+              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+                activeCategory === 'fruits' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
+              }`}
+            >
+              <span>🍇 Giỏ Trái Cây & Quà Tặng</span>
+              <span className="text-[11px] opacity-70">100% Nhập khẩu</span>
             </a>
-            <a href="#reviews-section" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between">
+            <a 
+              href="#reviews-section" 
+              onClick={() => setMobileMenuOpen(false)} 
+              className="py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between mt-1 pt-2 border-t border-gray-100"
+            >
               <span>⭐ Cảm nhận khách hàng thực tế</span>
               <span className="text-gray-400">→</span>
             </a>
