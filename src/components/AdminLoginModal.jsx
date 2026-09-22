@@ -131,7 +131,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         {/* Header */}
         <div className="bg-gradient-to-br from-[#1B3B2B] to-[#264A37] text-white p-6 text-center relative">
           <BrandLogo variant="stacked" size="md" theme="light" showTagline={false} className="mb-1" />
-          <p className="text-[11px] text-emerald-200 mt-1">Cổng điều hành & quản trị xưởng hoa</p>
+          <p className="text-[11px] text-emerald-200 mt-1">Cổng điều hành & quản trị tiệm hoa</p>
           
           <button
             onClick={onClose}
@@ -258,7 +258,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 disabled={isLoading || !pin}
                 className="w-full bg-[#1B3B2B] hover:bg-[#264A37] disabled:opacity-50 text-white font-bold text-xs py-3.5 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2"
               >
-                {isLoading ? 'Đang xác thực...' : 'Mở Bảng Điều Hành Xưởng'}
+                {isLoading ? 'Đang xác thực...' : 'Mở Bảng Điều Hành Tiệm Hoa'}
               </button>
 
               <div className="pt-2 text-center">

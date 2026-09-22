@@ -150,7 +150,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
         <div id="invoice-printable-content" className="p-6 sm:p-8 space-y-6 max-h-[82vh] overflow-y-auto">
           
           {/* ======================================================== */}
-          {/* PHẦN 1: PHIẾU GIAO HÀNG & HÓA ĐƠN XƯỞNG HOA (PACKING SLIP) */}
+          {/* PHẦN 1: PHIẾU GIAO HÀNG & HÓA ĐƠN TIỆM HOA (PACKING SLIP) */}
           {/* ======================================================== */}
           {(printSection === 'all' || printSection === 'invoice_only') && (
             <div className="border-2 border-dashed border-gray-400 p-6 rounded-2xl space-y-4 bg-white print-avoid-break">
@@ -232,7 +232,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                       <td className="p-2 text-center font-mono border-r border-gray-200">#</td>
                       <td className="p-2 font-medium border-r border-gray-200">
                         🚚 Phí giao hoa tận tay (Ngọc Flower Express)
-                        {order.isShippingConfirmed && <span className="text-[10px] text-emerald-800 font-bold ml-1.5">(Xưởng đã xác nhận)</span>}
+                        {order.isShippingConfirmed && <span className="text-[10px] text-emerald-800 font-bold ml-1.5">(Tiệm đã xác nhận)</span>}
                       </td>
                       <td className="p-2 text-right font-mono font-bold text-gray-900">
                         {Number(order.shippingFee || 0) === 0 ? 'Freeship (0đ)' : `${Number(order.shippingFee).toLocaleString('vi-VN')}đ`}

@@ -349,7 +349,7 @@ app.post('/api/orders', async (req, res) => {
       customerPhone: req.body.customerPhone || req.body.senderPhone || '0901 234 567',
       receiverName: req.body.receiverName || 'Người nhận hoa',
       receiverPhone: req.body.receiverPhone || '0988 765 432',
-      receiverAddress: req.body.receiverAddress || 'Quận 1, TP.HCM',
+      receiverAddress: req.body.receiverAddress || 'TP. Buôn Ma Thuột, Đắk Lắk',
       isAnonymous: Boolean(req.body.isAnonymous),
       productName: req.body.productName || 'Bó hoa tươi nghệ thuật',
       cardMessage: req.body.cardMessage || 'Gửi gắm yêu thương!',
@@ -816,7 +816,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
 
             if (found) {
               const statusMap = {
-                ARRANGING: 'Đang cắm tại xưởng',
+                ARRANGING: 'Đang cắm tại tiệm',
                 PHOTO_READY: 'Đã cắm xong - Chờ khách duyệt ảnh',
                 DELIVERING: 'Đang trên đường giao hoa',
                 COMPLETED: 'Đã giao hoa thành công'

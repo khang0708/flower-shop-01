@@ -71,7 +71,7 @@ export const ProductDetailModal = () => {
                 className="w-full h-full object-cover"
               />
               <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[11px] px-3 py-1 rounded-full">
-                📸 Ảnh mẫu tại xưởng
+                📸 Ảnh mẫu tại tiệm
               </span>
             </div>
 

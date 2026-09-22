@@ -106,7 +106,7 @@ export const CheckoutModal = () => {
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
   const [receiverPhone, setReceiverPhone] = useState('0988 765 432');
-  const [receiverAddress, setReceiverAddress] = useState('Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM');
+  const [receiverAddress, setReceiverAddress] = useState('124 Phan Chu Trinh, Phường Thắng Lợi, TP. Buôn Ma Thuột, Đắk Lắk');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [requestPhotoProof, setRequestPhotoProof] = useState(true);
   
@@ -143,7 +143,7 @@ export const CheckoutModal = () => {
   // Payment
   const [paymentMethod, setPaymentMethod] = useState('qr_transfer'); // 'qr_transfer' | 'momo' | 'card'
 
-  // Tính toán phí ship động dựa trên cấu hình xưởng hoa
+  // Tính toán phí ship động dựa trên cấu hình tiệm hoa
   const shippingFee = getShippingFee(deliveryType, cartTotal);
   const grandTotal = Math.max(0, cartTotal + shippingFee - discountAmount);
   const isFreeshipEligible = shippingSettings?.isFreeShippingEnabled && cartTotal >= (shippingSettings?.freeShippingThreshold || 1000000);
@@ -594,7 +594,7 @@ export const CheckoutModal = () => {
                     {isFreeshipEligible ? (
                       <span className="text-emerald-700 font-bold">Freeship (0đ)</span>
                     ) : shippingSettings?.shippingMode === 'admin_confirm' ? (
-                      <span className="text-[#C4685A] font-bold text-[11px]">Xưởng báo sau khi nhận địa chỉ (0đ)</span>
+                      <span className="text-[#C4685A] font-bold text-[11px]">Tiệm báo sau khi nhận địa chỉ (0đ)</span>
                     ) : (
                       `${shippingFee.toLocaleString('vi-VN')}đ`
                     )}

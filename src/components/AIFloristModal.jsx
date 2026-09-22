@@ -319,7 +319,7 @@ export const AIFloristModal = () => {
                         const theme = analysisResult?.style || 'Nghệ thuật';
                         openPersonalZaloChat(
                           shopZaloPhone,
-                          `Chào nghệ nhân Ngọc Flower, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
+                          `Chào nghệ nhân Ngọc Flower, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ tiệm tư vấn và báo giá!`
                         );
                       }}
                       className="flex-1 bg-[#0068FF] text-white text-xs font-bold px-4 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"

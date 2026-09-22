@@ -90,7 +90,7 @@ function AppContent() {
       <Suspense fallback={
         <div className="min-h-screen bg-[#1B3B2B] flex flex-col items-center justify-center text-white space-y-3">
           <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-          <span className="font-serif text-lg">Đang tải Trung Tâm Điều Hành Xưởng Hoa...</span>
+          <span className="font-serif text-lg">Đang tải Trung Tâm Điều Hành Tiệm Hoa...</span>
         </div>
       }>
         <AdminDashboard 

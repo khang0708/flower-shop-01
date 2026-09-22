@@ -46,7 +46,7 @@ const INITIAL_ORDERS = [
     customerPhone: '0909 123 456',
     receiverName: 'Trần Ngọc Bích',
     receiverPhone: '0988 765 432',
-    receiverAddress: 'Phòng 402, Bitexco, 2 Hải Triều, Q.1, TP.HCM',
+    receiverAddress: '124 Phan Chu Trinh, Phường Thắng Lợi, TP. Buôn Ma Thuột',
     isAnonymous: true,
     productName: 'Bó Hoa "Juliet Nắng Ban Mai" (Size Tiêu Chuẩn)',
     cardMessage: 'Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸',
@@ -212,7 +212,7 @@ export const ShopProvider = ({ children }) => {
       if (cached) return JSON.parse(cached);
     } catch (e) {}
     return {
-      shippingMode: 'admin_confirm', // 'admin_confirm' (Xưởng xác nhận báo ship) | 'auto' (Tự động theo bảng giá)
+      shippingMode: 'admin_confirm', // 'admin_confirm' (Tiệm xác nhận báo ship) | 'auto' (Tự động theo bảng giá)
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
@@ -1141,7 +1141,7 @@ export const ShopProvider = ({ children }) => {
       customerPhone: orderData.senderPhone || '0901 234 567',
       receiverName: orderData.receiverName || 'Người nhận hoa',
       receiverPhone: orderData.receiverPhone || '0988 765 432',
-      receiverAddress: orderData.receiverAddress || 'Quận 1, TP.HCM',
+      receiverAddress: orderData.receiverAddress || 'TP. Buôn Ma Thuột, Đắk Lắk',
       isAnonymous: Boolean(orderData.isAnonymous),
       productName: mainProductName,
       cardMessage: mainCardMessage,

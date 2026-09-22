@@ -312,7 +312,7 @@ function fullstackApiPlugin() {
               customerPhone: body.customerPhone || body.senderPhone || '0901 234 567',
               receiverName: body.receiverName || 'Người nhận hoa',
               receiverPhone: body.receiverPhone || '0988 765 432',
-              receiverAddress: body.receiverAddress || 'Quận 1, TP.HCM',
+              receiverAddress: body.receiverAddress || 'TP. Buôn Ma Thuột, Đắk Lắk',
               isAnonymous: Boolean(body.isAnonymous),
               productName: body.productName || 'Bó hoa tươi nghệ thuật',
               cardMessage: body.cardMessage || 'Gửi gắm yêu thương!',
@@ -619,7 +619,7 @@ function fullstackApiPlugin() {
                   const found = orders.find(o => (o.orderCode || o.id || '').toUpperCase() === searchedCode);
                   if (found) {
                     const statusMap = {
-                      ARRANGING: 'Đang cắm tại xưởng',
+                      ARRANGING: 'Đang cắm tại tiệm',
                       PHOTO_READY: 'Đã cắm xong - Chờ khách duyệt ảnh',
                       DELIVERING: 'Đang trên đường giao hoa',
                       COMPLETED: 'Đã giao hoa thành công'

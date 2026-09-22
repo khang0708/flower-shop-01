@@ -130,7 +130,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [editingProductId, setEditingProductId] = useState(null);
   const [imageImportMode, setImageImportMode] = useState('upload'); // 'upload' | 'library' | 'url'
 
-  // State Modal Chụp / Upload Ảnh Thật Tại Xưởng
+  // State Modal Chụp / Upload Ảnh Thật Tại Tiệm
   const [proofModalOrder, setProofModalOrder] = useState(null);
   const [proofPhotoInput, setProofPhotoInput] = useState('');
   const [proofNoteInput, setProofNoteInput] = useState('');
@@ -463,9 +463,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       `💐 Mẫu hoa: ${order.productName}\n` +
       `📍 Giao đến: ${order.receiverAddress}\n` +
       `⏱️ Khung giờ hẹn: ${order.deliverySlot}\n` +
-      `🚚 Phí giao hoa xưởng xác nhận: ${shipText}\n` +
+      `🚚 Phí giao hoa tiệm xác nhận: ${shipText}\n` +
       `💰 TỔNG CỘNG THANH TOÁN: ${Number(order.totalAmount || 0).toLocaleString('vi-VN')}đ\n\n` +
-      `👉 Xưởng hoa đang tiến hành tuyển chọn cành tươi để cắm theo mẫu. Khi cắm xong xưởng sẽ gửi ảnh chụp thật cho bạn duyệt trước khi giao nhé!`;
+      `👉 Tiệm hoa đang tiến hành tuyển chọn cành tươi để cắm theo mẫu. Khi cắm xong tiệm sẽ gửi ảnh chụp thật cho bạn duyệt trước khi giao nhé!`;
 
     navigator.clipboard?.writeText(message);
     const cleanPhone = (order.customerPhone || '').replace(/\D/g, '');
@@ -538,7 +538,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     e.preventDefault();
     if (!proofModalOrder) return;
     if (!proofPhotoInput.trim()) {
-      alert('Vui lòng chọn hoặc tải lên một tấm ảnh hoa thật tại xưởng trước khi gửi duyệt!');
+      alert('Vui lòng chọn hoặc tải lên một tấm ảnh hoa thật tại tiệm trước khi gửi duyệt!');
       return;
     }
     const currentTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -650,7 +650,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           {/* Sidebar Top: Brand Header */}
           <div className="p-5 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <NgocFlowerEmblem size={36} />
+              <NgocFlowerEmblem size={36} theme="light" />
               <div>
                 <h2 className="font-serif text-base font-bold text-white leading-tight">Ngọc Flower</h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -672,7 +672,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           <div className="flex-1 overflow-y-auto p-3 space-y-5 text-xs">
             {[
               {
-                groupTitle: 'VẬN HÀNH XƯỞNG',
+                groupTitle: 'VẬN HÀNH TIỆM HOA',
                 items: [
                   { id: 'orders', label: 'Đơn Hàng & Cắm Mẫu', icon: ShoppingBag, count: orders.length, alert: unreadOrdersCount > 0 },
                   { id: 'inventory', label: 'Tồn Kho Hoa Tươi', icon: Tag, count: inventory.length, danger: inventory.some(i => i.status === 'danger') }
@@ -1105,7 +1105,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-bold text-[#1B3B2B] flex items-center gap-1.5">
                             <Camera className="w-3.5 h-3.5 text-[#C4685A]" />
-                            <span>Ảnh Hoa Thật Tại Xưởng:</span>
+                            <span>Ảnh Hoa Thật Tại Tiệm:</span>
                           </span>
                           {order.proofPhotoUrl ? (
                             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
@@ -1422,7 +1422,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         }`}
                       >
                         <div className="flex items-center justify-between font-bold text-xs text-[#1B3B2B] mb-1">
-                          <span>🌸 Xưởng Báo Phí Ship (Admin xử lý)</span>
+                          <span>🌸 Tiệm Báo Phí Ship (Admin xử lý)</span>
                           <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Khuyên dùng</span>
                         </div>
                         <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -1711,7 +1711,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </div>
 
                   <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 space-y-1">
-                    <strong>💡 Lời khuyên định giá xưởng hoa:</strong>
+                    <strong>💡 Lời khuyên định giá tiệm hoa:</strong>
                     <p>
                       Mức phí tiêu chuẩn 35.000đ và Freeship từ 1.000.000đ giúp tăng giá trị trung bình đơn hàng (AOV) lên 24%.
                     </p>
@@ -1858,7 +1858,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
 
                     <div>
                       <label className="block font-bold text-gray-700 mb-1">
-                        Địa Chỉ Xưởng Hoa / Cửa Hàng:
+                        Địa Chỉ Tiệm Hoa / Cửa Hàng:
                       </label>
                       <input
                         type="text"
@@ -2327,7 +2327,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="bg-white p-4 rounded-2xl border border-[#E8EFEA] shadow-xs">
                 <span className="text-[11px] text-gray-500 font-bold block">TỔNG LOÀI HOA TƯƠI</span>
                 <span className="text-2xl font-extrabold text-[#1B3B2B] font-mono mt-1 block">{inventory.length}</span>
-                <span className="text-[10px] text-gray-400">Đang lưu hành trong xưởng</span>
+                <span className="text-[10px] text-gray-400">Đang lưu hành trong tiệm</span>
               </div>
 
               <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 shadow-xs">
@@ -2630,7 +2630,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </div>
                 )}
 
-                {/* CÁCH 2: CHỌN TỪ THƯ VIỆN MẪU XƯỞNG HOA CÓ SẴN */}
+                {/* CÁCH 2: CHỌN TỪ THƯ VIỆN MẪU TIỆM HOA CÓ SẴN */}
                 {imageImportMode === 'library' && (
                   <div className="space-y-1.5">
                     <span className="text-[10px] text-gray-500 font-semibold block">Click vào ảnh mẫu bạn muốn áp dụng:</span>
@@ -2869,7 +2869,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         </div>
       )}
 
-      {/* MODAL CHỤP / TẢI ẢNH HOA THẬT TẠI XƯỞNG ĐỂ GỬI DUYỆT */}
+      {/* MODAL CHỤP / TẢI ẢNH HOA THẬT TẠI TIỆM ĐỂ GỬI DUYỆT */}
       {proofModalOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto text-[#222523]">
@@ -2881,7 +2881,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 </div>
                 <div>
                   <h3 className="font-serif text-base font-bold">
-                    Chụp & Cập Nhật Ảnh Hoa Thật Tại Xưởng
+                    Chụp & Cập Nhật Ảnh Hoa Thật Tại Tiệm
                   </h3>
                   <p className="text-[11px] text-emerald-200">
                     Đơn hàng: #{proofModalOrder.orderCode || proofModalOrder.id} • {proofModalOrder.customerName}
@@ -2935,7 +2935,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     }`}
                   >
                     <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Mẫu Xưởng Studio</span>
+                    <span>Mẫu Tiệm Studio</span>
                   </button>
                   <button
                     type="button"
@@ -2968,7 +2968,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </div>
                 )}
 
-                {/* Tab 2: Chọn từ thư viện xưởng studio */}
+                {/* Tab 2: Chọn từ thư viện tiệm studio */}
                 {proofTabMode === 'preset' && (
                   <div className="grid grid-cols-3 gap-2">
                     {PRESET_FLOWER_PHOTOS.map((p, idx) => (
@@ -3021,7 +3021,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   <div className="aspect-[4/3] rounded-xl overflow-hidden border-2 border-white shadow-sm relative">
                     <img src={proofPhotoInput} alt="Preview ảnh hoa thật" className="w-full h-full object-cover" />
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] px-2.5 py-1 rounded-md">
-                      Chụp lúc {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • Xưởng Ngọc Flower Studio
+                      Chụp lúc {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • Tiệm Ngọc Flower Studio
                     </div>
                   </div>
                 </div>
