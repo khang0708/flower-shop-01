@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useShop } from '../context/ShopContext';
-import { OCCASIONS, COLOR_TONES } from '../data/flowers';
+import { 
+  SHOP_CATEGORIES, 
+  OCCASIONS, 
+  COLOR_TONES, 
+  WEDDING_TYPES, 
+  FRUIT_OCCASIONS 
+} from '../data/flowers';
 import { 
   openPersonalZaloChat, 
   openPersonalZaloToCustomer 
@@ -195,6 +201,31 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     { name: 'Giỏ Hoa Khai Trương Vàng', url: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=800&q=80' }
   ];
 
+  const CATEGORY_PRESET_PHOTOS = {
+    flowers: [
+      { name: 'Bó Juliet Cam Pastel', url: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80' },
+      { name: 'Mẫu Đơn Peony Hồng', url: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80' },
+      { name: 'Tulip Trắng Tinh Khôi', url: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80' },
+      { name: 'Hồng Đỏ 99 Bông', url: '/products/hoa_hong_do_99.jpg' },
+      { name: 'Kệ Khai Trương Phát Tài', url: '/products/hoa_khai_truong.jpg' },
+      { name: 'Hộp Hoa Vintage Garden', url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80' }
+    ],
+    weddings: [
+      { name: 'Rạp Cưới Versailles', url: '/products/rap_cuoi_versailles.jpg' },
+      { name: 'Gia Tiên Song Hỷ', url: '/products/gia_tien_song_hy.jpg' },
+      { name: 'Cổng Hoa Cưới Hàn Quốc', url: '/products/cong_hoa_cuoi.jpg' },
+      { name: 'Tráp Cưới Rồng Phụng', url: '/products/trap_cuoi_rong_phung.jpg' },
+      { name: 'Combo Cưới Hỏi VIP', url: '/products/combo_cuoi_hoi_vip.jpg' }
+    ],
+    fruits: [
+      { name: 'Giỏ Phú Quý Đại Cát', url: '/products/gio_trai_cay_phu_quy.jpg' },
+      { name: 'Hộp Quà Cherry Nhập Khẩu', url: '/products/hop_trai_cay_cherry.jpg' },
+      { name: 'Giỏ Trái Cây Lan Hồ Điệp', url: '/products/gio_trai_cay_lan_ho_diep.jpg' },
+      { name: 'Tráp Trái Cây Dạm Ngõ', url: '/products/trap_trai_cay_dam_ngo.jpg' },
+      { name: 'Giỏ Trái Cây Lễ Chùa', url: '/products/gio_trai_cay_le_chua.jpg' }
+    ]
+  };
+
   const handleImageFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -225,13 +256,24 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     expiresAt: '2026-12-31'
   });
   
+  // State Quản Lý Sản Phẩm (CMS) Phân Loại Đa Danh Mục
+  const [adminCategoryFilter, setAdminCategoryFilter] = useState('all'); // 'all' | 'flowers' | 'weddings' | 'fruits'
+  const [adminProductSearch, setAdminProductSearch] = useState('');
+
   const [formData, setFormData] = useState({
+    category: 'flowers',
     name: '',
     subtitle: '',
     price: 750000,
     originalPrice: 850000,
     occasion: 'love',
     colorTone: 'pastel',
+    weddingType: 'rapcuoi',
+    scale: '',
+    setupTime: '',
+    includedItems: '',
+    fruitOccasion: 'gift_vip',
+    fruitTypes: '',
     image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
     tags: ['Mẫu Mới'],
     meaning: 'Gửi gắm tình cảm chân thành và sự ngọt ngào.',
@@ -300,52 +342,88 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setBrowserNotifStatus(res);
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = (initialCategory) => {
     setEditingProductId(null);
+    const cat = initialCategory || (adminCategoryFilter !== 'all' ? adminCategoryFilter : 'flowers');
     setFormData({
+      category: cat,
       name: '',
       subtitle: '',
-      price: 750000,
-      originalPrice: 850000,
+      price: cat === 'weddings' ? 6500000 : cat === 'fruits' ? 1250000 : 750000,
+      originalPrice: cat === 'weddings' ? 7800000 : cat === 'fruits' ? 1450000 : 850000,
       occasion: 'love',
       colorTone: 'pastel',
-      image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
+      weddingType: 'rapcuoi',
+      scale: cat === 'weddings' ? 'Quy mô: 10 - 20 bàn tiệc' : '',
+      setupTime: cat === 'weddings' ? 'Thi công: 24h trước ngày lễ' : '',
+      includedItems: cat === 'weddings' ? 'Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu yêu cầu\nĐèn led chiếu sáng & fairy light trang trí\nMiễn phí vận chuyển & thu dọn hoàn thiện' : '',
+      fruitOccasion: 'gift_vip',
+      fruitTypes: cat === 'fruits' ? 'Nho Mẫu Đơn Nhật, Táo Envy, Lê Hàn Quốc, Kiwi Vàng' : '',
+      image: cat === 'weddings' 
+        ? '/products/rap_cuoi_versailles.jpg' 
+        : cat === 'fruits' 
+        ? '/products/gio_trai_cay_phu_quy.jpg' 
+        : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       tags: ['Mẫu Mới'],
-      meaning: 'Gửi gắm tình cảm chân thành và sự ngọt ngào.',
+      meaning: cat === 'weddings' 
+        ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' 
+        : cat === 'fruits' 
+        ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' 
+        : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.',
       flowerTypes: 'Hồng Juliet, Baby Hà Lan, Lá Bạc',
-      freshDays: 4,
+      freshDays: cat === 'fruits' ? 7 : 4,
     });
     setIsProductModalOpen(true);
   };
 
   const handleOpenEditModal = (prod) => {
     setEditingProductId(prod.id);
+    const cat = prod.category || 'flowers';
     setFormData({
-      name: prod.name,
+      category: cat,
+      name: prod.name || '',
       subtitle: prod.subtitle || '',
-      price: prod.price,
-      originalPrice: prod.originalPrice || prod.price,
+      price: prod.price || 0,
+      originalPrice: prod.originalPrice || prod.price || 0,
       occasion: prod.occasion || 'love',
       colorTone: prod.colorTone || 'pastel',
-      image: prod.image,
+      weddingType: prod.weddingType || 'rapcuoi',
+      scale: prod.scale || '',
+      setupTime: prod.setupTime || '',
+      includedItems: Array.isArray(prod.includedItems) ? prod.includedItems.join('\n') : (prod.includedItems || ''),
+      fruitOccasion: prod.fruitOccasion || 'gift_vip',
+      fruitTypes: Array.isArray(prod.fruitTypes) ? prod.fruitTypes.join(', ') : (prod.fruitTypes || ''),
+      image: prod.image || '',
       tags: prod.tags || ['Mẫu Mới'],
       meaning: prod.meaning || '',
-      flowerTypes: Array.isArray(prod.flowerTypes) ? prod.flowerTypes.join(', ') : prod.flowerTypes || '',
-      freshDays: prod.freshDays || 4,
+      flowerTypes: Array.isArray(prod.flowerTypes) ? prod.flowerTypes.join(', ') : (prod.flowerTypes || ''),
+      freshDays: prod.freshDays || (cat === 'fruits' ? 7 : 4),
     });
     setIsProductModalOpen(true);
   };
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
-    const flowerTypesArray = formData.flowerTypes.split(',').map(s => s.trim()).filter(Boolean);
+    const cat = formData.category || 'flowers';
     const now = new Date().toISOString();
+
+    const flowerTypesArray = formData.flowerTypes ? formData.flowerTypes.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const fruitTypesArray = formData.fruitTypes ? formData.fruitTypes.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const includedItemsArray = formData.includedItems ? formData.includedItems.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
     const payload = {
       ...formData,
-      price: Number(formData.price),
-      originalPrice: Number(formData.originalPrice),
-      flowerTypes: flowerTypesArray,
-      freshDays: Number(formData.freshDays) || 4,
+      category: cat,
+      price: Number(formData.price) || 0,
+      originalPrice: Number(formData.originalPrice) || Number(formData.price) || 0,
+      freshDays: Number(formData.freshDays) || (cat === 'fruits' ? 7 : 4),
+      flowerTypes: cat === 'flowers' ? flowerTypesArray : undefined,
+      fruitTypes: cat === 'fruits' ? fruitTypesArray : undefined,
+      includedItems: cat === 'weddings' ? includedItemsArray : undefined,
+      scale: cat === 'weddings' ? formData.scale : undefined,
+      setupTime: cat === 'weddings' ? formData.setupTime : undefined,
+      weddingType: cat === 'weddings' ? formData.weddingType : undefined,
+      fruitOccasion: cat === 'fruits' ? formData.fruitOccasion : undefined,
       updatedAt: now
     };
 
@@ -681,7 +759,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               {
                 groupTitle: 'SẢN PHẨM & BÁN HÀNG',
                 items: [
-                  { id: 'products_cms', label: 'Danh Mục Mẫu Hoa', icon: Flower2, count: products.length },
+                  { id: 'products_cms', label: 'Quản Lý Sản Phẩm', icon: Flower2, count: products.length },
                   { id: 'discounts', label: 'Voucher Khuyến Mãi', icon: Tag, count: discounts?.length || 0 },
                   { id: 'reviews', label: 'Đánh Giá Khách Hàng', icon: MessageSquareHeart, count: reviews?.length || 0 }
                 ]
@@ -757,7 +835,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-emerald-100 hover:text-white py-2 rounded-xl text-xs font-bold transition-all"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>← Về Cửa Hàng</span>
+              <span>Về Cửa Hàng</span>
             </button>
 
             <div className="flex items-center justify-between pt-1">
@@ -808,7 +886,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <h1 className="font-serif text-base sm:text-lg font-bold text-[#1B3B2B] leading-tight">
                   {activeTab === 'orders' && '🛍️ Quản Lý Đơn Hàng & Cắm Mẫu'}
                   {activeTab === 'inventory' && '🌿 Quản Lý Kho Hoa Tươi & Định Lượng'}
-                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Mẫu Hoa'}
+                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Sản Phẩm (Hoa • Rạp Cưới • Trái Cây)'}
                   {activeTab === 'discounts' && '🎟️ Quản Lý Voucher & Khuyến Mãi'}
                   {activeTab === 'reviews' && '⭐ Quản Lý Đánh Giá & Feedback Khách Hàng'}
                   {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
@@ -1216,81 +1294,335 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
           <SalesAnalyticsView orders={orders} products={products} />
         )}
 
-        {/* TAB 3: QUẢN LÝ SẢN PHẨM (CMS) */}
-        {activeTab === 'products_cms' && (
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="font-serif text-2xl font-bold text-[#1B3B2B]">
-                  Quản Lý Mẫu Hoa Hiển Thị Ra Trang Khách
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Thêm mẫu hoa mới, chỉnh sửa giá bán, cập nhật ảnh và bật/tắt hiển thị ra trang chủ ngay lập tức.
-                </p>
+        {/* TAB 3: QUẢN LÝ SẢN PHẨM (CMS) ĐA DANH MỤC */}
+        {activeTab === 'products_cms' && (() => {
+          const totalCount = products.length;
+          const flowerCount = products.filter(p => !p.category || p.category === 'flowers').length;
+          const weddingCount = products.filter(p => p.category === 'weddings').length;
+          const fruitCount = products.filter(p => p.category === 'fruits').length;
+
+          const filteredCmsProducts = products.filter(prod => {
+            const cat = prod.category || 'flowers';
+            if (adminCategoryFilter !== 'all' && cat !== adminCategoryFilter) {
+              return false;
+            }
+            if (adminProductSearch.trim()) {
+              const q = adminProductSearch.toLowerCase().trim();
+              const matchName = prod.name?.toLowerCase().includes(q);
+              const matchSubtitle = prod.subtitle?.toLowerCase().includes(q);
+              const matchTag = Array.isArray(prod.tags) && prod.tags.some(t => t.toLowerCase().includes(q));
+              if (!matchName && !matchSubtitle && !matchTag) return false;
+            }
+            return true;
+          });
+
+          return (
+            <div className="space-y-6">
+              {/* Header Box & Nút Thêm Mới */}
+              <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-serif text-2xl font-bold text-[#1B3B2B]">
+                    Quản Lý Danh Mục Sản Phẩm (CMS)
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Quản lý toàn diện 3 trụ cột: Hoa tươi nghệ thuật, Rạp cưới hỏi gia tiên và Giỏ trái cây quà tặng.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenAddModal(adminCategoryFilter !== 'all' ? adminCategoryFilter : 'flowers')}
+                    className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-5 py-3 rounded-full shadow-md transition-all flex items-center gap-2 active:scale-95"
+                  >
+                    <Plus className="w-4 h-4 text-[#F5D6CE]" />
+                    <span>
+                      {adminCategoryFilter === 'weddings' 
+                        ? 'Thêm Gói Cưới Hỏi' 
+                        : adminCategoryFilter === 'fruits' 
+                        ? 'Thêm Giỏ Trái Cây' 
+                        : 'Thêm Sản Phẩm Mới'}
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              <button
-                onClick={handleOpenAddModal}
-                className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-5 py-3 rounded-full shadow-md transition-all flex items-center gap-2 active:scale-95"
-              >
-                <Plus className="w-4 h-4 text-[#F5D6CE]" />
-                <span>+ Thêm Bó Hoa Mới</span>
-              </button>
-            </div>
+              {/* Thanh Điều Khiển: Bộ Lọc Danh Mục & Ô Tìm Kiếm */}
+              <div className="bg-white p-4 rounded-2xl border border-[#E8EFEA] shadow-xs flex flex-wrap items-center justify-between gap-3">
+                {/* 4 Tabs Phân Loại */}
+                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
+                  <button
+                    onClick={() => setAdminCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      adminCategoryFilter === 'all'
+                        ? 'bg-white text-[#1B3B2B] shadow-xs'
+                        : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    Tất Cả ({totalCount})
+                  </button>
+                  <button
+                    onClick={() => setAdminCategoryFilter('flowers')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      adminCategoryFilter === 'flowers'
+                        ? 'bg-white text-[#1B3B2B] shadow-xs'
+                        : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span>🌸</span>
+                    <span>Hoa Tươi ({flowerCount})</span>
+                  </button>
+                  <button
+                    onClick={() => setAdminCategoryFilter('weddings')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      adminCategoryFilter === 'weddings'
+                        ? 'bg-white text-[#1B3B2B] shadow-xs'
+                        : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span>🎪</span>
+                    <span>Rạp Cưới Hỏi ({weddingCount})</span>
+                  </button>
+                  <button
+                    onClick={() => setAdminCategoryFilter('fruits')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      adminCategoryFilter === 'fruits'
+                        ? 'bg-white text-[#1B3B2B] shadow-xs'
+                        : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span>🍇</span>
+                    <span>Giỏ Trái Cây ({fruitCount})</span>
+                  </button>
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((prod) => (
-                <div key={prod.id} className="bg-white rounded-2xl border border-[#E8EFEA] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                  <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                    <img src={prod.image} alt={prod.name} className="w-full h-full object-cover" />
-                    <div className="absolute top-3 left-3">
-                      <span className="text-[10px] font-bold bg-[#1B3B2B] text-white px-2.5 py-0.5 rounded-full shadow-sm">
-                        Dịp: {OCCASIONS.find(o => o.id === prod.occasion)?.label || prod.occasion}
-                      </span>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <button
-                        onClick={() => toggleProductAvailability(prod.id)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all ${
-                          prod.isAvailable !== false
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-red-100 text-red-800 border border-red-300'
-                        }`}
-                      >
-                        {prod.isAvailable !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                        <span>{prod.isAvailable !== false ? 'Đang hiển thị' : 'Đã ẩn'}</span>
-                      </button>
-                    </div>
+                {/* Ô Tìm Kiếm Nhanh */}
+                <div className="relative flex-1 min-w-[220px] max-w-sm">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={adminProductSearch}
+                    onChange={(e) => setAdminProductSearch(e.target.value)}
+                    placeholder="Tìm tên, mô tả sản phẩm..."
+                    className="w-full pl-9 pr-8 py-2 bg-gray-50 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#1B3B2B] focus:bg-white transition-all"
+                  />
+                  {adminProductSearch && (
+                    <button
+                      onClick={() => setAdminProductSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Lưới Danh Sách Sản Phẩm */}
+              {filteredCmsProducts.length === 0 ? (
+                <div className="bg-white p-12 rounded-3xl border border-[#E8EFEA] text-center space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 mx-auto flex items-center justify-center text-2xl">
+                    🔍
                   </div>
-
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <h4 className="font-serif text-base font-bold text-[#1B3B2B] line-clamp-1">{prod.name}</h4>
-                      <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{prod.subtitle}</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-gray-400 block">Giá niêm yết:</span>
-                        <span className="text-base font-bold text-[#C4685A] font-sans">
-                          {prod.price?.toLocaleString('vi-VN')}đ
-                        </span>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button onClick={() => handleOpenEditModal(prod)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => deleteProduct(prod.id)} className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                  <h4 className="font-serif text-lg font-bold text-[#1B3B2B]">
+                    Không tìm thấy sản phẩm nào
+                  </h4>
+                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                    Không có sản phẩm nào phù hợp với danh mục hoặc từ khóa tìm kiếm "{adminProductSearch}".
+                  </p>
+                  <div className="pt-2 flex justify-center gap-2">
+                    {(adminCategoryFilter !== 'all' || adminProductSearch) && (
+                      <button
+                        onClick={() => {
+                          setAdminCategoryFilter('all');
+                          setAdminProductSearch('');
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-xs font-bold text-gray-700 rounded-xl hover:bg-gray-100"
+                      >
+                        Xóa Bộ Lọc
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleOpenAddModal(adminCategoryFilter !== 'all' ? adminCategoryFilter : 'flowers')}
+                      className="px-4 py-2 bg-[#1B3B2B] text-xs font-bold text-white rounded-xl shadow-xs hover:bg-[#264A37]"
+                    >
+                      + Thêm Sản Phẩm Vào Đây
+                    </button>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCmsProducts.map((prod) => {
+                    const cat = prod.category || 'flowers';
+                    const isWedding = cat === 'weddings';
+                    const isFruit = cat === 'fruits';
+
+                    return (
+                      <div
+                        key={prod.id}
+                        className="bg-white rounded-2xl border border-[#E8EFEA] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                      >
+                        <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                          <img
+                            src={prod.image}
+                            alt={prod.name}
+                            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                          />
+
+                          {/* Huy Hiệu Trụ Cột & Phân Loại Trên Ảnh */}
+                          <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1 ${
+                              isWedding
+                                ? 'bg-rose-900 text-white'
+                                : isFruit
+                                ? 'bg-amber-800 text-white'
+                                : 'bg-[#1B3B2B] text-white'
+                            }`}>
+                              <span>{isWedding ? '🎪' : isFruit ? '🍇' : '🌸'}</span>
+                              <span>
+                                {isWedding 
+                                  ? (WEDDING_TYPES.find(w => w.id === prod.weddingType)?.label || 'Rạp Cưới')
+                                  : isFruit 
+                                  ? (FRUIT_OCCASIONS.find(f => f.id === prod.fruitOccasion)?.label || 'Giỏ Trái Cây')
+                                  : (OCCASIONS.find(o => o.id === prod.occasion)?.label || prod.occasion || 'Hoa Tươi')}
+                              </span>
+                            </span>
+
+                            {/* Tag Mẫu Mới / Khảo sát */}
+                            {Array.isArray(prod.tags) && prod.tags[0] && (
+                              <span className="text-[9px] font-semibold bg-white/90 backdrop-blur-xs text-gray-800 px-2 py-0.5 rounded-md shadow-xs">
+                                {prod.tags[0]}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Nút Bật/Tắt Hiển Thị */}
+                          <div className="absolute top-3 right-3">
+                            <button
+                              onClick={() => toggleProductAvailability(prod.id)}
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all ${
+                                prod.isAvailable !== false
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                                  : 'bg-red-100 text-red-800 border border-red-300 hover:bg-red-200'
+                              }`}
+                              title={prod.isAvailable !== false ? 'Bấm để ẩn khỏi web' : 'Bấm để hiển thị lên web'}
+                            >
+                              {prod.isAvailable !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              <span>{prod.isAvailable !== false ? 'Đang hiển thị' : 'Đã ẩn'}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                isWedding
+                                  ? 'bg-rose-50 text-rose-700'
+                                  : isFruit
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-emerald-50 text-emerald-700'
+                              }`}>
+                                {isWedding ? 'Rạp Cưới Hỏi' : isFruit ? 'Giỏ Trái Cây' : 'Hoa Tươi'}
+                              </span>
+                            </div>
+
+                            <h4 className="font-serif text-base font-bold text-[#1B3B2B] line-clamp-1">
+                              {prod.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                              {prod.subtitle}
+                            </p>
+
+                            {/* Thông Tin Chuyên Biệt Theo Loại */}
+                            <div className="pt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600">
+                              {isWedding ? (
+                                <>
+                                  {prod.scale && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                      📐 {prod.scale}
+                                    </span>
+                                  )}
+                                  {Array.isArray(prod.includedItems) && prod.includedItems.length > 0 && (
+                                    <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                      📋 {prod.includedItems.length} hạng mục
+                                    </span>
+                                  )}
+                                </>
+                              ) : isFruit ? (
+                                <>
+                                  {Array.isArray(prod.fruitTypes) && prod.fruitTypes.length > 0 ? (
+                                    <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md text-[10px] font-medium line-clamp-1">
+                                      🍎 {prod.fruitTypes.slice(0, 3).join(', ')}{prod.fruitTypes.length > 3 ? '...' : ''}
+                                    </span>
+                                  ) : null}
+                                  {prod.freshDays && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                      🌿 Tươi ~{prod.freshDays} ngày
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {prod.colorTone && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                      🎨 Tone: {COLOR_TONES.find(c => c.id === prod.colorTone)?.label || prod.colorTone}
+                                    </span>
+                                  )}
+                                  {prod.freshDays && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                                      🌿 Tươi ~{prod.freshDays} ngày
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Khung Giá & Thao Tác Sửa/Xóa */}
+                          <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Giá niêm yết:</span>
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-base font-bold text-[#C4685A] font-sans">
+                                  {prod.price?.toLocaleString('vi-VN')}đ
+                                </span>
+                                {prod.originalPrice && prod.originalPrice > prod.price && (
+                                  <span className="text-[11px] text-gray-400 line-through">
+                                    {prod.originalPrice.toLocaleString('vi-VN')}đ
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleOpenEditModal(prod)}
+                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                title="Chỉnh sửa sản phẩm này"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Bạn có chắc chắn muốn xóa "${prod.name}" không?`)) {
+                                    deleteProduct(prod.id);
+                                  }
+                                }}
+                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                                title="Xóa sản phẩm"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 3: QUẢN LÝ MÃ GIẢM GIÁ & VOUCHER */}
         {activeTab === 'discounts' && (
@@ -1310,7 +1642,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-5 py-3 rounded-full shadow-md transition-all flex items-center gap-2 active:scale-95"
               >
                 <Plus className="w-4 h-4 text-[#F5D6CE]" />
-                <span>+ Tạo Mã Voucher Mới</span>
+                <span>Tạo Mã Voucher Mới</span>
               </button>
             </div>
 
@@ -2318,7 +2650,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 className="bg-[#1B3B2B] hover:bg-[#264A37] text-white text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
               >
                 <Plus className="w-4 h-4 text-[#F5D6CE]" />
-                <span>+ Thêm Loài Hoa Mới</span>
+                <span>Thêm Loài Hoa Mới</span>
               </button>
             </div>
 
@@ -2489,22 +2821,90 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in my-auto">
             <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
-              <h3 className="font-serif text-lg font-bold">
-                {editingProductId ? '✏️ Chỉnh Sửa Mẫu Hoa' : '🌸 Thêm Mẫu Bó Hoa Mới'}
+              <h3 className="font-serif text-lg font-bold flex items-center gap-2">
+                {editingProductId 
+                  ? '✏️ Chỉnh Sửa Sản Phẩm' 
+                  : (formData.category === 'weddings' 
+                      ? '🎪 Thêm Gói Rạp / Cưới Hỏi Mới' 
+                      : (formData.category === 'fruits' 
+                          ? '🍇 Thêm Mẫu Giỏ Trái Cây Mới' 
+                          : '🌸 Thêm Mẫu Bó Hoa Tươi Mới'))}
               </h3>
               <button onClick={() => setIsProductModalOpen(false)} className="text-white/80 hover:text-white text-lg">✕</button>
             </div>
 
             <form onSubmit={handleSaveProduct} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+              {/* 1. PHÂN LOẠI DANH MỤC TRỤ CỘT */}
               <div>
-                <label className="block font-bold text-gray-700 mb-1">Tên bó hoa *</label>
+                <label className="block font-bold text-gray-700 mb-1.5">
+                  Phân Loại Trụ Cột Danh Mục *
+                </label>
+                <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-2xl">
+                  {[
+                    { id: 'flowers', label: 'Hoa Tươi', icon: '🌸' },
+                    { id: 'weddings', label: 'Rạp Cưới Hỏi', icon: '🎪' },
+                    { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇' }
+                  ].map((cat) => {
+                    const isSelected = (formData.category || 'flowers') === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          const newCat = cat.id;
+                          setFormData(prev => ({
+                            ...prev,
+                            category: newCat,
+                            price: !editingProductId && (!prev.price || prev.price === 750000 || prev.price === 6500000 || prev.price === 1250000)
+                              ? (newCat === 'weddings' ? 6500000 : newCat === 'fruits' ? 1250000 : 750000)
+                              : prev.price,
+                            originalPrice: !editingProductId && (!prev.originalPrice || prev.originalPrice === 850000 || prev.originalPrice === 7800000 || prev.originalPrice === 1450000)
+                              ? (newCat === 'weddings' ? 7800000 : newCat === 'fruits' ? 1450000 : 850000)
+                              : prev.originalPrice,
+                            image: !editingProductId && (!prev.image || prev.image.includes('unsplash') || prev.image.includes('/products/'))
+                              ? (newCat === 'weddings' ? '/products/rap_cuoi_versailles.jpg' : newCat === 'fruits' ? '/products/gio_trai_cay_phu_quy.jpg' : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80')
+                              : prev.image,
+                            meaning: !editingProductId && (!prev.meaning || prev.meaning.includes('Gửi gắm') || prev.meaning.includes('trọng đại') || prev.meaning.includes('thượng hạng'))
+                              ? (newCat === 'weddings' ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' : newCat === 'fruits' ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.')
+                              : prev.meaning
+                          }));
+                        }}
+                        className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                          isSelected
+                            ? 'bg-white text-[#1B3B2B] shadow-sm ring-1 ring-black/5'
+                            : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                      >
+                        <span>{cat.icon}</span>
+                        <span>{cat.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. TÊN VÀ MÔ TẢ */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {formData.category === 'weddings' 
+                    ? 'Tên gói dịch vụ / rạp cưới *' 
+                    : (formData.category === 'fruits' 
+                        ? 'Tên giỏ trái cây quà tặng *' 
+                        : 'Tên mẫu hoa tươi *')}
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="VD: Bó Hoa Juliet Hoàng Hôn"
-                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                  placeholder={
+                    formData.category === 'weddings'
+                      ? 'VD: Gói Rạp Cưới Hoàng Gia "Versailles Palace"'
+                      : (formData.category === 'fruits'
+                          ? 'VD: Giỏ Trái Cây Hoàng Kim "Phú Quý Đại Cát"'
+                          : 'VD: Bó Hoa Juliet Hoàng Hôn')
+                  }
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
                 />
               </div>
 
@@ -2515,66 +2915,221 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   required
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  placeholder="VD: Hoa hồng cam spirit phối cùng baby trắng"
-                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                  placeholder={
+                    formData.category === 'weddings'
+                      ? 'VD: Khung rạp nhôm kiên cố, voan lụa trần 2 lớp, bàn ghế Tiffany...'
+                      : (formData.category === 'fruits'
+                          ? 'VD: Nho Mẫu Đơn Nhật, Táo Envy New Zealand kết hoa tươi sang trọng...'
+                          : 'VD: Hoa hồng cam spirit phối cùng baby trắng...')
+                  }
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
                 />
               </div>
 
+              {/* 3. GIÁ BÁN */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Giá bán (VNĐ) *</label>
+                  <label className="block font-bold text-gray-700 mb-1">Giá bán niêm yết (VNĐ) *</label>
                   <input
                     type="number"
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Giá gốc *</label>
+                  <label className="block font-bold text-gray-700 mb-1">Giá gốc gạch ngang (VNĐ)</label>
                   <input
                     type="number"
-                    required
                     value={formData.originalPrice}
                     onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none"
+                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">Dịp tặng hoa</label>
-                  <select
-                    value={formData.occasion}
-                    onChange={(e) => setFormData({ ...formData, occasion: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white"
-                  >
-                    {OCCASIONS.filter(o => o.id !== 'all').map(o => (
-                      <option key={o.id} value={o.id}>{o.label}</option>
-                    ))}
-                  </select>
+              {/* 4. CÁC TRƯỜNG ĐẶC THÙ THEO TỪNG DANH MỤC */}
+              {(!formData.category || formData.category === 'flowers') && (
+                <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100 space-y-3">
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs pb-1 border-b border-emerald-100">
+                    <span>🌸</span>
+                    <span>Thông Số Chuyên Biệt: Hoa Tươi</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Dịp tặng hoa</label>
+                      <select
+                        value={formData.occasion}
+                        onChange={(e) => setFormData({ ...formData, occasion: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      >
+                        {OCCASIONS.filter(o => o.id !== 'all').map(o => (
+                          <option key={o.id} value={o.id}>{o.icon} {o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Tone màu chủ đạo</label>
+                      <select
+                        value={formData.colorTone}
+                        onChange={(e) => setFormData({ ...formData, colorTone: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      >
+                        {COLOR_TONES.filter(c => c.id !== 'all').map(c => (
+                          <option key={c.id} value={c.id}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="block font-bold text-gray-700 mb-1">Loại hoa phối (phân cách bằng dấu phẩy)</label>
+                      <input
+                        type="text"
+                        value={formData.flowerTypes}
+                        onChange={(e) => setFormData({ ...formData, flowerTypes: e.target.value })}
+                        placeholder="VD: Hồng Juliet, Baby Hà Lan, Lá Bạc"
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Độ tươi (ngày)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={formData.freshDays}
+                        onChange={(e) => setFormData({ ...formData, freshDays: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">Tone màu chủ đạo</label>
-                  <select
-                    value={formData.colorTone}
-                    onChange={(e) => setFormData({ ...formData, colorTone: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white"
-                  >
-                    {COLOR_TONES.filter(c => c.id !== 'all').map(c => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </select>
+              )}
+
+              {formData.category === 'weddings' && (
+                <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100 space-y-3">
+                  <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs pb-1 border-b border-rose-100">
+                    <span>🎪</span>
+                    <span>Thông Số Chuyên Biệt: Rạp Cưới Hỏi & Gia Tiên</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Phân loại dịch vụ cưới *</label>
+                      <select
+                        value={formData.weddingType}
+                        onChange={(e) => setFormData({ ...formData, weddingType: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      >
+                        {WEDDING_TYPES.filter(w => w.id !== 'all').map(w => (
+                          <option key={w.id} value={w.id}>{w.icon} {w.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Quy mô phục vụ</label>
+                      <input
+                        type="text"
+                        value={formData.scale}
+                        onChange={(e) => setFormData({ ...formData, scale: e.target.value })}
+                        placeholder="VD: 10 - 20 bàn tiệc hoặc Tư gia 12 - 24 người"
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Thời gian khảo sát / thi công</label>
+                    <input
+                      type="text"
+                      value={formData.setupTime}
+                      onChange={(e) => setFormData({ ...formData, setupTime: e.target.value })}
+                      placeholder="VD: Hoàn thiện trước ngày cưới 24 - 36 giờ"
+                      className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">
+                      Các hạng mục thi công bao gồm (mỗi dòng một hạng mục):
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.includedItems}
+                      onChange={(e) => setFormData({ ...formData, includedItems: e.target.value })}
+                      placeholder={"Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu\nĐèn led fairy light & âm thanh cơ bản\nMiễn phí dọn dẹp mặt bằng 100%"}
+                      className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs font-mono"
+                    />
+                  </div>
                 </div>
+              )}
+
+              {formData.category === 'fruits' && (
+                <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-100 space-y-3">
+                  <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs pb-1 border-b border-amber-100">
+                    <span>🍇</span>
+                    <span>Thông Số Chuyên Biệt: Giỏ Trái Cây & Quà Tặng</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Mục đích / Dịp biếu tặng *</label>
+                      <select
+                        value={formData.fruitOccasion}
+                        onChange={(e) => setFormData({ ...formData, fruitOccasion: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      >
+                        {FRUIT_OCCASIONS.filter(f => f.id !== 'all').map(f => (
+                          <option key={f.id} value={f.id}>{f.icon} {f.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Thời gian tươi ngon (ngày)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={formData.freshDays}
+                        onChange={(e) => setFormData({ ...formData, freshDays: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">
+                      Thành phần các loại quả trong giỏ (ngăn cách bằng dấu phẩy)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.fruitTypes}
+                      onChange={(e) => setFormData({ ...formData, fruitTypes: e.target.value })}
+                      placeholder="VD: Nho Mẫu Đơn Nhật, Táo Envy Size 24, Lê Hàn Quốc, Kiwi Vàng"
+                      className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Ý NGHĨA / THÔNG ĐIỆP */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Ý nghĩa / Lời nhắn gửi</label>
+                <input
+                  type="text"
+                  value={formData.meaning || ''}
+                  onChange={(e) => setFormData({ ...formData, meaning: e.target.value })}
+                  placeholder="VD: Món quà trao gửi sự chân thành, tinh tế và ấm áp."
+                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
+                />
               </div>
 
               {/* HÌNH ẢNH SẢN PHẨM: 3 CÁCH IMPORT ẢNH */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="block font-bold text-gray-700 text-xs">
-                    Hình ảnh mẫu hoa *
+                    Hình ảnh sản phẩm *
                   </label>
                   <div className="flex bg-gray-100 p-0.5 rounded-lg text-[10px] font-semibold text-gray-600">
                     <button
@@ -2593,7 +3148,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         imageImportMode === 'library' ? 'bg-white text-[#1B3B2B] shadow-xs font-bold' : 'hover:text-black'
                       }`}
                     >
-                      🌸 Mẫu Có Sẵn
+                      🖼️ Thư Viện Mẫu
                     </button>
                     <button
                       type="button"
@@ -2630,12 +3185,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </div>
                 )}
 
-                {/* CÁCH 2: CHỌN TỪ THƯ VIỆN MẪU TIỆM HOA CÓ SẴN */}
+                {/* CÁCH 2: CHỌN TỪ THƯ VIỆN MẪU THEO DANH MỤC */}
                 {imageImportMode === 'library' && (
                   <div className="space-y-1.5">
                     <span className="text-[10px] text-gray-500 font-semibold block">Click vào ảnh mẫu bạn muốn áp dụng:</span>
                     <div className="grid grid-cols-3 gap-2 p-2 bg-[#FAF8F5] rounded-2xl border border-gray-200 max-h-40 overflow-y-auto">
-                      {PRESET_FLOWER_PHOTOS.map((preset, idx) => (
+                      {(CATEGORY_PRESET_PHOTOS[formData.category || 'flowers'] || PRESET_FLOWER_PHOTOS).map((preset, idx) => (
                         <div
                           key={idx}
                           onClick={() => setFormData(prev => ({ ...prev, image: preset.url }))}
@@ -2669,7 +3224,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   <div className="flex items-center gap-3 p-2.5 bg-white rounded-2xl border border-[#E8EFEA] shadow-xs">
                     <img
                       src={formData.image}
-                      alt="Xem trước ảnh mẫu hoa"
+                      alt="Xem trước ảnh mẫu sản phẩm"
                       className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
@@ -2700,14 +3255,14 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="pt-4 border-t border-gray-200 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md"
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98"
                 >
                   {editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-5 border border-gray-300 text-gray-600 rounded-full"
+                  className="px-5 border border-gray-300 text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   Hủy
                 </button>

@@ -1,5 +1,32 @@
 [
   {
+    "id": "FB-96029",
+    "orderCode": "FB-96029",
+    "customerName": "Nguyễn Hoàng Nam",
+    "customerPhone": "0909 123 456",
+    "receiverName": "Trần Ngọc Bích",
+    "receiverPhone": "0988 765 432",
+    "receiverAddress": "124 Phan Chu Trinh, Phường Thắng Lợi, TP. Buôn Ma Thuột, Đắk Lắk",
+    "isAnonymous": false,
+    "productName": "Hộp Hoa \"Pastel Dream Sonata\" (Tiêu Chuẩn)",
+    "cardMessage": "Gửi gắm yêu thương!",
+    "senderSign": "Người gửi",
+    "deliverySlot": "Hôm nay (23/09) • 14:00 - 16:00",
+    "totalAmount": 920000,
+    "status": "ARRANGING",
+    "florist": "Thợ cắm hoa Minh Thư (Studio A)",
+    "floristAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "proofPhotoUrl": null,
+    "isApproved": false,
+    "createdAt": "10:31",
+    "items": [
+      {
+        "name": "Hộp Hoa \"Pastel Dream Sonata\" [Size: Tiêu Chuẩn] [Gói: Giấy Giản Dị Xanh Sage] ×1",
+        "price": 920000
+      }
+    ]
+  },
+  {
     "id": "FB-97994",
     "orderCode": "FB-97994",
     "customerName": "Nguyễn Văn A",
