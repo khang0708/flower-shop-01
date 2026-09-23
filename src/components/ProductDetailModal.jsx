@@ -384,23 +384,23 @@ export const ProductDetailModal = () => {
                         <label
                           key={addon.id}
                           onClick={() => toggleAddon(addon)}
-                          className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                          className={`flex items-center justify-between gap-2.5 p-3 rounded-xl border text-xs cursor-pointer select-none transition-all ${
                             isChecked 
                               ? 'border-[#C4685A] bg-[#FDF7F6] ring-1 ring-[#C4685A]' 
                               : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xl">{addon.img}</span>
-                            <div>
-                              <span className="font-semibold text-gray-800 block">{addon.name}</span>
-                              <span className="text-gray-500 font-medium">+{addon.price.toLocaleString('vi-VN')}đ</span>
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-xl shrink-0">{addon.img}</span>
+                            <div className="min-w-0 flex-1">
+                              <span className="font-semibold text-gray-800 block leading-snug">{addon.name}</span>
+                              <span className="text-gray-500 font-medium block mt-0.5">+{addon.price.toLocaleString('vi-VN')}đ</span>
                             </div>
                           </div>
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
-                            isChecked ? 'bg-[#C4685A] border-[#C4685A] text-white' : 'border-gray-300'
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 transition-colors ${
+                            isChecked ? 'bg-[#C4685A] border-[#C4685A] text-white' : 'border-gray-300 bg-white'
                           }`}>
-                            {isChecked && <Check className="w-3.5 h-3.5" />}
+                            {isChecked && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
                           </div>
                         </label>
                       );
