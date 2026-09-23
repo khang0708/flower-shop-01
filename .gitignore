@@ -27,3 +27,6 @@ dist-ssr
 
 guide_assets/
 capture_guide_screens.js
+
+# Cấu hình động (chứa token nhạy cảm - không commit)
+server/data/settings.json

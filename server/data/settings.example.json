@@ -1,0 +1,24 @@
+{
+  "shopZaloPhone": "",
+  "telegramBotToken": "<telegram_bot_token_từ_@BotFather>",
+  "telegramChatId": "<telegram_chat_id>",
+  "isSoundEnabled": true,
+  "shippingSettings": {
+    "standardFee": 35000,
+    "expressFee": 60000,
+    "freeShippingThreshold": 1000000,
+    "isFreeShippingEnabled": true,
+    "freeShippingNote": "Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ"
+  },
+  "facebookSettings": {
+    "pageId": "<facebook_page_id>",
+    "pageName": "<tên_trang_facebook>",
+    "pageAccessToken": "<facebook_page_access_token_từ_meta_developer>",
+    "verifyToken": "<chuỗi_bí_mật_ngẫu_nhiên_tự_tạo>",
+    "adminRecipientId": "",
+    "isEnabled": false,
+    "welcomeMessage": "Chào bạn! Cửa hàng rất vui được hỗ trợ bạn.",
+    "autoReplyEnabled": true
+  },
+  "updatedAt": ""
+}
