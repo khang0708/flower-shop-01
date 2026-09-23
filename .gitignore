@@ -28,5 +28,7 @@ dist-ssr
 guide_assets/
 capture_guide_screens.js
 
-# Cấu hình động (chứa token nhạy cảm - không commit)
-server/data/settings.json
+# Lưu ý: server/data/settings.json được commit dưới dạng bản mặc định (không có token).
+# Token thật được quản lý qua admin UI và lưu trong Neon DB.
+# Để tránh git track thay đổi local, chạy:
+#   git update-index --skip-worktree server/data/settings.json
