@@ -1,5 +1,6 @@
 {
   "shopZaloPhone": "",
+  "shopAddress": "<địa_chỉ_cửa_hàng>",
   "telegramBotToken": "<telegram_bot_token_từ_@BotFather>",
   "telegramChatId": "<telegram_chat_id>",
   "isSoundEnabled": true,

@@ -22,7 +22,6 @@ export const FlowerGrid = () => {
     searchQuery, 
     sortBy, 
     setSortBy, 
-    setIsAIFloristOpen,
     shopZaloPhone
   } = useShop();
 
@@ -85,19 +84,11 @@ export const FlowerGrid = () => {
       {/* THANH CÔNG CỤ ĐIỀU KHIỂN & SẮP XẾP SẢN PHẨM */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8EFEA] shadow-xs mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         
-        {/* Số lượng sản phẩm & AI prompt */}
+        {/* Số lượng sản phẩm */}
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-3 py-1.5 rounded-xl border border-[#D1DFD6]">
+          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-3.5 py-1.5 rounded-xl border border-[#D1DFD6]">
             🌸 <strong>{filteredAndSortedFlowers.length}</strong> mẫu hoa tuyển chọn
           </span>
-
-          <button
-            onClick={() => setIsAIFloristOpen(true)}
-            className="text-xs text-[#C4685A] hover:text-[#a85245] font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            <span>Thử tính năng AI Florist nhận diện hoa</span>
-          </button>
         </div>
 
         {/* BỘ SẮP XẾP SẢN PHẨM (SORTING BAR) */}
@@ -145,13 +136,14 @@ export const FlowerGrid = () => {
             Không tìm thấy mẫu hoa phù hợp với bộ lọc
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-            Bạn có thể thử chọn lại dịp tặng khác hoặc tải ảnh mẫu hoa bạn thích để chúng tôi cắm riêng theo yêu cầu.
+            Bạn có thể thử chọn lại dịp tặng khác hoặc nhắn tin Zalo để nghệ nhân cắm hoa thiết kế riêng theo ngân sách của bạn.
           </p>
           <button
-            onClick={() => setIsAIFloristOpen(true)}
-            className="mt-4 bg-[#1B3B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-full hover:bg-[#264A37] transition-all shadow-sm"
+            type="button"
+            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn được tư vấn cắm hoa theo yêu cầu riêng!')}
+            className="mt-4 bg-[#1B3B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-full hover:bg-[#264A37] transition-all shadow-sm active:scale-95"
           >
-            Tải ảnh hoa theo yêu cầu
+            Nhắn Zalo cắm hoa theo yêu cầu
           </button>
         </div>
       )}
@@ -160,7 +152,7 @@ export const FlowerGrid = () => {
       <div className="mt-16 bg-[#F4F7F5] rounded-3xl p-8 border border-[#D1DFD6] flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center md:text-left">
           <span className="text-xs font-bold text-[#5C8A70] uppercase tracking-wider">
-            Flora & Bloom Atelier Quality
+            Ngọc Flower Quality
           </span>
           <h3 className="font-serif text-2xl text-[#1B3B2B] font-bold">
             Bạn cần cắm hoa theo ngân sách riêng?
@@ -173,7 +165,7 @@ export const FlowerGrid = () => {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào nghệ nhân Flora & Bloom, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!')}
+            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào nghệ nhân Ngọc Flower, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!')}
             className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3 rounded-full hover:bg-blue-600 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
           >
             <span>💬 Chat Zalo Với Nghệ Nhân ({shopZaloPhone})</span>

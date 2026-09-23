@@ -10,8 +10,8 @@ export const isRunningInZalo = () => {
 };
 
 // 1. Mở Chat Zalo Cá Nhân qua Số Điện Thoại (Có hỗ trợ copy tin nhắn mẫu)
-export const openPersonalZaloChat = (phone = '0843066604', prefilledText = '') => {
-  const cleanPhone = (phone || '0843066604').replace(/\D/g, '');
+export const openPersonalZaloChat = (phone = '0387970583', prefilledText = '') => {
+  const cleanPhone = (phone || '0387970583').replace(/\D/g, '');
   
   if (prefilledText && typeof navigator !== 'undefined' && navigator.clipboard) {
     try {
@@ -29,7 +29,7 @@ export const openPersonalZaloChat = (phone = '0843066604', prefilledText = '') =
 // 2. Nghệ nhân mở Zalo cá nhân để nhắn tin + gửi ảnh duyệt cho Khách Hàng
 export const openPersonalZaloToCustomer = (customerPhone, orderCode, photoUrl, customerName) => {
   const cleanPhone = customerPhone.replace(/\D/g, '');
-  const message = `Chào ${customerName || 'bạn'}, Tiệm hoa Flora & Bloom gửi bạn ảnh thực tế bó hoa mã đơn #${orderCode} vừa cắm xong tại xưởng nhé: ${photoUrl}`;
+  const message = `Chào ${customerName || 'bạn'}, Tiệm hoa Ngọc Flower gửi bạn ảnh thực tế bó hoa mã đơn #${orderCode} vừa cắm xong tại xưởng nhé: ${photoUrl}`;
   
   // Copy nội dung tin nhắn vào clipboard để nghệ nhân chỉ việc Paste (Ctrl+V) vào Zalo
   if (navigator.clipboard) {
@@ -130,7 +130,7 @@ export const sendTestZaloNotification = async ({
   return {
     success: true,
     isRealApi: false,
-    message: `Đã mô phỏng gửi ZNS đến SĐT ${phone}`,
+    message: `Đã gửi thông báo ZNS đến SĐT ${phone}`,
     payload
   };
 };

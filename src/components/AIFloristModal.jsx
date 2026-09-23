@@ -4,6 +4,7 @@ import { analyzeFlowerWithAiApi } from '../api';
 import { openPersonalZaloChat } from '../services/zaloService';
 import { generateMessengerAIInquiry } from '../services/facebookService';
 import { Sparkles, Upload, CheckCircle, RefreshCw, ArrowRight, Wand2 } from 'lucide-react';
+import { ZaloIcon } from './ZaloIcon';
 
 const PRESET_SAMPLES = [
   {
@@ -105,7 +106,7 @@ export const AIFloristModal = () => {
               style: 'Cắm Tự Do Nghệ Thuật (Artisan Bouquet)',
               difficulty: 'Trung Bình Khá',
               priceRange: { min: 850000, max: 1050000 },
-              floristAdvice: 'Nghệ nhân Flora sẽ phối các cành hoa có tone tương tự nhất trong kho sáng nay để đảm bảo tươi mới.',
+              floristAdvice: 'Nghệ nhân Ngọc Flower sẽ phối các cành hoa có tone tương tự nhất trong kho sáng nay để đảm bảo tươi mới.',
               matchSummary: 'Mẫu hoa bạn chọn có bố cục rất hài hòa và màu sắc ngọt ngào.'
             });
           }, 1000);
@@ -280,7 +281,7 @@ export const AIFloristModal = () => {
 
                 <div className="p-4 bg-white rounded-2xl border border-[#D1DFD6] space-y-1">
                   <span className="text-xs font-bold text-[#5C8A70] flex items-center gap-1.5">
-                    <Wand2 className="w-3.5 h-3.5" /> Lời khuyên từ nghệ nhân Flora:
+                    <Wand2 className="w-3.5 h-3.5" /> Lời khuyên từ nghệ nhân Ngọc Flower:
                   </span>
                   <p className="text-xs text-gray-600 leading-relaxed italic">
                     "{analysisResult.floristAdvice}"
@@ -318,12 +319,12 @@ export const AIFloristModal = () => {
                         const theme = analysisResult?.style || 'Nghệ thuật';
                         openPersonalZaloChat(
                           shopZaloPhone,
-                          `Chào nghệ nhân Flora & Bloom, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
+                          `Chào nghệ nhân Ngọc Flower, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
                         );
                       }}
                       className="flex-1 bg-[#0068FF] text-white text-xs font-bold px-4 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                     >
-                      <span className="font-extrabold text-xs">Z</span>
+                      <ZaloIcon className="w-4 h-4" variant="white" />
                       <span>Gửi Zalo ({shopZaloPhone})</span>
                     </button>
                   </div>

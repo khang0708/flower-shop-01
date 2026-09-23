@@ -1,5 +1,5 @@
 /**
- * Flora & Bloom - Facebook Messenger Service
+ * Ngọc Flower - Facebook Messenger Service
  * Tiện ích kết nối, mở liên kết m.me và xử lý tương tác qua Facebook Messenger
  */
 
@@ -48,7 +48,7 @@ export const openFacebookMessenger = (pageId, message = '') => {
 export const generateMessengerProductInquiry = (pageId, product) => {
   if (!product) return openFacebookMessenger(pageId);
   const priceStr = Number(product.price || 0).toLocaleString('vi-VN');
-  const message = `Chào Flora & Bloom, tôi muốn tư vấn mẫu hoa "${product.name}" (giá: ${priceStr}đ). Nhờ tiệm gửi thêm ảnh hoa thực tế tại xưởng giúp tôi nhé!`;
+  const message = `Chào Ngọc Flower, tôi muốn tư vấn mẫu hoa "${product.name}" (giá: ${priceStr}đ). Nhờ tiệm gửi thêm ảnh hoa thực tế tại xưởng giúp tôi nhé!`;
   return openFacebookMessenger(pageId, message);
 };
 
@@ -67,6 +67,6 @@ export const generateMessengerOrderInquiry = (pageId, orderCode) => {
 export const generateMessengerAIInquiry = (pageId, analysisResult) => {
   const detected = analysisResult?.detectedFlowers?.join(', ') || 'Hoa thiết kế theo ảnh';
   const style = analysisResult?.style || 'Nghệ thuật';
-  const message = `Chào nghệ nhân Flora & Bloom, tôi vừa dùng AI Florist Vision thẩm định mẫu hoa phong cách "${style}" (${detected}). Nhờ xưởng báo giá và tư vấn cắm mẫu này giúp tôi nhé!`;
+  const message = `Chào nghệ nhân Ngọc Flower, tôi vừa dùng AI Florist Vision thẩm định mẫu hoa phong cách "${style}" (${detected}). Nhờ xưởng báo giá và tư vấn cắm mẫu này giúp tôi nhé!`;
   return openFacebookMessenger(pageId, message);
 };

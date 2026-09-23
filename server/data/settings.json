@@ -1,5 +1,6 @@
 {
-  "shopZaloPhone": "",
+  "shopZaloPhone": "0387970583",
+  "shopAddress": "44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk",
   "telegramBotToken": "",
   "telegramChatId": "",
   "isSoundEnabled": true,
@@ -11,14 +12,14 @@
     "freeShippingNote": "Miễn phí giao hoa tiêu chuẩn cho đơn hàng từ 1.000.000đ"
   },
   "facebookSettings": {
-    "pageId": "",
-    "pageName": "",
+    "pageId": "myphamstart",
+    "pageName": "Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật",
     "pageAccessToken": "",
     "verifyToken": "",
     "adminRecipientId": "",
-    "isEnabled": false,
-    "welcomeMessage": "Chào bạn! Cửa hàng rất vui được hỗ trợ bạn.",
-    "autoReplyEnabled": false
+    "isEnabled": true,
+    "welcomeMessage": "Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.",
+    "autoReplyEnabled": true
   },
-  "updatedAt": ""
+  "updatedAt": "2026-09-22T08:00:00.000Z"
 }

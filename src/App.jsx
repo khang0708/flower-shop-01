@@ -1,6 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ShopProvider } from './context/ShopContext';
-import { ZaloMiniAppBanner } from './components/ZaloMiniAppBanner';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { OccasionFilter } from './components/OccasionFilter';
@@ -105,9 +104,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#222523] selection:bg-[#F5D6CE] selection:text-[#1B3B2B]">
-      {/* Banner Mô phỏng Zalo Mini App */}
-      <ZaloMiniAppBanner />
-
       {/* Header Khách Hàng */}
       <Header />
 
@@ -129,7 +125,6 @@ function AppContent() {
         <ProductDetailModal />
         <CartDrawer />
         <CheckoutModal />
-        <AIFloristModal />
         <OrderTrackingModal />
         <AdminLoginModal
           isOpen={isAdminLoginOpen}

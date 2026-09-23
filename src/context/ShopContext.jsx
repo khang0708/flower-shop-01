@@ -149,7 +149,10 @@ export const ShopProvider = ({ children }) => {
 
   // 2. Cài đặt kết nối Zalo Cá Nhân / Telegram (Lưu bền vững vào LocalStorage & Backend Settings)
   const [shopZaloPhone, setShopZaloPhoneState] = useState(() => {
-    return localStorage.getItem('flora_shop_zalo_phone') || '0843066604';
+    return localStorage.getItem('flora_shop_zalo_phone') || '0387970583';
+  });
+  const [shopAddress, setShopAddressState] = useState(() => {
+    return localStorage.getItem('flora_shop_address') || '44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk';
   });
   const [zaloModeType, setZaloModeType] = useState('personal');
 
@@ -166,6 +169,14 @@ export const ShopProvider = ({ children }) => {
     setShopZaloPhoneState(clean);
     localStorage.setItem('flora_shop_zalo_phone', clean);
     saveSettingsApi({ shopZaloPhone: clean, updatedAt: now }).catch(() => {});
+  };
+
+  const setShopAddress = (val) => {
+    const clean = (val || '').trim();
+    const now = updateSettingsTimestamp();
+    setShopAddressState(clean);
+    localStorage.setItem('flora_shop_address', clean);
+    saveSettingsApi({ shopAddress: clean, updatedAt: now }).catch(() => {});
   };
 
   const setTelegramBotToken = (val) => {
@@ -230,12 +241,12 @@ export const ShopProvider = ({ children }) => {
     } catch (e) {}
     return {
       pageId: 'tiemhoaflorabloom',
-      pageName: 'Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật',
+      pageName: 'Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật',
       pageAccessToken: '',
       verifyToken: 'flora_bloom_webhook_secret_2026',
       adminRecipientId: '',
       isEnabled: true,
-      welcomeMessage: 'Chào bạn! Flora & Bloom Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.',
+      welcomeMessage: 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.',
       autoReplyEnabled: true
     };
   });
@@ -535,7 +546,7 @@ export const ShopProvider = ({ children }) => {
       productName: 'Bó Hoa Juliet Nắng Ban Mai',
       rating: 5,
       occasion: 'Kỷ Niệm Ngày Cưới',
-      comment: 'Hoa bên ngoài đẹp hơn cả ảnh mẫu trên web! Shop có gửi ảnh hoa thực tế qua Zalo cho mình duyệt trước khi giao nên cực kỳ an tâm. Shipper giao đúng boong 14h chiều, bạn nhận xúc động suýt khóc. Sẽ ủng hộ Flora & Bloom dài dài!',
+      comment: 'Hoa bên ngoài đẹp hơn cả ảnh mẫu trên web! Shop có gửi ảnh hoa thực tế qua Zalo cho mình duyệt trước khi giao nên cực kỳ an tâm. Shipper giao đúng boong 14h chiều, bạn nhận xúc động suýt khóc. Sẽ ủng hộ Ngọc Flower dài dài!',
       proofImage: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       verified: true,
       createdAt: '2026-08-25',
@@ -651,6 +662,10 @@ export const ShopProvider = ({ children }) => {
             setShopZaloPhoneState(apiSettings.shopZaloPhone);
             if (typeof localStorage !== 'undefined') localStorage.setItem('flora_shop_zalo_phone', apiSettings.shopZaloPhone);
           }
+          if (apiSettings.shopAddress) {
+            setShopAddressState(apiSettings.shopAddress);
+            if (typeof localStorage !== 'undefined') localStorage.setItem('flora_shop_address', apiSettings.shopAddress);
+          }
           if (apiSettings.telegramBotToken) {
             setTelegramBotTokenState(apiSettings.telegramBotToken);
             if (typeof localStorage !== 'undefined') localStorage.setItem('flora_tg_token', apiSettings.telegramBotToken);
@@ -672,6 +687,7 @@ export const ShopProvider = ({ children }) => {
           // Local mới hơn server -> GIỮ NGUYÊN LOCAL & Rehydrate container server ngầm!
           const localSettingsPayload = {
             shopZaloPhone: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_shop_zalo_phone') : undefined,
+            shopAddress: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_shop_address') : undefined,
             telegramBotToken: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_tg_token') : undefined,
             telegramChatId: typeof localStorage !== 'undefined' ? localStorage.getItem('flora_tg_chat_id') : undefined,
             shippingSettings: shippingSettings,
@@ -1294,6 +1310,8 @@ export const ShopProvider = ({ children }) => {
         toggleProductAvailability,
         shopZaloPhone,
         setShopZaloPhone,
+        shopAddress,
+        setShopAddress,
         zaloModeType,
         setZaloModeType,
         telegramBotToken,

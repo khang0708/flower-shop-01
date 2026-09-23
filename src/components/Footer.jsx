@@ -1,10 +1,12 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
 import { openPersonalZaloChat } from '../services/zaloService';
-import { Phone, Mail, MapPin, ShieldCheck, Heart, Globe, MessageCircle, Lock } from 'lucide-react';
+import { Phone, MapPin, ShieldCheck, Heart, Globe, MessageCircle, Lock } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
+import { ZaloIcon } from './ZaloIcon';
 
 export const Footer = ({ onOpenAdminLogin }) => {
-  const { shopZaloPhone } = useShop();
+  const { shopZaloPhone, shopAddress } = useShop();
   return (
     <footer className="bg-[#1B3B2B] text-[#FAF8F5] pt-16 pb-10 border-t border-[#264A37]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,14 +15,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
           
           {/* Cột 1: Brand Info */}
           <div className="space-y-4">
-            <div>
-              <span className="font-serif text-3xl font-bold tracking-tight text-white block">
-                Flora & Bloom
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.3em] text-[#E8998D] font-semibold">
-                Botanical Atelier & Gifting
-              </span>
-            </div>
+            <BrandLogo variant="horizontal" size="lg" theme="light" />
             <p className="text-xs text-gray-300 leading-relaxed font-light">
               Tiệm hoa tươi thủ công cao cấp. Chúng tôi chăm chút từng cành hoa, từng dòng chữ trên thiệp để món quà của bạn trở thành khoảnh khắc đáng nhớ nhất.
             </p>
@@ -30,11 +25,11 @@ export const Footer = ({ onOpenAdminLogin }) => {
               </a>
               <button 
                 type="button"
-                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Flora & Bloom, tôi muốn tư vấn mẫu hoa!')}
+                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn tư vấn mẫu hoa!')}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#0068FF] hover:text-white flex items-center justify-center transition-all" 
                 title={`Chat Zalo (${shopZaloPhone})`}
               >
-                <span className="font-bold text-xs">Z</span>
+                <ZaloIcon className="w-4 h-4" variant="white" />
               </button>
               <a href="#" className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#E8998D] hover:text-white flex items-center justify-center transition-all" title="Hotline">
                 <Phone className="w-4 h-4" />
@@ -54,7 +49,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
             </ul>
           </div>
 
-          {/* Cột 3: Cam kết của Flora */}
+          {/* Cột 3: Cam kết của Ngọc Flower */}
           <div className="space-y-3">
             <h4 className="font-serif text-base font-bold text-white">Chính Sách & Cam Kết</h4>
             <ul className="space-y-2 text-xs text-gray-300">
@@ -72,11 +67,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
             <div className="space-y-2">
               <p className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#E8998D] flex-shrink-0 mt-0.5" />
-                <span>Store 1: 128 Nguyễn Trãi, P. Bến Thành, Quận 1, TP.HCM</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-[#E8998D] flex-shrink-0 mt-0.5" />
-                <span>Store 2: 45 Lý Thường Kiệt, Q. Hoàn Kiếm, Hà Nội</span>
+                <span>{shopAddress || '44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk'}</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#E8998D] flex-shrink-0" />
@@ -94,10 +85,6 @@ export const Footer = ({ onOpenAdminLogin }) => {
                   Chat Zalo Cá Nhân Xưởng Hoa
                 </button>
               </p>
-              <p className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#E8998D] flex-shrink-0" />
-                <span>hello@florabloom.vn</span>
-              </p>
             </div>
           </div>
 
@@ -105,7 +92,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
 
         {/* Sub-footer kín đáo dành riêng cho nhân viên */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-3">
-          <p>© 2026 Flora & Bloom Atelier. All rights reserved.</p>
+          <p>© 2026 Ngọc Flower. All rights reserved.</p>
           
           <div className="flex items-center gap-4">
             <p className="flex items-center gap-1">

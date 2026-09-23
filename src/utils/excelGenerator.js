@@ -1,5 +1,5 @@
 /**
- * Flora & Bloom - Pure Native XLSX & XML Spreadsheet Generator
+ * Ngọc Flower - Pure Native XLSX & XML Spreadsheet Generator
  * Xuất file Excel chuẩn binary .xlsx hoặc .xml với đầy đủ màu sắc, KPI, số điện thoại không mất số 0
  * và hoàn toàn KHÔNG bị Microsoft Excel hiển thị hộp thoại cảnh báo định dạng.
  */
@@ -257,13 +257,13 @@ export const generateNativeXlsxBlob = ({
 
   // Row 1: Banner Header
   sheetRows += `<row r="${rIdx}" ht="40" customHeight="1">
-    <c r="A${rIdx}" s="1" t="inlineStr"><is><t>🌸 FLORA &amp; BLOOM - BÁO CÁO DOANH THU &amp; TIẾN TRÌNH ĐƠN HÀNG CHI TIẾT</t></is></c>
+    <c r="A${rIdx}" s="1" t="inlineStr"><is><t>🌸 NGỌC FLOWER - BÁO CÁO DOANH THU &amp; TIẾN TRÌNH ĐƠN HÀNG CHI TIẾT</t></is></c>
   </row>`;
   rIdx++;
 
   // Row 2: Subtitle
   sheetRows += `<row r="${rIdx}" ht="20" customHeight="1">
-    <c r="A${rIdx}" s="0" t="inlineStr"><is><t>Hệ Thống Quản Trị Tiệm Hoa Tươi Flora &amp; Bloom Studio • Ngày xuất: ${escapeXml(exportTimeStr)} • Người lập: Ban Quản Trị</t></is></c>
+    <c r="A${rIdx}" s="0" t="inlineStr"><is><t>Hệ Thống Quản Trị Tiệm Hoa Tươi Ngọc Flower Studio • Ngày xuất: ${escapeXml(exportTimeStr)} • Người lập: Ban Quản Trị</t></is></c>
   </row>`;
   rIdx++;
 

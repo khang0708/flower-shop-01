@@ -5,6 +5,7 @@ import { CardPreviewer } from './CardPreviewer';
 import { openPersonalZaloChat } from '../services/zaloService';
 import { generateMessengerProductInquiry } from '../services/facebookService';
 import { X, Check, Star, ShoppingBag, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
+import { ZaloIcon } from './ZaloIcon';
 
 export const ProductDetailModal = () => {
   const { quickViewProduct, setQuickViewProduct, addToCart, shopZaloPhone, facebookSettings } = useShop();
@@ -254,7 +255,7 @@ export const ProductDetailModal = () => {
                   className="px-3.5 py-3 bg-blue-50 hover:bg-blue-100 text-[#0068FF] border border-blue-200 rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
                   title={`Tư vấn mẫu này qua Zalo (${shopZaloPhone})`}
                 >
-                  <span className="font-extrabold text-xs">Z</span>
+                  <ZaloIcon className="w-4 h-4" variant="blue" />
                   <span>Zalo</span>
                 </button>
 

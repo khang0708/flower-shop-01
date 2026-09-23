@@ -492,7 +492,7 @@ export const CheckoutModal = () => {
                 <div className="p-4 bg-white rounded-xl border border-dashed border-[#5C8A70] flex items-center gap-4">
                   <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center p-1.5 flex-shrink-0">
                     <img 
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FLORABLOOM_ORDER_PAYMENT" 
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=NGOCFLOWER_ORDER_PAYMENT" 
                       alt="VietQR" 
                       className="w-full h-full object-contain"
                     />
@@ -500,7 +500,7 @@ export const CheckoutModal = () => {
                   <div className="text-[11px] text-gray-600 space-y-1">
                     <span className="font-bold text-[#1B3B2B] block text-xs">Mã QR VietQR Tự Động</span>
                     <p>Ngân hàng: <strong>Techcombank (1903 888 666)</strong></p>
-                    <p>Chủ TK: <strong>FLORA & BLOOM ATELIER</strong></p>
+                    <p>Chủ TK: <strong>NGỌC FLOWER</strong></p>
                     <p className="text-emerald-700 font-semibold">Tự động kích hoạt đơn ngay khi quét</p>
                   </div>
                 </div>

@@ -166,7 +166,7 @@ export const sendTelegramOrderNotificationApi = async (botToken, chatId, order) 
     `🏠 <b>Địa chỉ:</b> ${escapeTelegramHtml(order.receiverAddress || 'Chưa cung cấp')}\n` +
     `💌 <b>Lời chúc thiệp:</b> <i>"${escapeTelegramHtml(order.cardMessage || 'Gửi gắm yêu thương!')}"</i>\n` +
     `✍️ <b>Ký tên:</b> <i>"${escapeTelegramHtml(order.senderSign || order.customerName || 'Người gửi')}"</i>\n\n` +
-    `👉 <i>Flora & Bloom Studio: Hãy mở Admin để cắm mẫu và gửi ảnh duyệt nhé!</i>`;
+    `👉 <i>Ngọc Flower Studio: Hãy mở Admin để cắm mẫu và gửi ảnh duyệt nhé!</i>`;
 
   try {
     const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -218,7 +218,7 @@ export const sendTelegramTestApi = async (botToken, chatId, testOrder) => {
     `💰 <b>Tổng tiền:</b> ${Number(order.totalAmount).toLocaleString('vi-VN')}đ\n` +
     `⏱️ <b>Khung giờ:</b> ${escapeTelegramHtml(order.deliverySlot)}\n` +
     `📍 <b>Giao tới:</b> ${escapeTelegramHtml(order.receiverAddress)}\n\n` +
-    `👉 <i>Flora & Bloom Studio đã sẵn sàng cắm hoa!</i>`;
+    `👉 <i>Ngọc Flower Studio đã sẵn sàng cắm hoa!</i>`;
 
   try {
     const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;

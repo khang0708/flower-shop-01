@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Star, 
   CheckCircle, 
@@ -10,9 +10,67 @@ import {
   Filter,
   X,
   Send,
-  HeartHandshake
+  HeartHandshake,
+  Upload,
+  Trash2,
+  RefreshCw,
+  Link as LinkIcon,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
+
+/**
+ * Tối ưu nén ảnh phía client để ảnh chụp điện thoại (5-15MB) 
+ * giảm xuống kích thước tiêu chuẩn (~1200px, 150-300KB) cực nét và mượt mà.
+ */
+const compressImageFile = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('Vui lòng chọn tệp hình ảnh hợp lệ'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Không thể đọc tệp ảnh'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Không thể tải hình ảnh'));
+      img.onload = () => {
+        const maxWidth = 1200;
+        const maxHeight = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target.result);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          resolve(dataUrl);
+        } catch (err) {
+          resolve(e.target.result);
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
 export const ReviewsSection = () => {
   const { reviews, addReview, products } = useShop();
@@ -31,6 +89,40 @@ export const ReviewsSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Mobile Camera & Gallery File Input Refs & State
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file hình ảnh (JPG, PNG, WEBP, HEIC)!');
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressedDataUrl = await compressImageFile(file);
+      setFormImage(compressedDataUrl);
+      setShowUrlInput(false);
+    } catch (err) {
+      console.error('Lỗi nén ảnh:', err);
+      // Fallback: FileReader thông thường
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        if (evt.target?.result) setFormImage(evt.target.result);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsCompressing(false);
+      e.target.value = '';
+    }
+  };
+
   // Lọc đánh giá
   const visibleReviews = reviews.filter(r => r.isVisible !== false);
   const filteredReviews = visibleReviews.filter(r => {
@@ -48,7 +140,7 @@ export const ReviewsSection = () => {
     setIsSubmitting(true);
     try {
       await addReview({
-        customerName: formName || 'Khách hàng Flora',
+        customerName: formName || 'Khách hàng Ngọc Flower',
         rating: Number(formRating),
         occasion: formOccasion,
         productName: formProductName,
@@ -61,6 +153,7 @@ export const ReviewsSection = () => {
         setIsWriteModalOpen(false);
         setFormComment('');
         setFormImage('');
+        setShowUrlInput(false);
       }, 1500);
     } catch (err) {
       alert('Không thể gửi đánh giá: ' + err.message);
@@ -202,7 +295,7 @@ export const ReviewsSection = () => {
                   >
                     <img 
                       src={rev.proofImage} 
-                      alt={`Ảnh hoa thực tế giao khách hàng ${rev.customerName} - Flora & Bloom`}
+                      alt={`Ảnh hoa thực tế giao khách hàng ${rev.customerName} - Ngọc Flower`}
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -325,21 +418,153 @@ export const ReviewsSection = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">Ảnh chụp bó hoa thực tế (URL ảnh)</label>
+              {/* VÙNG CHỌN / CHỤP ẢNH HOA THỰC TẾ (HỖ TRỢ MOBILE CAMERA & THƯ VIỆN) */}
+              <div className="space-y-2">
+                <label className="block font-bold text-gray-700 text-xs">
+                  📸 Ảnh chụp bó hoa thực tế bạn đã nhận
+                </label>
+
+                {/* Input file ẩn hỗ trợ Camera chụp trực tiếp trên mobile */}
                 <input
-                  type="url"
-                  value={formImage}
-                  onChange={(e) => setFormImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/... hoặc link ảnh"
-                  className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B]"
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileSelect}
                 />
+
+                {/* Input file ẩn hỗ trợ mở Thư viện ảnh / Tệp */}
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+
+                {/* Trạng thái đang nén ảnh */}
+                {isCompressing && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center gap-2 text-xs text-emerald-800 animate-pulse font-medium">
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                    <span>Đang tối ưu & xử lý ảnh hoa sắc nét...</span>
+                  </div>
+                )}
+
+                {/* Khi ĐÃ CÓ ẢNH: Hiển thị Preview & các nút thao tác */}
+                {!isCompressing && formImage ? (
+                  <div className="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-center gap-3">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-300 flex-shrink-0 bg-white shadow-xs">
+                      <img
+                        src={formImage}
+                        alt="Ảnh hoa thực tế"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1 text-emerald-800 font-bold text-xs">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                        <span className="truncate">Đã tải ảnh thực tế thành công</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        Ảnh đã được tối ưu chuẩn để hiển thị cùng đánh giá.
+                      </p>
+
+                      <div className="flex items-center gap-2.5 mt-1.5 text-[11px] font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="text-emerald-800 hover:underline flex items-center gap-1"
+                        >
+                          <Camera className="w-3 h-3" />
+                          <span>Chụp lại</span>
+                        </button>
+                        <span className="text-gray-300">•</span>
+                        <button
+                          type="button"
+                          onClick={() => galleryInputRef.current?.click()}
+                          className="text-blue-700 hover:underline flex items-center gap-1"
+                        >
+                          <Upload className="w-3 h-3" />
+                          <span>Đổi ảnh</span>
+                        </button>
+                        <span className="text-gray-300">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormImage('')}
+                          className="text-red-600 hover:underline flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Khi CHƯA CÓ ẢNH: 2 Nút lớn thân thiện cho Mobile & Máy tính */
+                  !isCompressing && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {/* Nút 1: Mở Camera chụp trực tiếp (Ưu tiên mobile) */}
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="p-3.5 bg-emerald-50/80 hover:bg-emerald-100 border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-emerald-900 active:scale-95 group text-center"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                            <Camera className="w-5 h-5" />
+                          </div>
+                          <span className="font-bold text-xs">Chụp ảnh (Camera)</span>
+                          <span className="text-[10px] text-emerald-700 font-medium">Bật camera chụp ngay</span>
+                        </button>
+
+                        {/* Nút 2: Chọn ảnh từ Thư viện */}
+                        <button
+                          type="button"
+                          onClick={() => galleryInputRef.current?.click()}
+                          className="p-3.5 bg-blue-50/80 hover:bg-blue-100 border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-blue-900 active:scale-95 group text-center"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <span className="font-bold text-xs">Chọn từ thư viện</span>
+                          <span className="text-[10px] text-blue-700 font-medium">Tải ảnh có sẵn từ máy</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-gray-500 px-0.5">
+                        <span>Hỗ trợ JPG, PNG, WEBP</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowUrlInput(!showUrlInput)}
+                          className="text-emerald-800 hover:underline font-semibold inline-flex items-center gap-1"
+                        >
+                          <LinkIcon className="w-3 h-3" />
+                          <span>{showUrlInput ? 'Ẩn link URL' : 'Hoặc dán liên kết URL ảnh'}</span>
+                        </button>
+                      </div>
+
+                      {showUrlInput && (
+                        <div className="pt-1 animate-fade-in">
+                          <input
+                            type="url"
+                            value={formImage}
+                            onChange={(e) => setFormImage(e.target.value)}
+                            placeholder="Dán link ảnh (https://...)"
+                            className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#1B3B2B] text-xs font-mono"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
 
               {submitSuccess && (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Cảm ơn bạn! Đánh giá đã được gửi lên hệ thống Flora & Bloom.</span>
+                  <span>Cảm ơn bạn! Đánh giá đã được gửi lên hệ thống Ngọc Flower.</span>
                 </div>
               )}
 
