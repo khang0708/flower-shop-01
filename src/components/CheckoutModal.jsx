@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   Lock, 
   Sparkles,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react';
 
 import { openPersonalZaloChat } from '../services/zaloService';
@@ -102,6 +103,7 @@ export const CheckoutModal = () => {
   };
 
   // Form State
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
@@ -120,6 +122,7 @@ export const CheckoutModal = () => {
   // Tự động load mới ngày hiện tại mỗi lần mở modal đặt hoa
   useEffect(() => {
     if (isCheckoutOpen) {
+      setIsSubmitting(false);
       setDateMode('today');
       setCustomDate('');
       setSelectedSlot('14:00 - 16:00');
@@ -148,24 +151,33 @@ export const CheckoutModal = () => {
   const grandTotal = Math.max(0, cartTotal + shippingFee - discountAmount);
   const isFreeshipEligible = shippingSettings?.isFreeShippingEnabled && cartTotal >= (shippingSettings?.freeShippingThreshold || 1000000);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     const computedSlot = deliveryType === 'express' 
       ? `⚡ Hỏa tốc 60 - 90 phút (${dynamicDates.today.label})` 
       : `${currentDeliveryDateLabel} • ${selectedSlot}`;
 
-    submitOrder({
-      senderName,
-      senderPhone,
-      receiverName,
-      receiverPhone,
-      receiverAddress,
-      isAnonymous,
-      deliveryType,
-      shippingFee,
-      deliverySlot: computedSlot,
-      paymentMethod,
-    });
+    try {
+      await submitOrder({
+        senderName,
+        senderPhone,
+        receiverName,
+        receiverPhone,
+        receiverAddress,
+        isAnonymous,
+        deliveryType,
+        shippingFee,
+        deliverySlot: computedSlot,
+        paymentMethod,
+      });
+    } catch (err) {
+      console.error('Lỗi khi gửi đơn hàng:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -179,8 +191,13 @@ export const CheckoutModal = () => {
             <span className="font-serif text-lg font-bold">Thanh Toán Đơn Gửi Tặng Hoa</span>
           </div>
           <button 
-            onClick={() => setIsCheckoutOpen(false)}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-lg transition-all"
+            type="button"
+            onClick={() => !isSubmitting && setIsCheckoutOpen(false)}
+            disabled={isSubmitting}
+            className={`w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-lg transition-all ${
+              isSubmitting ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+            title="Đóng cửa sổ thanh toán"
           >
             ✕
           </button>
@@ -576,11 +593,34 @@ export const CheckoutModal = () => {
               {/* Submit CTA */}
               <button
                 type="submit"
-                className="w-full bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold text-sm py-4 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className={`w-full text-white font-bold text-sm py-4 rounded-full shadow-lg transition-all flex items-center justify-center gap-2.5 ${
+                  isSubmitting
+                    ? 'bg-[#1B3B2B]/85 cursor-not-allowed opacity-90 shadow-none'
+                    : 'bg-[#1B3B2B] hover:bg-[#264A37] hover:shadow-xl active:scale-95 cursor-pointer'
+                }`}
               >
-                <Lock className="w-4 h-4 text-[#F5D6CE]" />
-                <span>Hoàn Tất Đặt Hoa Ngay</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-[#F5D6CE]" />
+                    <span>Đang xử lý đơn hoa của bạn...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 text-[#F5D6CE]" />
+                    <span>Hoàn Tất Đặt Hoa Ngay</span>
+                  </>
+                )}
               </button>
+
+              {isSubmitting && (
+                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-center animate-fade-in">
+                  <p className="text-[11px] text-[#1B3B2B] font-medium flex items-center justify-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span>Hệ thống đang ghi nhận đơn & gửi báo cáo về tiệm hoa, vui lòng đợi trong giây lát...</span>
+                  </p>
+                </div>
+              )}
 
               <div className="pt-1 text-center">
                 <button
