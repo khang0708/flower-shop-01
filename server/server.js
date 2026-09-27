@@ -42,17 +42,42 @@ if (process.env.DATABASE_URL) {
   }
 }
 
+// Bọc mọi promise (DB query, fetch bên thứ 3, ...) bằng timeout để tránh
+// serverless function treo tới tận giới hạn tối đa của Vercel khi bên ngoài
+// không phản hồi (kết nối mạng treo, DB không reachable, API bên thứ 3 hang).
+const withTimeout = (promise, ms, label = 'operation') => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
+const DB_TIMEOUT_MS = 10000;
+
+// fetch() ra API bên thứ 3 kèm timeout (mặc định 15s) qua AbortController,
+// để không bao giờ treo tới giới hạn tối đa của function.
+const fetchWithTimeout = async (url, options = {}, ms = 15000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 let isTableInitialized = false;
 const ensureTable = async () => {
   if (!sql || isTableInitialized) return;
   try {
-    await sql`
+    await withTimeout(sql`
       CREATE TABLE IF NOT EXISTS flora_store (
         key VARCHAR(50) PRIMARY KEY,
         data JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
-    `;
+    `, DB_TIMEOUT_MS, 'ensureTable');
     isTableInitialized = true;
   } catch (err) {
     console.warn('ensureTable note:', err.message);
@@ -70,7 +95,11 @@ const readJson = async (fileName) => {
   if (sql) {
     try {
       await ensureTable();
-      const rows = await sql`SELECT data FROM flora_store WHERE key = ${key}`;
+      const rows = await withTimeout(
+        sql`SELECT data FROM flora_store WHERE key = ${key}`,
+        DB_TIMEOUT_MS,
+        `readJson(${key})`
+      );
       if (rows && rows.length > 0 && rows[0].data !== undefined) {
         const data = rows[0].data;
         memoryDb.set(fileName, data);
@@ -121,11 +150,11 @@ const writeJson = async (fileName, data) => {
     try {
       await ensureTable();
       const jsonStr = JSON.stringify(data);
-      await sql`
+      await withTimeout(sql`
         INSERT INTO flora_store (key, data, updated_at)
         VALUES (${key}, ${jsonStr}, NOW())
         ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
-      `;
+      `, DB_TIMEOUT_MS, `writeJson(${key})`);
     } catch (dbErr) {
       console.error(`[Neon DB] Lỗi ghi ${key}:`, dbErr.message);
     }
@@ -162,19 +191,33 @@ export const broadcastAdminEvent = (eventPayload) => {
 };
 
 // GET /api/admin/events (SSE Stream)
-app.get('/api/admin/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders?.();
-
-  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Admin Stream Active' })}\n\n`);
-  sseClients.add(res);
-
-  req.on('close', () => {
-    sseClients.delete(res);
+//
+// QUAN TRỌNG: Vercel Serverless Functions có giới hạn thời gian chạy cứng
+// (maxDuration). Giữ response mở vô thời hạn để chờ push event (SSE) khiến
+// MỖI invocation phải chạy tới hết giới hạn đó rồi mới bị Vercel kill với lỗi
+// "Task timed out" - lặp lại liên tục vì client (EventSource) tự động
+// reconnect. SSE dạng long-poll chỉ hoạt động đúng trên 1 Node process chạy
+// dài hạn (vd `npm run server` local), KHÔNG chạy được trên Vercel.
+// => Trên Vercel, trả lời ngay 1 lần rồi đóng kết nối (không giữ treo).
+if (process.env.VERCEL) {
+  app.get('/api/admin/events', (req, res) => {
+    res.status(204).end();
   });
-});
+} else {
+  app.get('/api/admin/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Admin Stream Active' })}\n\n`);
+    sseClients.add(res);
+
+    req.on('close', () => {
+      sseClients.delete(res);
+    });
+  });
+}
 
 // ----------------------------------------------------
 // 1. PRODUCTS REST API (Quản Lý Sản Phẩm Mẫu Hoa)
@@ -435,7 +478,7 @@ app.post('/api/notifications/telegram-get-chat-id', async (req, res) => {
 
     const token = cleanTelegramToken(rawToken);
     const updatesUrl = `https://api.telegram.org/bot${token}/getUpdates`;
-    const tgRes = await fetch(updatesUrl);
+    const tgRes = await fetchWithTimeout(updatesUrl, {}, 10000);
     const tgData = await tgRes.json();
 
     if (!tgData.ok) {
@@ -512,7 +555,7 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
       `👉 <i>Hãy mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
 
     const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
-    const tgRes = await fetch(telegramUrl, {
+    const tgRes = await fetchWithTimeout(telegramUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -657,14 +700,14 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 
     if (accessToken) {
       try {
-        const response = await fetch('https://business.openapi.zalo.me/message/template', {
+        const response = await fetchWithTimeout('https://business.openapi.zalo.me/message/template', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'access_token': accessToken
           },
           body: JSON.stringify(payload)
-        });
+        }, 10000);
         const liveData = await response.json();
         return res.json({ success: true, isLiveApi: true, data: liveData });
       } catch (err) {
@@ -737,14 +780,14 @@ const callFacebookSendApi = async (pageAccessToken, recipientId, messageText, qu
   }
 
   const graphUrl = `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageAccessToken)}`;
-  const response = await fetch(graphUrl, {
+  const response = await fetchWithTimeout(graphUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       recipient: { id: recipientId },
       message: messagePayload
     })
-  });
+  }, 10000);
 
   const resData = await response.json();
   if (resData.error) {

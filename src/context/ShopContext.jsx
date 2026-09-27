@@ -754,10 +754,18 @@ export const ShopProvider = ({ children }) => {
       }
     }, 30000);
 
-    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác.
+    // CHỈ bật ở dev (Vite dev server chạy dài hạn). Trên production (Vercel
+    // Serverless), route này không giữ kết nối mở (xem server/server.js) vì
+    // sẽ khiến function treo tới hết maxDuration rồi bị kill - đã gây ra sự cố
+    // "Task timed out after 300 seconds" lặp lại hàng loạt. Đồng bộ real-time
+    // trên production dựa vào Smart Polling (30s) + BroadcastChannel ở trên.
     let eventSource = null;
     try {
-      eventSource = new EventSource('/api/admin/events');
+      if (import.meta.env.DEV) {
+        eventSource = new EventSource('/api/admin/events');
+      }
+      if (eventSource) {
       eventSource.onmessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
@@ -794,6 +802,7 @@ export const ShopProvider = ({ children }) => {
           }
         } catch (err) {}
       };
+      }
     } catch (err) {}
 
     // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới, Cập nhật ảnh thật, Đồng bộ mẫu hoa)
