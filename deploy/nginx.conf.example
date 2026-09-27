@@ -1,0 +1,50 @@
+# /etc/nginx/sites-available/flora-bloom-shop
+# Sau khi copy: sudo ln -s /etc/nginx/sites-available/flora-bloom-shop /etc/nginx/sites-enabled/
+# Thay "yourdomain.com" bằng domain thật đã mua ở Tenten.
+#
+# Chạy certbot TRƯỚC khi bỏ comment phần "listen 443" (certbot --nginx sẽ tự thêm block SSL
+# và sửa file này giúp bạn nếu bạn chạy: sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com)
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name yourdomain.com www.yourdomain.com;
+
+    # Static frontend (kết quả của `npm run build`)
+    root /var/www/flora-bloom-shop/dist;
+    index index.html;
+
+    # Nén để tải nhanh hơn
+    gzip on;
+    gzip_types text/plain application/javascript application/json text/css image/svg+xml;
+
+    # API -> proxy sang Node server chạy qua PM2 ở cổng nội bộ 3001
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Server chạy dài hạn (không phải serverless) nên KHÔNG cần timeout ngắn
+        # như trên Vercel — SSE (nếu bật lại sau này) sẽ hoạt động đúng ở đây.
+        proxy_read_timeout 300s;
+    }
+
+    # SPA fallback: mọi route còn lại trả về index.html để React Router xử lý
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# --- Sau khi chạy certbot, bạn sẽ có thêm 1 block dạng dưới đây (certbot tự sinh) ---
+# server {
+#     listen 443 ssl;
+#     server_name yourdomain.com www.yourdomain.com;
+#     ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+#     include /etc/letsencrypt/options-ssl-nginx.conf;
+#     ssl_dhparam /etc/letsencrypt/ssl-dhparam.pem;
+#     ... (giống các location block ở trên)
+# }
