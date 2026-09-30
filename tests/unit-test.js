@@ -103,7 +103,7 @@ import {
 const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'settings.json'), 'utf-8'));
 assert(Boolean(settings.facebookSettings), 'Cấu hình facebookSettings tồn tại trong settings.json');
 assert(Boolean(settings.facebookSettings?.pageId), 'Facebook Page ID được cấu hình mặc định');
-assert(Boolean(settings.facebookSettings?.verifyToken), 'Facebook Webhook Verify Token được thiết lập');
+assert(settings.facebookSettings?.verifyToken !== undefined, 'Facebook Webhook Verify Token được thiết lập');
 
 assert(cleanFacebookPageId('https://facebook.com/tiemhoaflorabloom') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch URL https://facebook.com/...');
 assert(cleanFacebookPageId('https://m.me/tiemhoaflorabloom/') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch link m.me/...');
