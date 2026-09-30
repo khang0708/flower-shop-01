@@ -14,7 +14,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 APP_DIR="/var/www/flower-shop"
-BRANCH="development"
+BRANCH="main"
 APP_NAME="flower-shop-api"
 
 echo -e "${BLUE}======================================================${NC}"
