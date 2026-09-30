@@ -1,16 +1,38 @@
-# React + Vite
+# 🌸 Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật (hoatuoibmt.vn)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+[![CI/CD Auto Deploy to AZDIGI VPS](https://github.com/khang0708/flower-shop-01/actions/workflows/deploy.yml/badge.svg)](https://github.com/khang0708/flower-shop-01/actions/workflows/deploy.yml)
 
-Currently, two official plugins are available:
+Website bán lẻ hoa tươi nghệ thuật, giỏ trái cây cao cấp và dịch vụ hoa cưới hỏi chuyên nghiệp tại Buôn Ma Thuột.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **🌐 Website chính thức:** [https://hoatuoibmt.vn](https://hoatuoibmt.vn)
+- **⚡ Công nghệ sử dụng:** React 19, Vite, Tailwind CSS, Node.js Express, PM2, Nginx, Let's Encrypt SSL.
+- **🚀 Triển khai & Vận hành:** VPS AZDIGI (Debian 13) với quy trình CI/CD tự động qua GitHub Actions.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Hướng Dẫn Phát Triển Cục Bộ (Local Development)
 
-## Expanding the Oxlint configuration
+### Yêu cầu môi trường:
+- Node.js >= 20.x
+- npm >= 10.x
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Cài đặt và khởi chạy:
+```bash
+# Cài đặt thư viện phụ thuộc
+npm install
+
+# Khởi chạy Dev Server
+npm run dev
+```
+
+### Chạy bộ kiểm thử (Test Suite):
+```bash
+npm test
+```
+
+---
+
+## 🚀 Quy Trình CI/CD Tự Động (GitHub Actions)
+Hệ thống tự động kích hoạt mỗi khi có commit được đẩy lên nhánh `main`:
+1. **Automated Test:** Chạy bộ kiểm thử toàn diện 34 unit tests & 22 tiêu chuẩn bảo mật.
+2. **Auto Deploy:** Kết nối SSH bảo mật vào VPS AZDIGI, tự động build và reload dịch vụ (Zero Downtime).
