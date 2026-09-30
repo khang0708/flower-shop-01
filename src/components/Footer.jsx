@@ -1,7 +1,7 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
 import { openPersonalZaloChat } from '../services/zaloService';
-import { Phone, MapPin, ShieldCheck, Heart, Globe, MessageCircle, Lock } from 'lucide-react';
+import { Phone, MapPin, ShieldCheck, Globe, MessageCircle, Lock } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { ZaloIcon } from './ZaloIcon';
 
@@ -63,7 +63,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
 
           {/* Cột 4: Hệ thống cửa hàng */}
           <div className="space-y-3 text-xs text-gray-300">
-            <h4 className="font-serif text-base font-bold text-white">Xưởng Hoa & Liên Hệ</h4>
+            <h4 className="font-serif text-base font-bold text-white">Tiệm Hoa & Liên Hệ</h4>
             <div className="space-y-2">
               <p className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#E8998D] flex-shrink-0 mt-0.5" />
@@ -82,7 +82,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
                   onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop, tôi muốn được tư vấn đặt hoa tươi!')}
                   className="text-gray-300 hover:text-white transition-colors underline flex items-center gap-1 text-[11px]"
                 >
-                  Chat Zalo Cá Nhân Xưởng Hoa
+                  Chat Zalo Cá Nhân Tiệm Hoa
                 </button>
               </p>
             </div>
@@ -95,10 +95,6 @@ export const Footer = ({ onOpenAdminLogin }) => {
           <p>© 2026 Ngọc Flower. All rights reserved.</p>
           
           <div className="flex items-center gap-4">
-            <p className="flex items-center gap-1">
-              Thiết kế theo chuẩn <strong>UI/UX Pro Max</strong> <Heart className="w-3 h-3 text-[#E8998D] fill-[#E8998D]" />
-            </p>
-            <span className="text-white/20">•</span>
             {/* Link kín đáo ở chân trang */}
             <button
               onClick={onOpenAdminLogin}

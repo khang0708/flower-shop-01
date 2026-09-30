@@ -4,21 +4,22 @@ import { FlowerCard } from './FlowerCard';
 import { 
   Sparkles, 
   ArrowUpDown, 
-  SlidersHorizontal, 
   ArrowUp, 
   ArrowDown, 
   Star, 
   Clock, 
   Tag
 } from 'lucide-react';
-
 import { openPersonalZaloChat } from '../services/zaloService';
 
 export const FlowerGrid = () => {
   const { 
     products, 
+    activeCategory,
     selectedOccasion, 
     selectedColor, 
+    selectedWeddingType,
+    selectedFruitType,
     searchQuery, 
     sortBy, 
     setSortBy, 
@@ -37,24 +38,45 @@ export const FlowerGrid = () => {
   // Lọc và sắp xếp sản phẩm theo tiêu chí được chọn
   const filteredAndSortedFlowers = useMemo(() => {
     // 1. Lọc sản phẩm
-    const filtered = products.filter((flower) => {
-      if (flower.isAvailable === false) return false;
+    const filtered = products.filter((item) => {
+      if (item.isAvailable === false) return false;
 
-      // Filter Occasion
-      if (selectedOccasion !== 'all' && flower.occasion !== selectedOccasion) {
+      const itemCategory = item.category || 'flowers';
+
+      // 1.1 Lọc theo Pillar Category
+      if (itemCategory !== activeCategory) {
         return false;
       }
-      // Filter Color Tone
-      if (selectedColor !== 'all' && flower.colorTone !== selectedColor) {
-        return false;
+
+      // 1.2 Lọc Sub-filters theo Category
+      if (activeCategory === 'flowers') {
+        if (selectedOccasion !== 'all' && item.occasion !== selectedOccasion) {
+          return false;
+        }
+        if (selectedColor !== 'all' && item.colorTone !== selectedColor) {
+          return false;
+        }
+      } else if (activeCategory === 'weddings') {
+        if (selectedWeddingType !== 'all' && item.weddingType !== selectedWeddingType) {
+          return false;
+        }
+      } else if (activeCategory === 'fruits') {
+        if (selectedFruitType !== 'all' && item.fruitOccasion !== selectedFruitType) {
+          return false;
+        }
       }
-      // Filter Search
+
+      // 1.3 Lọc Search Query
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
-        const matchName = flower.name?.toLowerCase().includes(q);
-        const matchSubtitle = flower.subtitle?.toLowerCase().includes(q);
-        const matchFlowers = flower.flowerTypes?.some(f => f.toLowerCase().includes(q));
-        if (!matchName && !matchSubtitle && !matchFlowers) return false;
+        const matchName = item.name?.toLowerCase().includes(q);
+        const matchSubtitle = item.subtitle?.toLowerCase().includes(q);
+        const matchFlowers = item.flowerTypes?.some(f => f.toLowerCase().includes(q));
+        const matchFruits = item.fruitTypes?.some(f => f.toLowerCase().includes(q));
+        const matchIncluded = item.includedItems?.some(i => i.toLowerCase().includes(q));
+        if (!matchName && !matchSubtitle && !matchFlowers && !matchFruits && !matchIncluded) {
+          return false;
+        }
       }
       return true;
     });
@@ -76,7 +98,20 @@ export const FlowerGrid = () => {
       default:
         return cloned;
     }
-  }, [products, selectedOccasion, selectedColor, searchQuery, sortBy]);
+  }, [products, activeCategory, selectedOccasion, selectedColor, selectedWeddingType, selectedFruitType, searchQuery, sortBy]);
+
+  // Nhãn hiển thị số lượng theo category
+  const counterLabel = useMemo(() => {
+    switch (activeCategory) {
+      case 'weddings':
+        return `🎪 ${filteredAndSortedFlowers.length} gói rạp cưới & gia tiên trọn gói`;
+      case 'fruits':
+        return `🍇 ${filteredAndSortedFlowers.length} mẫu giỏ trái cây cao cấp`;
+      case 'flowers':
+      default:
+        return `🌸 ${filteredAndSortedFlowers.length} mẫu hoa tuyển chọn`;
+    }
+  }, [activeCategory, filteredAndSortedFlowers.length]);
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
@@ -87,7 +122,7 @@ export const FlowerGrid = () => {
         {/* Số lượng sản phẩm */}
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-3.5 py-1.5 rounded-xl border border-[#D1DFD6]">
-            🌸 <strong>{filteredAndSortedFlowers.length}</strong> mẫu hoa tuyển chọn
+            {counterLabel}
           </span>
         </div>
 
@@ -106,7 +141,7 @@ export const FlowerGrid = () => {
                 <button
                   key={opt.id}
                   onClick={() => setSortBy(opt.id)}
-                  className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 ${
+                  className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
                     isActive
                       ? 'bg-[#1B3B2B] text-white shadow-xs'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
@@ -131,44 +166,76 @@ export const FlowerGrid = () => {
         </div>
       ) : (
         <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-[#D1DFD6] p-8">
-          <p className="text-3xl mb-2">🌸</p>
+          <p className="text-3xl mb-2">
+            {activeCategory === 'weddings' ? '🎪' : activeCategory === 'fruits' ? '🍇' : '🌸'}
+          </p>
           <h3 className="font-serif text-lg font-bold text-[#1B3B2B]">
-            Không tìm thấy mẫu hoa phù hợp với bộ lọc
+            {activeCategory === 'weddings' 
+              ? 'Không tìm thấy gói cưới hỏi phù hợp với bộ lọc'
+              : activeCategory === 'fruits'
+              ? 'Không tìm thấy giỏ trái cây phù hợp với bộ lọc'
+              : 'Không tìm thấy mẫu hoa phù hợp với bộ lọc'}
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-            Bạn có thể thử chọn lại dịp tặng khác hoặc nhắn tin Zalo để nghệ nhân cắm hoa thiết kế riêng theo ngân sách của bạn.
+            {activeCategory === 'weddings'
+              ? 'Ngọc Flower nhận thiết kế và thi công rạp cưới theo kích thước sân nhà riêng. Nhắn Zalo để được đội ngũ kỹ thuật khảo sát miễn phí!'
+              : activeCategory === 'fruits'
+              ? 'Bạn có thể yêu cầu mix trái cây theo sở thích và ngân sách riêng từ 500k. Đội ngũ nghệ nhân sẽ chụp ảnh duyệt trước khi giao!'
+              : 'Bạn có thể thử chọn lại dịp tặng khác hoặc nhắn tin Zalo để nghệ nhân cắm hoa thiết kế riêng theo ngân sách của bạn.'}
           </p>
           <button
             type="button"
-            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn được tư vấn cắm hoa theo yêu cầu riêng!')}
-            className="mt-4 bg-[#1B3B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-full hover:bg-[#264A37] transition-all shadow-sm active:scale-95"
+            onClick={() => openPersonalZaloChat(
+              shopZaloPhone, 
+              activeCategory === 'weddings'
+                ? 'Chào shop Ngọc Flower, tôi muốn được khảo sát và báo giá gói rạp cưới hỏi theo kích thước sân nhà!'
+                : activeCategory === 'fruits'
+                ? 'Chào shop Ngọc Flower, tôi muốn đặt mix giỏ trái cây theo ngân sách và hoa tươi riêng!'
+                : 'Chào shop Ngọc Flower, tôi muốn được tư vấn cắm hoa theo yêu cầu riêng!'
+            )}
+            className="mt-4 bg-[#1B3B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-full hover:bg-[#264A37] transition-all shadow-sm active:scale-95 cursor-pointer"
           >
-            Nhắn Zalo cắm hoa theo yêu cầu
+            💬 Nhắn Zalo tư vấn riêng ngay
           </button>
         </div>
       )}
 
-      {/* Banner Cam kết & Quy chuẩn Nghệ nhân */}
+      {/* Banner Cam kết & Tư Vấn Riêng */}
       <div className="mt-16 bg-[#F4F7F5] rounded-3xl p-8 border border-[#D1DFD6] flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center md:text-left">
           <span className="text-xs font-bold text-[#5C8A70] uppercase tracking-wider">
-            Ngọc Flower Quality
+            {activeCategory === 'weddings' ? 'Dịch Vụ Cưới Hỏi Trọn Gói' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Nghệ Thuật' : 'Ngọc Flower Quality'}
           </span>
           <h3 className="font-serif text-2xl text-[#1B3B2B] font-bold">
-            Bạn cần cắm hoa theo ngân sách riêng?
+            {activeCategory === 'weddings'
+              ? 'Bạn cần khảo sát mặt bằng rạp cưới tại nhà?'
+              : activeCategory === 'fruits'
+              ? 'Bạn cần thiết kế giỏ trái cây quà biếu theo yêu cầu?'
+              : 'Bạn cần cắm hoa theo ngân sách riêng?'}
           </h3>
           <p className="text-xs text-gray-600 max-w-lg">
-            Đội ngũ nghệ nhân của chúng tôi nhận thiết kế hoa tiệc cưới, hoa sự kiện doanh nghiệp và cắm hoa theo yêu cầu tone màu riêng từ 500.000đ.
+            {activeCategory === 'weddings'
+              ? 'Đội ngũ kỹ thuật viên của Ngọc Flower đến tận nơi đo đạc diện tích sân nhà, tư vấn dựng rạp chống mưa nắng và lên phối cảnh 3D hoàn toàn miễn phí.'
+              : activeCategory === 'fruits'
+              ? 'Lựa chọn từng loại quả nhập khẩu cao cấp (Nho Mẫu Đơn, Táo Envy, Cherry đỏ, Kiwi vàng...) phối cùng hoa tươi nghệ thuật, in thiệp và ruy băng miễn phí.'
+              : 'Đội ngũ nghệ nhân của chúng tôi nhận thiết kế hoa tiệc cưới, hoa sự kiện doanh nghiệp và cắm hoa theo yêu cầu tone màu riêng từ 500.000đ.'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào nghệ nhân Ngọc Flower, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!')}
-            className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3 rounded-full hover:bg-blue-600 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+            onClick={() => openPersonalZaloChat(
+              shopZaloPhone, 
+              activeCategory === 'weddings'
+                ? 'Chào shop Ngọc Flower, tôi cần khảo sát mặt bằng dựng rạp cưới tại nhà và nhận báo giá chi tiết!'
+                : activeCategory === 'fruits'
+                ? 'Chào shop Ngọc Flower, tôi muốn nhận báo giá giỏ trái cây quà tặng theo ngân sách!'
+                : 'Chào nghệ nhân Ngọc Flower, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!'
+            )}
+            className="bg-[#0068FF] text-white text-xs font-bold px-5 py-3 rounded-full hover:bg-blue-600 transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <span>💬 Chat Zalo Với Nghệ Nhân ({shopZaloPhone})</span>
+            <span>💬 Chat Zalo Nhận Báo Giá ({shopZaloPhone})</span>
           </button>
           <a
             href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`}
@@ -182,4 +249,5 @@ export const FlowerGrid = () => {
     </section>
   );
 };
+
 

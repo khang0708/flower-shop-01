@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   Lock, 
   Sparkles,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react';
 
 import { openPersonalZaloChat } from '../services/zaloService';
@@ -102,11 +103,12 @@ export const CheckoutModal = () => {
   };
 
   // Form State
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
   const [receiverPhone, setReceiverPhone] = useState('0988 765 432');
-  const [receiverAddress, setReceiverAddress] = useState('Phòng 402, Tòa nhà Bitexco, 2 Hải Triều, P. Bến Nghé, Quận 1, TP.HCM');
+  const [receiverAddress, setReceiverAddress] = useState('124 Phan Chu Trinh, Phường Thắng Lợi, TP. Buôn Ma Thuột, Đắk Lắk');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [requestPhotoProof, setRequestPhotoProof] = useState(true);
   
@@ -120,6 +122,7 @@ export const CheckoutModal = () => {
   // Tự động load mới ngày hiện tại mỗi lần mở modal đặt hoa
   useEffect(() => {
     if (isCheckoutOpen) {
+      setIsSubmitting(false);
       setDateMode('today');
       setCustomDate('');
       setSelectedSlot('14:00 - 16:00');
@@ -143,29 +146,38 @@ export const CheckoutModal = () => {
   // Payment
   const [paymentMethod, setPaymentMethod] = useState('qr_transfer'); // 'qr_transfer' | 'momo' | 'card'
 
-  // Tính toán phí ship động dựa trên cấu hình xưởng hoa
+  // Tính toán phí ship động dựa trên cấu hình tiệm hoa
   const shippingFee = getShippingFee(deliveryType, cartTotal);
   const grandTotal = Math.max(0, cartTotal + shippingFee - discountAmount);
   const isFreeshipEligible = shippingSettings?.isFreeShippingEnabled && cartTotal >= (shippingSettings?.freeShippingThreshold || 1000000);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     const computedSlot = deliveryType === 'express' 
       ? `⚡ Hỏa tốc 60 - 90 phút (${dynamicDates.today.label})` 
       : `${currentDeliveryDateLabel} • ${selectedSlot}`;
 
-    submitOrder({
-      senderName,
-      senderPhone,
-      receiverName,
-      receiverPhone,
-      receiverAddress,
-      isAnonymous,
-      deliveryType,
-      shippingFee,
-      deliverySlot: computedSlot,
-      paymentMethod,
-    });
+    try {
+      await submitOrder({
+        senderName,
+        senderPhone,
+        receiverName,
+        receiverPhone,
+        receiverAddress,
+        isAnonymous,
+        deliveryType,
+        shippingFee,
+        deliverySlot: computedSlot,
+        paymentMethod,
+      });
+    } catch (err) {
+      console.error('Lỗi khi gửi đơn hàng:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -179,8 +191,13 @@ export const CheckoutModal = () => {
             <span className="font-serif text-lg font-bold">Thanh Toán Đơn Gửi Tặng Hoa</span>
           </div>
           <button 
-            onClick={() => setIsCheckoutOpen(false)}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-lg transition-all"
+            type="button"
+            onClick={() => !isSubmitting && setIsCheckoutOpen(false)}
+            disabled={isSubmitting}
+            className={`w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-lg transition-all ${
+              isSubmitting ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+            title="Đóng cửa sổ thanh toán"
           >
             ✕
           </button>
@@ -453,60 +470,6 @@ export const CheckoutModal = () => {
                 </div>
               )}
             </div>
-
-            {/* 4. Phương thức thanh toán */}
-            <div className="bg-[#FAF8F5] p-5 rounded-2xl border border-[#E8EFEA] space-y-3">
-              <h3 className="font-serif text-base font-bold text-[#1B3B2B] flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#1B3B2B] text-white text-[11px] flex items-center justify-center font-sans">4</span>
-                Phương Thức Thanh Toán
-              </h3>
-
-              <div className="space-y-2">
-                {[
-                  { id: 'qr_transfer', label: 'Quét mã VietQR chuyển khoản tức thì (Miễn phí)', badge: 'Khuyên dùng', icon: '📱' },
-                  { id: 'momo', label: 'Ví MoMo / ZaloPay', badge: 'Tiện lợi', icon: '🟣' },
-                  { id: 'card', label: 'Thẻ Quốc tế Visa / Mastercard', badge: 'Quốc tế', icon: '💳' },
-                ].map((m) => (
-                  <label
-                    key={m.id}
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${
-                      paymentMethod === m.id 
-                        ? 'border-[#1B3B2B] bg-white ring-1 ring-[#1B3B2B] shadow-sm' 
-                        : 'border-gray-200 bg-white/70 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">{m.icon}</span>
-                      <span className="font-semibold text-gray-800">{m.label}</span>
-                    </div>
-                    <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                      {m.badge}
-                    </span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Dynamic VietQR Preview Mockup */}
-              {paymentMethod === 'qr_transfer' && (
-                <div className="p-4 bg-white rounded-xl border border-dashed border-[#5C8A70] flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center p-1.5 flex-shrink-0">
-                    <img 
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=NGOCFLOWER_ORDER_PAYMENT" 
-                      alt="VietQR" 
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="text-[11px] text-gray-600 space-y-1">
-                    <span className="font-bold text-[#1B3B2B] block text-xs">Mã QR VietQR Tự Động</span>
-                    <p>Ngân hàng: <strong>Techcombank (1903 888 666)</strong></p>
-                    <p>Chủ TK: <strong>NGỌC FLOWER</strong></p>
-                    <p className="text-emerald-700 font-semibold">Tự động kích hoạt đơn ngay khi quét</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
 
           {/* CỘT PHẢI: TÓM TẮT ĐƠN HÀNG (5 Cột) */}
@@ -594,7 +557,7 @@ export const CheckoutModal = () => {
                     {isFreeshipEligible ? (
                       <span className="text-emerald-700 font-bold">Freeship (0đ)</span>
                     ) : shippingSettings?.shippingMode === 'admin_confirm' ? (
-                      <span className="text-[#C4685A] font-bold text-[11px]">Xưởng báo sau khi nhận địa chỉ (0đ)</span>
+                      <span className="text-[#C4685A] font-bold text-[11px]">Tiệm báo sau khi nhận địa chỉ (0đ)</span>
                     ) : (
                       `${shippingFee.toLocaleString('vi-VN')}đ`
                     )}
@@ -630,11 +593,34 @@ export const CheckoutModal = () => {
               {/* Submit CTA */}
               <button
                 type="submit"
-                className="w-full bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold text-sm py-4 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className={`w-full text-white font-bold text-sm py-4 rounded-full shadow-lg transition-all flex items-center justify-center gap-2.5 ${
+                  isSubmitting
+                    ? 'bg-[#1B3B2B]/85 cursor-not-allowed opacity-90 shadow-none'
+                    : 'bg-[#1B3B2B] hover:bg-[#264A37] hover:shadow-xl active:scale-95 cursor-pointer'
+                }`}
               >
-                <Lock className="w-4 h-4 text-[#F5D6CE]" />
-                <span>Hoàn Tất Đặt Hoa Ngay</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-[#F5D6CE]" />
+                    <span>Đang xử lý đơn hoa của bạn...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 text-[#F5D6CE]" />
+                    <span>Hoàn Tất Đặt Hoa Ngay</span>
+                  </>
+                )}
               </button>
+
+              {isSubmitting && (
+                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-center animate-fade-in">
+                  <p className="text-[11px] text-[#1B3B2B] font-medium flex items-center justify-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span>Hệ thống đang ghi nhận đơn & gửi báo cáo về tiệm hoa, vui lòng đợi trong giây lát...</span>
+                  </p>
+                </div>
+              )}
 
               <div className="pt-1 text-center">
                 <button

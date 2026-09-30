@@ -45,7 +45,7 @@ export const OrderTrackingModal = () => {
   const steps = [
     { key: 'PENDING', label: 'Đã nhận đơn', done: true },
     { key: 'ARRANGING', label: 'Đang cắm hoa thủ công', done: true },
-    { key: 'PHOTO_READY', label: 'Ảnh hoa chụp tại xưởng', done: hasRealPhoto },
+    { key: 'PHOTO_READY', label: 'Ảnh hoa chụp tại tiệm', done: hasRealPhoto },
     { key: 'DELIVERING', label: 'Shipper đang giao', done: isDelivering },
     { key: 'COMPLETED', label: 'Đã giao tận tay', done: isCompleted },
   ];
@@ -91,7 +91,7 @@ export const OrderTrackingModal = () => {
                 <h4 className="text-xs font-bold text-[#1B3B2B]">{activeOrder.florist || 'Nghệ nhân Minh Thư'}</h4>
                 <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Đang trực tiếp cắm tại xưởng Studio A</span>
+                  <span>Đang trực tiếp cắm tại tiệm Studio A</span>
                 </span>
               </div>
             </div>
@@ -102,7 +102,7 @@ export const OrderTrackingModal = () => {
                   type="button"
                   onClick={handleChatMessengerFlorist}
                   className="p-2.5 bg-gradient-to-tr from-[#0084FF] to-[#A824FF] text-white rounded-full hover:opacity-90 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
-                  title="Trao đổi với xưởng qua Facebook Messenger"
+                  title="Trao đổi với tiệm qua Facebook Messenger"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.13 2 11.23c0 2.9 1.45 5.49 3.73 7.14v3.52c0 .4.44.66.79.46l3.9-2.14c.51.08 1.04.12 1.58.12 5.52 0 10-4.13 10-9.23S17.52 2 12 2zm1.06 12.35l-2.61-2.79-5.1 2.79 5.61-5.96 2.68 2.79 5.03-2.79-5.61 5.96z"/>
@@ -120,7 +120,7 @@ export const OrderTrackingModal = () => {
                 type="button"
                 onClick={handleChatZaloFlorist}
                 className="p-2.5 bg-[#0068FF] text-white rounded-full hover:bg-blue-600 shadow-xs transition-transform active:scale-95 flex items-center justify-center"
-                title={`Chat Zalo Với Xưởng Hoa (${shopZaloPhone})`}
+                title={`Chat Zalo Với Tiệm Hoa (${shopZaloPhone})`}
               >
                 <ZaloIcon className="w-4 h-4" variant="white" />
               </button>
@@ -160,14 +160,14 @@ export const OrderTrackingModal = () => {
             </div>
           </div>
 
-          {/* 📸 PROOF PHOTO: KHUNG ẢNH HOA THẬT TẠI XƯỞNG (REALTIME SYNC) */}
+          {/* 📸 PROOF PHOTO: KHUNG ẢNH HOA THẬT TẠI TIỆM (REALTIME SYNC) */}
           <div className="bg-[#FAF4F0] p-5 rounded-2xl border border-[#F5D6CE] space-y-4">
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-[#C4685A]" />
                 <h4 className="font-serif text-base font-bold text-[#1B3B2B]">
-                  Ảnh Chụp Bó Hoa Thực Tế Tại Xưởng
+                  Ảnh Chụp Bó Hoa Thực Tế Tại Tiệm
                 </h4>
               </div>
               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
@@ -191,12 +191,12 @@ export const OrderTrackingModal = () => {
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white shadow-md group">
                   <img
                     src={activeOrder.proofPhotoUrl}
-                    alt="Ảnh hoa thực tế tại xưởng"
+                    alt="Ảnh hoa thực tế tại tiệm"
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                   />
                   <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <Sparkles className="w-3.5 h-3.5 text-[#F5D6CE]" />
-                    <span>Chụp thực tế lúc {activeOrder.proofPhotoTime || activeOrder.createdAt} • Xưởng Ngọc Flower Studio</span>
+                    <span>Chụp thực tế lúc {activeOrder.proofPhotoTime || activeOrder.createdAt} • Tiệm Ngọc Flower Studio</span>
                   </div>
                 </div>
 
@@ -254,7 +254,7 @@ export const OrderTrackingModal = () => {
                     Nghệ nhân đang tỉ mỉ cắm hoa thủ công...
                   </h5>
                   <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto leading-relaxed">
-                    Hoa của bạn đang được tuyển chọn từng cành tươi nhất và cắm theo yêu cầu. Ngay khi hoàn thiện, <strong>ảnh chụp hoa thật tại xưởng sẽ xuất hiện trực tiếp tại đây</strong> để bạn duyệt trước khi giao!
+                    Hoa của bạn đang được tuyển chọn từng cành tươi nhất và cắm theo yêu cầu. Ngay khi hoàn thiện, <strong>ảnh chụp hoa thật tại tiệm sẽ xuất hiện trực tiếp tại đây</strong> để bạn duyệt trước khi giao!
                   </p>
                 </div>
 
@@ -303,7 +303,7 @@ export const OrderTrackingModal = () => {
             <div className="pl-6 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-200">
               <span className="text-gray-600">
                 🚚 Phí giao hoa: <strong>{Number(activeOrder.shippingFee || 0) === 0 ? 'Freeship (0đ)' : `${Number(activeOrder.shippingFee).toLocaleString('vi-VN')}đ`}</strong>
-                {activeOrder.isShippingConfirmed && <span className="text-[10px] text-emerald-700 ml-1.5 font-bold">(✓ Xưởng đã xác nhận)</span>}
+                {activeOrder.isShippingConfirmed && <span className="text-[10px] text-emerald-700 ml-1.5 font-bold">(✓ Tiệm đã xác nhận)</span>}
               </span>
               <span className="text-sm font-extrabold text-[#1B3B2B] font-mono">
                 Tổng thanh toán: {Number(activeOrder.totalAmount || 0).toLocaleString('vi-VN')}đ

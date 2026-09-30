@@ -40,7 +40,7 @@ const PRESET_SAMPLES = [
   {
     id: 'sample-3',
     name: 'Bó Hoa Hướng Dương Nắng Vàng (Ảnh Khai Trương)',
-    image: 'https://images.unsplash.com/photo-1599733589046-10c005739ef9?auto=format&fit=crop&w=600&q=80',
+    image: '/products/hoa_khai_truong.jpg',
     analysis: {
       detectedFlowers: ['Hướng Dương Nhật (7 đóa)', 'Lan Vũ Nữ vàng chùm', 'Lá Đinh Lăng cẩm thạch'],
       colorPalette: ['#F6D268', '#5C8A70', '#D8C7B5'],
@@ -319,7 +319,7 @@ export const AIFloristModal = () => {
                         const theme = analysisResult?.style || 'Nghệ thuật';
                         openPersonalZaloChat(
                           shopZaloPhone,
-                          `Chào nghệ nhân Ngọc Flower, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ xưởng tư vấn và báo giá!`
+                          `Chào nghệ nhân Ngọc Flower, tôi muốn gửi mẫu hoa thiết kế AI phong cách: "${theme}" (${detected}) để nhờ tiệm tư vấn và báo giá!`
                         );
                       }}
                       className="flex-1 bg-[#0068FF] text-white text-xs font-bold px-4 py-3.5 rounded-full hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm active:scale-95"

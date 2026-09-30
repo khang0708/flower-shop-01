@@ -32,6 +32,15 @@
   background: #5C8A70;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @keyframes fadeInScale {
   from {
     opacity: 0;

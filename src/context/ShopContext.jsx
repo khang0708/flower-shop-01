@@ -46,7 +46,7 @@ const INITIAL_ORDERS = [
     customerPhone: '0909 123 456',
     receiverName: 'Trần Ngọc Bích',
     receiverPhone: '0988 765 432',
-    receiverAddress: 'Phòng 402, Bitexco, 2 Hải Triều, Q.1, TP.HCM',
+    receiverAddress: '124 Phan Chu Trinh, Phường Thắng Lợi, TP. Buôn Ma Thuột',
     isAnonymous: true,
     productName: 'Bó Hoa "Juliet Nắng Ban Mai" (Size Tiêu Chuẩn)',
     cardMessage: 'Chúc em một ngày sinh nhật rực rỡ và luôn nở nụ cười thật tươi! 🌸',
@@ -113,7 +113,36 @@ export const ShopProvider = ({ children }) => {
       const cached = localStorage.getItem('flora_products');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const migrated = parsed.map(p => {
+            const defaultItem = FLOWERS_DATA.find(f => f.id === p.id);
+            let image = p.image;
+            if (defaultItem) {
+              if (
+                defaultItem.image && (
+                  defaultItem.image.startsWith('/products/') || 
+                  !image || 
+                  image.includes('wikimedia.org') || 
+                  image.includes('photo-1599733589046-10c005739ef9')
+                )
+              ) {
+                image = defaultItem.image;
+              }
+            }
+            return {
+              ...p,
+              image: image || defaultItem?.image || '',
+              category: p.category || defaultItem?.category || 'flowers'
+            };
+          });
+          const existingIds = new Set(migrated.map(p => p.id));
+          const missingNewItems = FLOWERS_DATA.filter(item => !existingIds.has(item.id));
+          const merged = [...migrated, ...missingNewItems];
+          try {
+            localStorage.setItem('flora_products', JSON.stringify(merged));
+          } catch (_) {}
+          return merged;
+        }
       }
     } catch (e) {
       console.warn('Lỗi đọc cache flora_products:', e);
@@ -212,7 +241,7 @@ export const ShopProvider = ({ children }) => {
       if (cached) return JSON.parse(cached);
     } catch (e) {}
     return {
-      shippingMode: 'admin_confirm', // 'admin_confirm' (Xưởng xác nhận báo ship) | 'auto' (Tự động theo bảng giá)
+      shippingMode: 'admin_confirm', // 'admin_confirm' (Tiệm xác nhận báo ship) | 'auto' (Tự động theo bảng giá)
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
@@ -293,8 +322,11 @@ export const ShopProvider = ({ children }) => {
   // 4. Giỏ hàng & Sản phẩm
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('flowers'); // 'flowers' | 'weddings' | 'fruits'
   const [selectedOccasion, setSelectedOccasion] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
+  const [selectedWeddingType, setSelectedWeddingType] = useState('all');
+  const [selectedFruitType, setSelectedFruitType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price_asc' | 'price_desc' | 'rating_desc' | 'newest' | 'name_asc'
   
@@ -599,7 +631,16 @@ export const ShopProvider = ({ children }) => {
       if (Array.isArray(apiProducts) && apiProducts.length > 0) {
         const itemsToRehydrate = [];
         updateProductsLocalAndBroadcast(currentProducts => {
-          const merged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
+          const rawMerged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
+          const merged = rawMerged.map(mp => {
+            const canonical = FLOWERS_DATA.find(f => f.id === mp.id);
+            if (canonical && canonical.image && canonical.image.startsWith('/products/')) {
+              if (!mp.image || !mp.image.startsWith('data:image/') || mp.image.includes('photo-1599733589046-10c005739ef9')) {
+                return { ...mp, image: canonical.image, category: mp.category || canonical.category };
+              }
+            }
+            return mp;
+          });
           // Tìm các sản phẩm local có timestamp mới hơn server để re-push ngầm ngoài updater
           merged.forEach(mp => {
             const sp = apiProducts.find(p => p.id === mp.id);
@@ -1150,7 +1191,7 @@ export const ShopProvider = ({ children }) => {
       customerPhone: orderData.senderPhone || '0901 234 567',
       receiverName: orderData.receiverName || 'Người nhận hoa',
       receiverPhone: orderData.receiverPhone || '0988 765 432',
-      receiverAddress: orderData.receiverAddress || 'Quận 1, TP.HCM',
+      receiverAddress: orderData.receiverAddress || 'TP. Buôn Ma Thuột, Đắk Lắk',
       isAnonymous: Boolean(orderData.isAnonymous),
       productName: mainProductName,
       cardMessage: mainCardMessage,
@@ -1344,10 +1385,16 @@ export const ShopProvider = ({ children }) => {
         isApiConnected,
         cart,
         wishlist,
+        activeCategory,
+        setActiveCategory,
         selectedOccasion,
         setSelectedOccasion,
         selectedColor,
         setSelectedColor,
+        selectedWeddingType,
+        setSelectedWeddingType,
+        selectedFruitType,
+        setSelectedFruitType,
         searchQuery,
         setSearchQuery,
         sortBy,
