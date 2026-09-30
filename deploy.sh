@@ -5,6 +5,7 @@
 # ==============================================================================
 
 set -e # Dừng script ngay khi có lỗi
+export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
 
 # Màu sắc thông báo
 GREEN='\033[0;32m'
