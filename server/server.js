@@ -10,6 +10,16 @@ if (fs.existsSync('.env.local')) {
   dotenv.config({ path: '.env.local', override: true });
 }
 import { neon } from '@neondatabase/serverless';
+import { 
+  verifyPassword, 
+  hashPassword, 
+  createJwtToken, 
+  checkLoginRateLimit, 
+  recordFailedLogin, 
+  clearFailedLogin,
+  requireAdminMiddleware,
+  getInitialAdminCredentials 
+} from './auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -220,6 +230,98 @@ if (process.env.VERCEL) {
 }
 
 // ----------------------------------------------------
+// 0. ADMIN AUTHENTICATION API (Xác thực đăng nhập & Đổi mật khẩu)
+// ----------------------------------------------------
+
+// POST /api/admin/login
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown';
+    const rateLimit = checkLoginRateLimit(ip);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ success: false, message: rateLimit.message });
+    }
+
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tài khoản và mật khẩu.' });
+    }
+
+    let adminData = await readJson('admin.json');
+    if (!adminData || !adminData.hash || !adminData.salt) {
+      adminData = getInitialAdminCredentials();
+      await writeJson('admin.json', adminData);
+    }
+
+    const isMatchUser = (adminData.username || 'admin').toLowerCase() === String(username).trim().toLowerCase();
+    const isMatchPass = verifyPassword(password, adminData.hash, adminData.salt);
+
+    if (!isMatchUser || !isMatchPass) {
+      recordFailedLogin(ip);
+      return res.status(401).json({ success: false, message: 'Tài khoản hoặc mật khẩu không chính xác.' });
+    }
+
+    clearFailedLogin(ip);
+    const userPayload = {
+      username: adminData.username,
+      name: adminData.name || 'Quản Trị Viên',
+      role: adminData.role || 'SUPER_ADMIN'
+    };
+
+    const token = createJwtToken(userPayload);
+    res.json({
+      success: true,
+      token,
+      user: userPayload,
+      message: 'Đăng nhập quản trị viên thành công.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/admin/me
+app.get('/api/admin/me', requireAdminMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    user: req.adminUser
+  });
+});
+
+// POST /api/admin/change-password
+app.post('/api/admin/change-password', requireAdminMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới.' });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có tối thiểu 6 ký tự.' });
+    }
+
+    let adminData = await readJson('admin.json');
+    if (!adminData || !adminData.hash || !adminData.salt) {
+      adminData = getInitialAdminCredentials();
+    }
+
+    if (!verifyPassword(currentPassword, adminData.hash, adminData.salt)) {
+      return res.status(401).json({ success: false, message: 'Mật khẩu hiện tại không chính xác.' });
+    }
+
+    const { hash, salt } = hashPassword(newPassword);
+    adminData.hash = hash;
+    adminData.salt = salt;
+    adminData.updatedAt = new Date().toISOString();
+
+    await writeJson('admin.json', adminData);
+    res.json({ success: true, message: 'Đổi mật khẩu quản trị thành công!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ----------------------------------------------------
 // 1. PRODUCTS REST API (Quản Lý Sản Phẩm Mẫu Hoa)
 // ----------------------------------------------------
 
@@ -235,7 +337,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 // POST /api/products (Thêm mẫu hoa mới)
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAdminMiddleware, async (req, res) => {
   try {
     const products = (await readJson('products.json')) || [];
     const newProduct = {
@@ -270,7 +372,7 @@ app.post('/api/products', async (req, res) => {
 });
 
 // PUT /api/products/:id (Cập nhật mẫu hoa)
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -319,7 +421,7 @@ app.put('/api/products/:id', async (req, res) => {
 });
 
 // PATCH /api/products/:id/toggle (Bật/Tắt hiển thị)
-app.patch('/api/products/:id/toggle', async (req, res) => {
+app.patch('/api/products/:id/toggle', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -341,7 +443,7 @@ app.patch('/api/products/:id/toggle', async (req, res) => {
 });
 
 // DELETE /api/products/:id (Xóa mẫu hoa)
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -368,6 +470,18 @@ app.delete('/api/products/:id', async (req, res) => {
 app.get('/api/orders', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    let isAdmin = false;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = (await import('./auth.js')).verifyJwtToken(authHeader.slice(7).trim());
+      if (decoded) isAdmin = true;
+    }
+
+    if (!isAdmin) {
+      // Khách vãng lai không được phép xem toàn bộ danh sách đơn hàng chứa thông tin riêng tư
+      return res.json({ success: true, data: [], total: 0, isGuest: true });
+    }
+
     const orders = await readJson('orders.json');
     res.json({ success: true, data: orders, total: orders.length });
   } catch (error) {
@@ -595,7 +709,7 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-app.put('/api/inventory', async (req, res) => {
+app.put('/api/inventory', requireAdminMiddleware, async (req, res) => {
   try {
     const newInventory = req.body;
     await writeJson('inventory.json', newInventory);
@@ -732,14 +846,35 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 app.get('/api/settings', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    const settings = await readJson('settings.json');
+    const settings = (await readJson('settings.json')) || {};
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    let isAdmin = false;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = (await import('./auth.js')).verifyJwtToken(authHeader.slice(7).trim());
+      if (decoded) isAdmin = true;
+    }
+
+    if (!isAdmin) {
+      // Giấu các token nhạy cảm đối với người dùng thông thường
+      const safeSettings = {
+        ...settings,
+        telegramBotToken: settings.telegramBotToken ? '••••••••' : '',
+        facebookSettings: {
+          ...(settings.facebookSettings || {}),
+          pageAccessToken: settings.facebookSettings?.pageAccessToken ? '••••••••' : '',
+          verifyToken: settings.facebookSettings?.verifyToken ? '••••••••' : ''
+        }
+      };
+      return res.json({ success: true, data: safeSettings });
+    }
+
     res.json({ success: true, data: settings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdminMiddleware, async (req, res) => {
   try {
     const current = (await readJson('settings.json')) || {};
     const updated = {

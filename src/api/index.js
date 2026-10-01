@@ -5,8 +5,10 @@ const API_BASE = '/api';
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('flora_admin_token') : null;
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.headers || {})
   };
 
@@ -414,6 +416,46 @@ export const sendFacebookMessageApi = async (payload) => {
     body: JSON.stringify(payload)
   });
   return res;
+};
+
+// ----------------------------------------------------
+// 11. ADMIN AUTHENTICATION API
+// ----------------------------------------------------
+export const adminLoginApi = async (username, password) => {
+  const res = await request('/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  });
+  if (res.token) {
+    localStorage.setItem('flora_admin_token', res.token);
+    localStorage.setItem('flora_admin_user', JSON.stringify(res.user));
+  }
+  return res;
+};
+
+export const adminVerifyApi = async () => {
+  const token = localStorage.getItem('flora_admin_token');
+  if (!token) return null;
+  try {
+    const res = await request('/admin/me');
+    return res.user;
+  } catch (err) {
+    localStorage.removeItem('flora_admin_token');
+    localStorage.removeItem('flora_admin_user');
+    return null;
+  }
+};
+
+export const adminChangePasswordApi = async (currentPassword, newPassword) => {
+  return await request('/admin/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+};
+
+export const adminLogoutApi = () => {
+  localStorage.removeItem('flora_admin_token');
+  localStorage.removeItem('flora_admin_user');
 };
 
 

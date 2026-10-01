@@ -21,7 +21,7 @@ import {
   requestBrowserNotificationPermission, 
   getBrowserNotificationPermission 
 } from '../services/notificationService';
-import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi } from '../api';
+import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
@@ -69,8 +69,160 @@ import {
   Image as ImageIcon,
   Truck,
   Menu,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  KeyRound
 } from 'lucide-react';
+
+const AdminChangePasswordForm = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ type: '', text: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMsg({ type: '', text: '' });
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setMsg({ type: 'error', text: 'Vui lòng điền đầy đủ các trường thông tin.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMsg({ type: 'error', text: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMsg({ type: 'error', text: 'Mật khẩu mới và mật khẩu xác nhận không khớp nhau.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await adminChangePasswordApi(currentPassword, newPassword);
+      if (res.success) {
+        setMsg({ type: 'success', text: 'Đổi mật khẩu quản trị thành công! Hãy ghi nhớ mật khẩu mới của bạn.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        throw new Error(res.message || 'Không thể đổi mật khẩu.');
+      }
+    } catch (err) {
+      setMsg({ type: 'error', text: err.message || 'Mật khẩu hiện tại không chính xác.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-5">
+      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <h4 className="font-bold text-sm text-[#1B3B2B] flex items-center gap-2">
+            <Lock className="w-4 h-4 text-emerald-600" />
+            <span>Đổi Mật Khẩu Quản Trị Viên</span>
+          </h4>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            Mật khẩu mới sẽ có hiệu lực ngay lập tức và được mã hóa chuẩn PBKDF2 trên máy chủ.
+          </p>
+        </div>
+      </div>
+
+      {msg.text && (
+        <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border animate-fade-in ${
+          msg.type === 'success' 
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+            : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
+          <span>{msg.text}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Mật khẩu hiện tại:
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Nhập mật khẩu đang dùng (Mặc định: Flora@2026)"
+            required
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Mật khẩu mới (tối thiểu 6 ký tự):
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nhập mật khẩu mới..."
+            required
+            minLength={6}
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Xác nhận mật khẩu mới:
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Nhập lại mật khẩu mới..."
+            required
+            minLength={6}
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="showPassToggle"
+            checked={showPass}
+            onChange={(e) => setShowPass(e.target.checked)}
+            className="w-3.5 h-3.5 text-[#1B3B2B] rounded border-gray-300 focus:ring-0 cursor-pointer"
+          />
+          <label htmlFor="showPassToggle" className="text-xs text-gray-600 cursor-pointer select-none">
+            Hiển thị mật khẩu rõ ràng
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-[#1B3B2B] hover:bg-[#234d38] text-white font-bold text-xs py-3 px-6 rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <span>Đang lưu mật khẩu...</span>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="w-4 h-4" />
+              <span>Lưu Mật Khẩu Mới</span>
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
 
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -774,7 +926,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 groupTitle: 'CÀI ĐẶT CỬA HÀNG',
                 items: [
                   { id: 'shipping_config', label: 'Phí Giao Hoa & Freeship', icon: Truck },
-                  { id: 'zalo_config', label: 'Cấu Hình Kênh Chat & MXH', icon: Smartphone }
+                  { id: 'zalo_config', label: 'Cấu Hình Kênh Chat & MXH', icon: Smartphone },
+                  { id: 'security', label: 'Bảo Mật & Mật Khẩu', icon: Lock }
                 ]
               }
             ].map((group, gIdx) => (
@@ -892,6 +1045,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
                   {activeTab === 'shipping_config' && '🚚 Cấu Hình Phí Giao Hoa & Freeship'}
                   {activeTab === 'zalo_config' && '💬 Cấu Hình Kênh Chat & MXH (Zalo, Telegram, Messenger)'}
+                  {activeTab === 'security' && '🔐 Cấu Hình Bảo Mật & Đổi Mật Khẩu Admin'}
                 </h1>
                 <span className="text-[10px] text-gray-400 hidden sm:block">Ngọc Flower • Bảng Điều Hành Trung Tâm</span>
               </div>
@@ -2625,6 +2779,54 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
 
             </div>
 
+          </div>
+        )}
+
+        {/* TAB: BẢO MẬT & ĐỔI MẬT KHẨU ADMIN */}
+        {activeTab === 'security' && (
+          <div className="max-w-4xl space-y-6 animate-fade-in">
+            {/* Header Card */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                  <span>Bảo Mật Hệ Thống & Tài Khoản Quản Trị</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Quản lý phiên đăng nhập an toàn (JWT HMAC-SHA256) và đổi mật khẩu quản trị viên tiệm hoa.
+                </p>
+              </div>
+            </div>
+
+            {/* Thông tin tài khoản hiện tại */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-4">
+              <h4 className="font-bold text-sm text-[#1B3B2B] flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-emerald-600" />
+                <span>Phiên Làm Việc Hiện Tại</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Tài khoản:</span>
+                  <span className="font-bold font-mono text-[#1B3B2B] text-sm">{adminUser?.username || 'admin'}</span>
+                </div>
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Quyền hạn:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full inline-block">
+                    {adminUser?.role || 'SUPER_ADMIN'}
+                  </span>
+                </div>
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Trạng thái phiên:</span>
+                  <span className="font-bold text-emerald-600 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Đã xác thực JWT
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Đổi Mật Khẩu */}
+            <AdminChangePasswordForm />
           </div>
         )}
 

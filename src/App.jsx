@@ -6,6 +6,7 @@ import { OccasionFilter } from './components/OccasionFilter';
 import { FlowerGrid } from './components/FlowerGrid';
 import { SocialChatHubFloatingButton } from './components/SocialChatHubFloatingButton';
 import { Footer } from './components/Footer';
+import { adminVerifyApi, adminLogoutApi } from './api';
 
 // Code-splitting lazy load các thành phần nặng không cần tải ở màn hình ban đầu
 const ReviewsSection = lazy(() => import('./components/ReviewsSection').then(m => ({ default: m.ReviewsSection })));
@@ -25,10 +26,26 @@ function AppContent() {
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const cached = localStorage.getItem('flora_admin_user');
-      if (cached) return JSON.parse(cached);
+      const token = localStorage.getItem('flora_admin_token');
+      if (cached && token) return JSON.parse(cached);
     } catch (e) {}
     return null;
   });
+
+  // Xác thực token với máy chủ khi khởi động
+  useEffect(() => {
+    const token = localStorage.getItem('flora_admin_token');
+    if (token) {
+      adminVerifyApi().then(user => {
+        if (user) {
+          setAdminUser(user);
+        } else {
+          setAdminUser(null);
+          adminLogoutApi();
+        }
+      });
+    }
+  }, []);
 
   const isAdminAuthenticated = Boolean(adminUser);
 
@@ -79,7 +96,7 @@ function AppContent() {
   };
 
   const handleLogoutAdmin = () => {
-    localStorage.removeItem('flora_admin_user');
+    adminLogoutApi();
     setAdminUser(null);
     setIsAdminView(false);
     window.location.hash = '';
