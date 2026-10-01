@@ -1131,7 +1131,7 @@ app.get('/api/health', (req, res) => {
     status: 'ONLINE',
     service: 'Ngọc Flower Atelier Backend API',
     time: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.1.0-auth'
   });
 });
 

@@ -41,6 +41,9 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script_stop: true
           script: |
-            echo "🚀 Connecting to VPS and triggering deploy script..."
+            echo "🚀 Connecting to VPS and updating repository..."
+            cd /var/www/flower-shop
+            git fetch origin main
+            git reset --hard origin/main
             chmod +x /var/www/flower-shop/deploy.sh
             /var/www/flower-shop/deploy.sh
