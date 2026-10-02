@@ -133,9 +133,9 @@ export const Header = () => {
             Danh mục:
           </span>
           {[
-            { id: 'flowers', label: 'Hoa Tươi', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
-            { id: 'weddings', label: 'Tráp Cưới', icon: '🧧', badge: 'Tư vấn 0đ' },
-            { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇', badge: '100% Nhập khẩu' },
+            { id: 'flowers', label: 'Hoa Tươi', icon: '🌸' },
+            { id: 'weddings', label: 'Tráp Cưới', icon: '🧧' },
+            { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇' },
           ].map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
@@ -144,7 +144,7 @@ export const Header = () => {
                 href="#catalog"
                 data-active={isActive ? 'true' : 'false'}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-[#1B3B2B] text-white shadow-xs'
                     : 'text-gray-600 hover:text-[#1B3B2B] hover:bg-gray-100/80 bg-gray-50/70 border border-transparent'
@@ -152,11 +152,6 @@ export const Header = () => {
               >
                 <span className="shrink-0">{cat.icon}</span>
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-normal hidden md:inline shrink-0 ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {cat.badge}
-                </span>
               </a>
             );
           })}
@@ -208,12 +203,12 @@ export const Header = () => {
                 setActiveCategory('flowers');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'flowers' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
               <span>🌸 Hoa Tươi Buôn Ma Thuột</span>
-              <span className="text-[11px] opacity-70">Cắm mới mỗi ngày</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#catalog" 
@@ -221,12 +216,12 @@ export const Header = () => {
                 setActiveCategory('weddings');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'weddings' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
               <span>🧧 Tráp Cưới</span>
-              <span className="text-[11px] opacity-70">Tư vấn 0đ</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#catalog" 
@@ -234,12 +229,12 @@ export const Header = () => {
                 setActiveCategory('fruits');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'fruits' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
               <span>🍇 Giỏ Trái Cây</span>
-              <span className="text-[11px] opacity-70">100% Nhập khẩu</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#reviews-section" 

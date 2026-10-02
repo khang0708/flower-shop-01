@@ -7,7 +7,7 @@ import {
   WEDDING_TYPES, 
   FRUIT_OCCASIONS 
 } from '../data/flowers';
-import { Palette, Sparkles, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Palette, CheckCircle, ShieldCheck } from 'lucide-react';
 
 export const OccasionFilter = () => {
   const { 
@@ -29,12 +29,6 @@ export const OccasionFilter = () => {
     <div id="catalog" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pt-2 sm:pt-6 pb-2 sm:pb-3">
       {/* TIÊU ĐỀ THEO TRỤ CỘT ĐANG CHỌN */}
       <div className="text-center mb-2.5 sm:mb-5">
-        <div className="inline-flex items-center gap-1.5 bg-[#F4F7F5] px-2.5 py-0.5 sm:py-1 rounded-full border border-[#D1DFD6] mb-1">
-          <Sparkles className="w-3 h-3 text-[#5C8A70]" />
-          <span className="text-[10px] sm:text-[11px] font-bold text-[#1B3B2B] uppercase tracking-wider">
-            {currentCategoryObj.badge}
-          </span>
-        </div>
         <h2 className="font-serif text-lg sm:text-3xl text-[#1B3B2B] font-bold flex items-center justify-center gap-1.5 sm:gap-2">
           <span>{currentCategoryObj.name}</span>
           <span className="text-base sm:text-2xl">{currentCategoryObj.icon}</span>
