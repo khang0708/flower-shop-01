@@ -346,7 +346,7 @@ export const CheckoutModal = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold">📅 Khung giờ chọn trước</span>
                     <span className={`text-[11px] font-mono font-bold ${isFreeshipEligible ? 'text-emerald-700' : 'text-gray-700'}`}>
-                      {getShippingFee('timeslot', cartTotal) === 0 ? 'Freeship (0đ)' : `${getShippingFee('timeslot', cartTotal).toLocaleString('vi-VN')}đ`}
+                      {getShippingFee('timeslot', cartTotal) === 0 ? (shippingSettings?.shippingMode === 'admin_confirm' ? 'Báo phí sau' : 'Miễn phí (0đ)') : `${getShippingFee('timeslot', cartTotal).toLocaleString('vi-VN')}đ`}
                     </span>
                   </div>
                   <span className="text-[11px] text-gray-500 block mt-0.5">Giao đúng giờ hẹn bất ngờ</span>
@@ -555,7 +555,7 @@ export const CheckoutModal = () => {
                   <span>Phí giao hoa tận tay:</span>
                   <span className="font-semibold text-gray-900">
                     {isFreeshipEligible ? (
-                      <span className="text-emerald-700 font-bold">Freeship (0đ)</span>
+                      <span className="text-emerald-700 font-bold">Miễn phí giao (0đ)</span>
                     ) : shippingSettings?.shippingMode === 'admin_confirm' ? (
                       <span className="text-[#C4685A] font-bold text-[11px]">Tiệm báo sau khi nhận địa chỉ (0đ)</span>
                     ) : (

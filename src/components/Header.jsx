@@ -49,13 +49,11 @@ export const Header = () => {
       <div className="bg-[#1B3B2B] text-[#E8EFEA] text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
-          {/* Thông tin Freeship & Cam kết */}
+          {/* Thông tin Giao hàng & Cam kết */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <span className="flex items-center gap-1 truncate font-medium">
               <span className="flex-shrink-0">🚚</span>
-              <strong className="font-bold hidden xs:inline">Freeship 4km</strong>
-              <span className="hidden xs:inline">từ 600k</span>
-              <span className="xs:hidden font-semibold truncate">Freeship 4km từ 600k</span>
+              <span className="font-semibold truncate">Giao hoa hỏa tốc nội thành BMT</span>
             </span>
             <span className="hidden md:inline-flex items-center gap-1 text-emerald-200">
               📸 <strong>Chụp ảnh hoa thật</strong> gửi duyệt trước khi ship

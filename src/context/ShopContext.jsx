@@ -245,8 +245,8 @@ export const ShopProvider = ({ children }) => {
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
-      isFreeShippingEnabled: true,
-      freeShippingNote: 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
+      isFreeShippingEnabled: false,
+      freeShippingNote: ''
     };
   });
 
@@ -298,7 +298,7 @@ export const ShopProvider = ({ children }) => {
       standardFee = 35000, 
       expressFee = 60000, 
       freeShippingThreshold = 1000000, 
-      isFreeShippingEnabled = true 
+      isFreeShippingEnabled = false 
     } = shippingSettings;
 
     const isFreeship = isFreeShippingEnabled && subtotal >= freeShippingThreshold;
