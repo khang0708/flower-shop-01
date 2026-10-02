@@ -26,40 +26,8 @@ export const OccasionFilter = () => {
   const currentCategoryObj = SHOP_CATEGORIES.find(c => c.id === activeCategory) || SHOP_CATEGORIES[0];
 
   return (
-    <div id="catalog" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4">
-      
-      {/* 1. THANH CHUYỂN ĐỔI 3 TRỤ CỘT DANH MỤC (PILLAR SEGMENTED TABS) */}
-      <div className="bg-[#FAF8F5] p-1.5 sm:p-2 rounded-3xl border border-[#D1DFD6] shadow-xs max-w-3xl mx-auto mb-6 sm:mb-8">
-        <div className="grid grid-cols-3 gap-1 sm:gap-2">
-          {SHOP_CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setActiveCategory(cat.id)}
-                className={`py-3 px-2 sm:px-4 rounded-2xl font-bold transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 active:scale-95 cursor-pointer ${
-                  isActive
-                    ? 'bg-[#1B3B2B] text-white shadow-md'
-                    : 'text-gray-700 hover:text-[#1B3B2B] hover:bg-white/80'
-                }`}
-              >
-                <span className="text-lg sm:text-xl">{cat.icon}</span>
-                <div className="text-center sm:text-left">
-                  <span className="text-xs sm:text-sm block leading-tight">{cat.name}</span>
-                  <span className={`text-[10px] hidden sm:block font-normal mt-0.5 ${
-                    isActive ? 'text-gray-300' : 'text-gray-500'
-                  }`}>
-                    {cat.badge}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 2. TIÊU ĐỀ THEO TRỤ CỘT ĐANG CHỌN */}
+    <div id="catalog" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-3 sm:pb-4">
+      {/* TIÊU ĐỀ THEO TRỤ CỘT ĐANG CHỌN */}
       <div className="text-center mb-5 sm:mb-6">
         <div className="inline-flex items-center gap-1.5 bg-[#F4F7F5] px-3 py-1 rounded-full border border-[#D1DFD6] mb-1.5 sm:mb-2">
           <Sparkles className="w-3.5 h-3.5 text-[#5C8A70]" />
