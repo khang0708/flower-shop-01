@@ -163,7 +163,7 @@ export const PrintInvoiceModal = ({ isOpen, onClose, order }) => {
                     <h2 className="font-serif text-xl sm:text-2xl font-black text-gray-950 tracking-tight leading-none">
                       NGỌC FLOWER
                     </h2>
-                    <p className="text-[11px] text-gray-600 italic mt-1">Tiệm Hoa Tươi Nghệ Thuật & Thiết Kế Quà Tặng</p>
+                    <p className="text-[11px] text-gray-600 italic mt-1">Tiệm Hoa Tươi Buôn Ma Thuột & Thiết Kế Quà Tặng</p>
                     <p className="text-[10px] text-gray-700 mt-0.5 font-medium">📍 {shopAddress || '44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk'} • Hotline/Zalo: {shopZaloPhone}</p>
                   </div>
                 </div>

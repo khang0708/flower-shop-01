@@ -2,7 +2,7 @@
 export const SHOP_CATEGORIES = [
   {
     id: 'flowers',
-    name: 'Hoa Tươi Nghệ Thuật',
+    name: 'Hoa Tươi Buôn Ma Thuột',
     shortName: 'Hoa Tươi',
     icon: '🌸',
     badge: 'Cắm Mới Mỗi Sáng',

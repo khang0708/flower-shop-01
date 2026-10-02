@@ -164,7 +164,7 @@ export const Header = () => {
             Danh mục:
           </span>
           {[
-            { id: 'flowers', label: 'Hoa Tươi Nghệ Thuật', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
+            { id: 'flowers', label: 'Hoa Tươi Buôn Ma Thuột', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
             { id: 'weddings', label: 'Rạp Cưới Hỏi & Gia Tiên', icon: '🎪', badge: 'Khảo sát 0đ' },
             { id: 'fruits', label: 'Giỏ Trái Cây & Quà Tặng', icon: '🍇', badge: '100% Nhập khẩu' },
           ].map((cat) => {
@@ -243,7 +243,7 @@ export const Header = () => {
                 activeCategory === 'flowers' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🌸 Hoa Tươi Nghệ Thuật</span>
+              <span>🌸 Hoa Tươi Buôn Ma Thuột</span>
               <span className="text-[11px] opacity-70">Cắm mới mỗi ngày</span>
             </a>
             <a 

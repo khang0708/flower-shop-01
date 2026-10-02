@@ -270,7 +270,7 @@ export const ShopProvider = ({ children }) => {
     } catch (e) {}
     return {
       pageId: 'tiemhoaflorabloom',
-      pageName: 'Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật',
+      pageName: 'Ngọc Flower - Hoa Tươi Buôn Ma Thuột',
       pageAccessToken: '',
       verifyToken: 'flora_bloom_webhook_secret_2026',
       adminRecipientId: '',

@@ -1,8 +1,8 @@
-# 🌸 Flora & Bloom - Tiệm Hoa Tươi Nghệ Thuật (hoatuoibmt.vn)
+# 🌸 Ngọc Flower - Tiệm Hoa Tươi Buôn Ma Thuột (hoatuoibmt.vn)
 
 [![CI/CD Auto Deploy to AZDIGI VPS](https://github.com/khang0708/flower-shop-01/actions/workflows/deploy.yml/badge.svg)](https://github.com/khang0708/flower-shop-01/actions/workflows/deploy.yml)
 
-Website bán lẻ hoa tươi nghệ thuật, giỏ trái cây cao cấp và dịch vụ hoa cưới hỏi chuyên nghiệp tại Buôn Ma Thuột.
+Website bán lẻ hoa tươi Buôn Ma Thuột, giỏ trái cây cao cấp và dịch vụ hoa cưới hỏi chuyên nghiệp tại Buôn Ma Thuột.
 
 - **🌐 Website chính thức:** [https://hoatuoibmt.vn](https://hoatuoibmt.vn)
 - **⚡ Công nghệ sử dụng:** React 19, Vite, Tailwind CSS, Node.js Express, PM2, Nginx, Let's Encrypt SSL.

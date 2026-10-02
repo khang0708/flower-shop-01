@@ -1479,7 +1479,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     Quản Lý Danh Mục Sản Phẩm (CMS)
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Quản lý toàn diện 3 trụ cột: Hoa tươi nghệ thuật, Rạp cưới hỏi gia tiên và Giỏ trái cây quà tặng.
+                    Quản lý toàn diện 3 trụ cột: Hoa tươi Buôn Ma Thuột, Rạp cưới hỏi gia tiên và Giỏ trái cây quà tặng.
                   </p>
                 </div>
 
@@ -2587,7 +2587,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           type="text"
                           value={inputFbPageName}
                           onChange={(e) => setInputFbPageName(e.target.value)}
-                          placeholder="VD: Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật"
+                          placeholder="VD: Ngọc Flower - Hoa Tươi Buôn Ma Thuột"
                           className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0084FF] text-[11px]"
                         />
                       </div>
