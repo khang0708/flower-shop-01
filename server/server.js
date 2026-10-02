@@ -41,7 +41,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 // ----------------------------------------------------
 // SHARED PERSISTENT STORAGE (Neon Database & In-Memory Fallback)
-// Giải quyết dứt điểm vấn đề mất dữ liệu giữa các Vercel container
+// Lưu trữ dữ liệu bền vững qua Neon PostgreSQL & Local fallback
 // ----------------------------------------------------
 let sql = null;
 if (process.env.DATABASE_URL) {
@@ -53,8 +53,7 @@ if (process.env.DATABASE_URL) {
 }
 
 // Bọc mọi promise (DB query, fetch bên thứ 3, ...) bằng timeout để tránh
-// serverless function treo tới tận giới hạn tối đa của Vercel khi bên ngoài
-// không phản hồi (kết nối mạng treo, DB không reachable, API bên thứ 3 hang).
+// request treo khi bên ngoài không phản hồi (kết nối mạng treo, DB không reachable, API bên thứ 3 hang).
 const withTimeout = (promise, ms, label = 'operation') => {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -101,7 +100,7 @@ const memoryDb = new Map();
 const readJson = async (fileName) => {
   const key = fileName.replace('.json', '');
 
-  // 1. Neon Database (Lưu trữ dùng chung giữa tất cả container Vercel & mọi thiết bị)
+  // 1. Neon Database (Lưu trữ dùng chung giữa backend & mọi thiết bị)
   if (sql) {
     try {
       await ensureTable();
@@ -200,34 +199,20 @@ export const broadcastAdminEvent = (eventPayload) => {
   });
 };
 
-// GET /api/admin/events (SSE Stream)
-//
-// QUAN TRỌNG: Vercel Serverless Functions có giới hạn thời gian chạy cứng
-// (maxDuration). Giữ response mở vô thời hạn để chờ push event (SSE) khiến
-// MỖI invocation phải chạy tới hết giới hạn đó rồi mới bị Vercel kill với lỗi
-// "Task timed out" - lặp lại liên tục vì client (EventSource) tự động
-// reconnect. SSE dạng long-poll chỉ hoạt động đúng trên 1 Node process chạy
-// dài hạn (vd `npm run server` local), KHÔNG chạy được trên Vercel.
-// => Trên Vercel, trả lời ngay 1 lần rồi đóng kết nối (không giữ treo).
-if (process.env.VERCEL) {
-  app.get('/api/admin/events', (req, res) => {
-    res.status(204).end();
-  });
-} else {
-  app.get('/api/admin/events', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders?.();
+// GET /api/admin/events (SSE Stream - Real-time push cho Admin Dashboard)
+app.get('/api/admin/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
 
-    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Admin Stream Active' })}\n\n`);
-    sseClients.add(res);
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Admin Stream Active' })}\n\n`);
+  sseClients.add(res);
 
-    req.on('close', () => {
-      sseClients.delete(res);
-    });
+  req.on('close', () => {
+    sseClients.delete(res);
   });
-}
+});
 
 // ----------------------------------------------------
 // 0. ADMIN AUTHENTICATION API (Xác thực đăng nhập & Đổi mật khẩu)
@@ -1135,13 +1120,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-if (!process.env.VERCEL) {
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
-  });
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
+});
 
-  process.on('SIGTERM', () => server.close());
-  process.on('SIGINT', () => server.close());
-}
+process.on('SIGTERM', () => server.close());
+process.on('SIGINT', () => server.close());
 
 export default app;

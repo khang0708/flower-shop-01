@@ -27,8 +27,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Server chạy dài hạn (không phải serverless) nên KHÔNG cần timeout ngắn
-        # như trên Vercel — SSE (nếu bật lại sau này) sẽ hoạt động đúng ở đây.
+        # Hỗ trợ SSE realtime stream kết nối liên tục
         proxy_read_timeout 300s;
     }
 

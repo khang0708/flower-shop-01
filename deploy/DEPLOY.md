@@ -111,10 +111,5 @@ pm2 restart flora-bloom-api
 ```
 
 ## Ghi chú riêng cho dự án này
-- `server/server.js` đã tự nhận diện: khi KHÔNG có biến `VERCEL`, nó sẽ `app.listen()` bình
-  thường — đúng như trên VPS, không cần sửa gì thêm cho phần này.
-- Route SSE (`/api/admin/events`) đã được giới hạn chỉ hoạt động khi không chạy trên Vercel,
-  nghĩa là trên VPS nó **sẽ hoạt động đúng như thiết kế ban đầu** (giữ kết nối mở real-time) —
-  vì VPS không có giới hạn thời gian request như serverless. Nếu muốn bật lại real-time
-  SSE ở phía client cho production, sửa điều kiện `import.meta.env.DEV` trong
-  `src/context/ShopContext.jsx` cho phù hợp với môi trường VPS.
+- `server/server.js` chạy trực tiếp Node Express Server qua PM2 trên cổng 3001, được Nginx reverse proxy sang `/api/`.
+- Route SSE (`/api/admin/events`) hoạt động liên tục real-time giữa các thiết bị mà không bị giới hạn timeout của serverless.

@@ -90,7 +90,7 @@ const INITIAL_ORDERS = [
 
 // ----------------------------------------------------
 // LOCAL-FIRST & CONFLICT RESOLUTION UTILITIES
-// Ngăn stale server container Vercel ghi đè dữ liệu mới
+// Đồng bộ đa thiết bị và ngăn dữ liệu cũ ghi đè dữ liệu mới
 // ----------------------------------------------------
 import { 
   getDeletedProductIds, 
@@ -795,15 +795,10 @@ export const ShopProvider = ({ children }) => {
       }
     }, 30000);
 
-    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác.
-    // CHỈ bật ở dev (Vite dev server chạy dài hạn). Trên production (Vercel
-    // Serverless), route này không giữ kết nối mở (xem server/server.js) vì
-    // sẽ khiến function treo tới hết maxDuration rồi bị kill - đã gây ra sự cố
-    // "Task timed out after 300 seconds" lặp lại hàng loạt. Đồng bộ real-time
-    // trên production dựa vào Smart Polling (30s) + BroadcastChannel ở trên.
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác trên VPS
     let eventSource = null;
     try {
-      if (import.meta.env.DEV) {
+      if (typeof window !== 'undefined' && 'EventSource' in window) {
         eventSource = new EventSource('/api/admin/events');
       }
       if (eventSource) {
