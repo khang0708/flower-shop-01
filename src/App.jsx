@@ -1,7 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ShopProvider } from './context/ShopContext';
 import { Header } from './components/Header';
-import { HeroSection } from './components/HeroSection';
 import { OccasionFilter } from './components/OccasionFilter';
 import { FlowerGrid } from './components/FlowerGrid';
 import { SocialChatHubFloatingButton } from './components/SocialChatHubFloatingButton';
@@ -126,7 +125,6 @@ function AppContent() {
 
       {/* Nội dung chính Storefront */}
       <main className="flex-grow">
-        <HeroSection />
         <OccasionFilter />
         <FlowerGrid />
         <Suspense fallback={<div className="py-12 text-center text-xs text-gray-400">Đang tải đánh giá khách hàng...</div>}>
