@@ -363,10 +363,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       { name: 'Hộp Hoa Vintage Garden', url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80' }
     ],
     weddings: [
-      { name: 'Rạp Cưới Versailles', url: '/products/rap_cuoi_versailles.jpg' },
+      { name: 'Tráp Cưới Rồng Phụng', url: '/products/trap_cuoi_rong_phung.jpg' },
       { name: 'Gia Tiên Song Hỷ', url: '/products/gia_tien_song_hy.jpg' },
       { name: 'Cổng Hoa Cưới Hàn Quốc', url: '/products/cong_hoa_cuoi.jpg' },
-      { name: 'Tráp Cưới Rồng Phụng', url: '/products/trap_cuoi_rong_phung.jpg' },
       { name: 'Combo Cưới Hỏi VIP', url: '/products/combo_cuoi_hoi_vip.jpg' }
     ],
     fruits: [
@@ -420,7 +419,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     originalPrice: 850000,
     occasion: 'love',
     colorTone: 'pastel',
-    weddingType: 'rapcuoi',
+    weddingType: 'trapcuoi',
     scale: '',
     setupTime: '',
     includedItems: '',
@@ -505,20 +504,20 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       originalPrice: cat === 'weddings' ? 7800000 : cat === 'fruits' ? 1450000 : 850000,
       occasion: 'love',
       colorTone: 'pastel',
-      weddingType: 'rapcuoi',
-      scale: cat === 'weddings' ? 'Quy mô: 10 - 20 bàn tiệc' : '',
-      setupTime: cat === 'weddings' ? 'Thi công: 24h trước ngày lễ' : '',
-      includedItems: cat === 'weddings' ? 'Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu yêu cầu\nĐèn led chiếu sáng & fairy light trang trí\nMiễn phí vận chuyển & thu dọn hoàn thiện' : '',
+      weddingType: 'trapcuoi',
+      scale: cat === 'weddings' ? 'Quy mô: Bộ 6 - 8 tráp' : '',
+      setupTime: cat === 'weddings' ? 'Bàn giao: Sáng sớm ngày làm lễ' : '',
+      includedItems: cat === 'weddings' ? 'Bộ 6 - 8 tráp sơn mài cao cấp\nTráp rồng phượng kết hoa tươi nhập khẩu\nTráp trầu cau, rượu ngoại & bánh gia truyền\nMiễn phí vận chuyển & bàn giao tận nơi' : '',
       fruitOccasion: 'gift_vip',
       fruitTypes: cat === 'fruits' ? 'Nho Mẫu Đơn Nhật, Táo Envy, Lê Hàn Quốc, Kiwi Vàng' : '',
       image: cat === 'weddings' 
-        ? '/products/rap_cuoi_versailles.jpg' 
+        ? '/products/trap_cuoi_rong_phung.jpg' 
         : cat === 'fruits' 
         ? '/products/gio_trai_cay_phu_quy.jpg' 
         : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       tags: ['Mẫu Mới'],
       meaning: cat === 'weddings' 
-        ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' 
+        ? 'Long Phụng sum vầy, phú quý viên mãn cho đôi uyên ương trăm năm hạnh phúc.' 
         : cat === 'fruits' 
         ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' 
         : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.',
@@ -539,7 +538,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       originalPrice: prod.originalPrice || prod.price || 0,
       occasion: prod.occasion || 'love',
       colorTone: prod.colorTone || 'pastel',
-      weddingType: prod.weddingType || 'rapcuoi',
+      weddingType: prod.weddingType || 'trapcuoi',
       scale: prod.scale || '',
       setupTime: prod.setupTime || '',
       includedItems: Array.isArray(prod.includedItems) ? prod.includedItems.join('\n') : (prod.includedItems || ''),
@@ -1039,7 +1038,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <h1 className="font-serif text-base sm:text-lg font-bold text-[#1B3B2B] leading-tight">
                   {activeTab === 'orders' && '🛍️ Quản Lý Đơn Hàng & Cắm Mẫu'}
                   {activeTab === 'inventory' && '🌿 Quản Lý Kho Hoa Tươi & Định Lượng'}
-                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Sản Phẩm (Hoa • Rạp Cưới • Trái Cây)'}
+                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Sản Phẩm (Hoa • Tráp Cưới • Trái Cây)'}
                   {activeTab === 'discounts' && '🎟️ Quản Lý Voucher & Khuyến Mãi'}
                   {activeTab === 'reviews' && '⭐ Quản Lý Đánh Giá & Feedback Khách Hàng'}
                   {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
@@ -1479,7 +1478,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     Quản Lý Danh Mục Sản Phẩm (CMS)
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Quản lý toàn diện 3 trụ cột: Hoa tươi Buôn Ma Thuột, Rạp cưới hỏi gia tiên và Giỏ trái cây quà tặng.
+                    Quản lý toàn diện 3 trụ cột: Hoa tươi Buôn Ma Thuột, Tráp cưới hỏi & gia tiên và Giỏ trái cây quà tặng.
                   </p>
                 </div>
 
@@ -1491,7 +1490,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     <Plus className="w-4 h-4 text-[#F5D6CE]" />
                     <span>
                       {adminCategoryFilter === 'weddings' 
-                        ? 'Thêm Gói Cưới Hỏi' 
+                        ? 'Thêm Gói Tráp Cưới' 
                         : adminCategoryFilter === 'fruits' 
                         ? 'Thêm Giỏ Trái Cây' 
                         : 'Thêm Sản Phẩm Mới'}
@@ -1533,8 +1532,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         : 'text-gray-500 hover:text-black'
                     }`}
                   >
-                    <span>🎪</span>
-                    <span>Rạp Cưới Hỏi ({weddingCount})</span>
+                    <span>🧧</span>
+                    <span>Tráp Cưới Hỏi ({weddingCount})</span>
                   </button>
                   <button
                     onClick={() => setAdminCategoryFilter('fruits')}
@@ -1630,10 +1629,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                 ? 'bg-amber-800 text-white'
                                 : 'bg-[#1B3B2B] text-white'
                             }`}>
-                              <span>{isWedding ? '🎪' : isFruit ? '🍇' : '🌸'}</span>
+                              <span>{isWedding ? '🧧' : isFruit ? '🍇' : '🌸'}</span>
                               <span>
                                 {isWedding 
-                                  ? (WEDDING_TYPES.find(w => w.id === prod.weddingType)?.label || 'Rạp Cưới')
+                                  ? (WEDDING_TYPES.find(w => w.id === prod.weddingType)?.label || 'Tráp Cưới')
                                   : isFruit 
                                   ? (FRUIT_OCCASIONS.find(f => f.id === prod.fruitOccasion)?.label || 'Giỏ Trái Cây')
                                   : (OCCASIONS.find(o => o.id === prod.occasion)?.label || prod.occasion || 'Hoa Tươi')}
@@ -1675,7 +1674,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                   ? 'bg-amber-50 text-amber-700'
                                   : 'bg-emerald-50 text-emerald-700'
                               }`}>
-                                {isWedding ? 'Rạp Cưới Hỏi' : isFruit ? 'Giỏ Trái Cây' : 'Hoa Tươi'}
+                                {isWedding ? 'Tráp Cưới Hỏi' : isFruit ? 'Giỏ Trái Cây' : 'Hoa Tươi'}
                               </span>
                             </div>
 
@@ -3027,7 +3026,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 {editingProductId 
                   ? '✏️ Chỉnh Sửa Sản Phẩm' 
                   : (formData.category === 'weddings' 
-                      ? '🎪 Thêm Gói Rạp / Cưới Hỏi Mới' 
+                      ? '🧧 Thêm Gói Tráp / Cưới Hỏi Mới' 
                       : (formData.category === 'fruits' 
                           ? '🍇 Thêm Mẫu Giỏ Trái Cây Mới' 
                           : '🌸 Thêm Mẫu Bó Hoa Tươi Mới'))}
@@ -3044,7 +3043,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-2xl">
                   {[
                     { id: 'flowers', label: 'Hoa Tươi', icon: '🌸' },
-                    { id: 'weddings', label: 'Rạp Cưới Hỏi', icon: '🎪' },
+                    { id: 'weddings', label: 'Tráp Cưới Hỏi', icon: '🧧' },
                     { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇' }
                   ].map((cat) => {
                     const isSelected = (formData.category || 'flowers') === cat.id;
@@ -3064,7 +3063,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                               ? (newCat === 'weddings' ? 7800000 : newCat === 'fruits' ? 1450000 : 850000)
                               : prev.originalPrice,
                             image: !editingProductId && (!prev.image || prev.image.includes('unsplash') || prev.image.includes('/products/'))
-                              ? (newCat === 'weddings' ? '/products/rap_cuoi_versailles.jpg' : newCat === 'fruits' ? '/products/gio_trai_cay_phu_quy.jpg' : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80')
+                              ? (newCat === 'weddings' ? '/products/trap_cuoi_rong_phung.jpg' : newCat === 'fruits' ? '/products/gio_trai_cay_phu_quy.jpg' : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80')
                               : prev.image,
                             meaning: !editingProductId && (!prev.meaning || prev.meaning.includes('Gửi gắm') || prev.meaning.includes('trọng đại') || prev.meaning.includes('thượng hạng'))
                               ? (newCat === 'weddings' ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' : newCat === 'fruits' ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.')
@@ -3089,7 +3088,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
                   {formData.category === 'weddings' 
-                    ? 'Tên gói dịch vụ / rạp cưới *' 
+                    ? 'Tên gói dịch vụ / tráp cưới *' 
                     : (formData.category === 'fruits' 
                         ? 'Tên giỏ trái cây quà tặng *' 
                         : 'Tên mẫu hoa tươi *')}
@@ -3101,7 +3100,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={
                     formData.category === 'weddings'
-                      ? 'VD: Gói Rạp Cưới Hoàng Gia "Versailles Palace"'
+                      ? 'VD: Bộ 8 Tráp Cưới Long Phụng Hoàng Gia'
                       : (formData.category === 'fruits'
                           ? 'VD: Giỏ Trái Cây Hoàng Kim "Phú Quý Đại Cát"'
                           : 'VD: Bó Hoa Juliet Hoàng Hôn')
@@ -3119,7 +3118,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                   placeholder={
                     formData.category === 'weddings'
-                      ? 'VD: Khung rạp nhôm kiên cố, voan lụa trần 2 lớp, bàn ghế Tiffany...'
+                      ? 'VD: Kết rồng phượng 3D cau bắp hoa tươi, tráp mâm sơn mài thượng hạng...'
                       : (formData.category === 'fruits'
                           ? 'VD: Nho Mẫu Đơn Nhật, Táo Envy New Zealand kết hoa tươi sang trọng...'
                           : 'VD: Hoa hồng cam spirit phối cùng baby trắng...')
@@ -3214,8 +3213,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               {formData.category === 'weddings' && (
                 <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100 space-y-3">
                   <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs pb-1 border-b border-rose-100">
-                    <span>🎪</span>
-                    <span>Thông Số Chuyên Biệt: Rạp Cưới Hỏi & Gia Tiên</span>
+                    <span>🧧</span>
+                    <span>Thông Số Chuyên Biệt: Tráp Cưới Hỏi & Gia Tiên</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -3236,32 +3235,32 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         type="text"
                         value={formData.scale}
                         onChange={(e) => setFormData({ ...formData, scale: e.target.value })}
-                        placeholder="VD: 10 - 20 bàn tiệc hoặc Tư gia 12 - 24 người"
+                        placeholder="VD: Bộ 6 tráp, Bộ 8 tráp hoặc Tư gia 12 - 24 người"
                         className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Thời gian khảo sát / thi công</label>
+                    <label className="block font-bold text-gray-700 mb-1">Thời gian chuẩn bị / bàn giao</label>
                     <input
                       type="text"
                       value={formData.setupTime}
                       onChange={(e) => setFormData({ ...formData, setupTime: e.target.value })}
-                      placeholder="VD: Hoàn thiện trước ngày cưới 24 - 36 giờ"
+                      placeholder="VD: Bàn giao sáng sớm ngày đón dâu"
                       className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
                     />
                   </div>
 
                   <div>
                     <label className="block font-bold text-gray-700 mb-1">
-                      Các hạng mục thi công bao gồm (mỗi dòng một hạng mục):
+                      Các lễ vật / hạng mục bao gồm (mỗi dòng một mục):
                     </label>
                     <textarea
                       rows={3}
                       value={formData.includedItems}
                       onChange={(e) => setFormData({ ...formData, includedItems: e.target.value })}
-                      placeholder={"Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu\nĐèn led fairy light & âm thanh cơ bản\nMiễn phí dọn dẹp mặt bằng 100%"}
+                      placeholder={"Tráp Trầu Cau kết phụng hoa tươi\nTráp Rồng hoa quả kết nho Mẫu Đơn\nTráp Rượu Vang & Trà thượng hạng\nMiễn phí vận chuyển tận nhà"}
                       className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs font-mono"
                     />
                   </div>

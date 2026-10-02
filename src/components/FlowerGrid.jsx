@@ -104,7 +104,7 @@ export const FlowerGrid = () => {
   const counterLabel = useMemo(() => {
     switch (activeCategory) {
       case 'weddings':
-        return `🎪 ${filteredAndSortedFlowers.length} gói rạp cưới & gia tiên trọn gói`;
+        return `🧧 ${filteredAndSortedFlowers.length} bộ tráp cưới & gia tiên trọn gói`;
       case 'fruits':
         return `🍇 ${filteredAndSortedFlowers.length} mẫu giỏ trái cây cao cấp`;
       case 'flowers':
@@ -178,7 +178,7 @@ export const FlowerGrid = () => {
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
             {activeCategory === 'weddings'
-              ? 'Ngọc Flower nhận thiết kế và thi công rạp cưới theo kích thước sân nhà riêng. Nhắn Zalo để được đội ngũ kỹ thuật khảo sát miễn phí!'
+              ? 'Ngọc Flower nhận kết tráp cưới hỏi rồng phụng theo yêu cầu riêng. Nhắn Zalo để được nghệ nhân tư vấn miễn phí!'
               : activeCategory === 'fruits'
               ? 'Bạn có thể yêu cầu mix trái cây theo sở thích và ngân sách riêng từ 500k. Đội ngũ nghệ nhân sẽ chụp ảnh duyệt trước khi giao!'
               : 'Bạn có thể thử chọn lại dịp tặng khác hoặc nhắn tin Zalo để nghệ nhân cắm hoa thiết kế riêng theo ngân sách của bạn.'}
@@ -188,7 +188,7 @@ export const FlowerGrid = () => {
             onClick={() => openPersonalZaloChat(
               shopZaloPhone, 
               activeCategory === 'weddings'
-                ? 'Chào shop Ngọc Flower, tôi muốn được khảo sát và báo giá gói rạp cưới hỏi theo kích thước sân nhà!'
+                ? 'Chào shop Ngọc Flower, tôi muốn được tư vấn và báo giá gói tráp cưới hỏi!'
                 : activeCategory === 'fruits'
                 ? 'Chào shop Ngọc Flower, tôi muốn đặt mix giỏ trái cây theo ngân sách và hoa tươi riêng!'
                 : 'Chào shop Ngọc Flower, tôi muốn được tư vấn cắm hoa theo yêu cầu riêng!'
@@ -204,18 +204,18 @@ export const FlowerGrid = () => {
       <div className="mt-16 bg-[#F4F7F5] rounded-3xl p-8 border border-[#D1DFD6] flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center md:text-left">
           <span className="text-xs font-bold text-[#5C8A70] uppercase tracking-wider">
-            {activeCategory === 'weddings' ? 'Dịch Vụ Cưới Hỏi Trọn Gói' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Nghệ Thuật' : 'Ngọc Flower Quality'}
+            {activeCategory === 'weddings' ? 'Tráp Cưới Hỏi & Gia Tiên Trọn Gói' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Nghệ Thuật' : 'Ngọc Flower Quality'}
           </span>
           <h3 className="font-serif text-2xl text-[#1B3B2B] font-bold">
             {activeCategory === 'weddings'
-              ? 'Bạn cần khảo sát mặt bằng rạp cưới tại nhà?'
+              ? 'Bạn cần tư vấn tráp cưới hỏi tại nhà?'
               : activeCategory === 'fruits'
               ? 'Bạn cần thiết kế giỏ trái cây quà biếu theo yêu cầu?'
               : 'Bạn cần cắm hoa theo ngân sách riêng?'}
           </h3>
           <p className="text-xs text-gray-600 max-w-lg">
             {activeCategory === 'weddings'
-              ? 'Đội ngũ kỹ thuật viên của Ngọc Flower đến tận nơi đo đạc diện tích sân nhà, tư vấn dựng rạp chống mưa nắng và lên phối cảnh 3D hoàn toàn miễn phí.'
+              ? 'Đội ngũ nghệ nhân của Ngọc Flower tư vấn mẫu tráp rồng phụng, cau bắp, quả nhập khẩu kết hoa tươi và lễ vật chu đáo hoàn toàn miễn phí.'
               : activeCategory === 'fruits'
               ? 'Lựa chọn từng loại quả nhập khẩu cao cấp (Nho Mẫu Đơn, Táo Envy, Cherry đỏ, Kiwi vàng...) phối cùng hoa tươi nghệ thuật, in thiệp và ruy băng miễn phí.'
               : 'Đội ngũ nghệ nhân của chúng tôi nhận thiết kế hoa tiệc cưới, hoa sự kiện doanh nghiệp và cắm hoa theo yêu cầu tone màu riêng từ 500.000đ.'}
@@ -228,7 +228,7 @@ export const FlowerGrid = () => {
             onClick={() => openPersonalZaloChat(
               shopZaloPhone, 
               activeCategory === 'weddings'
-                ? 'Chào shop Ngọc Flower, tôi cần khảo sát mặt bằng dựng rạp cưới tại nhà và nhận báo giá chi tiết!'
+                ? 'Chào shop Ngọc Flower, tôi cần tư vấn bộ tráp cưới hỏi và nhận báo giá chi tiết!'
                 : activeCategory === 'fruits'
                 ? 'Chào shop Ngọc Flower, tôi muốn nhận báo giá giỏ trái cây quà tặng theo ngân sách!'
                 : 'Chào nghệ nhân Ngọc Flower, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!'

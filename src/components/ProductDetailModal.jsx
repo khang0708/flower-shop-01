@@ -41,7 +41,7 @@ export const ProductDetailModal = () => {
   const [cardMessage, setCardMessage] = useState('Chúc bạn luôn bình an, may mắn và hạnh phúc viên mãn! 🌸');
   const [senderSign, setSenderSign] = useState('Người thương');
 
-  // State cho Rạp Cưới Hỏi (Khảo sát)
+  // State cho Tráp Cưới Hỏi (Khảo sát & Tư vấn)
   const [weddingDate, setWeddingDate] = useState('');
   const [weddingAddress, setWeddingAddress] = useState('');
 
@@ -158,11 +158,11 @@ export const ProductDetailModal = () => {
                 <>
                   <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
                     <CheckCircle2 className="w-4 h-4 text-[#5C8A70]" />
-                    <span>Khảo sát mặt bằng tận nơi 0đ trong 2 giờ</span>
+                    <span>Tư vấn mẫu tráp & gia tiên tận nơi 0đ</span>
                   </div>
                   <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
                     <ShieldCheck className="w-4 h-4 text-[#C4685A]" />
-                    <span>Khung rạp kiên cố, bạt chống nóng chống mưa 100%</span>
+                    <span>Lễ vật tươi mới, kết rồng phụng 3D chuẩn lễ nghi</span>
                   </div>
                 </>
               ) : isFruit ? (
@@ -194,7 +194,7 @@ export const ProductDetailModal = () => {
           {/* CỘT PHẢI: TRÌNH TÙY BIẾN HOẶC HẠNG MỤC CƯỚI HỎI (7 Cột) */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* TRƯỜNG HỢP 1: RẠP CƯỚI HỎI & GIA TIÊN */}
+            {/* TRƯỜNG HỢP 1: TRÁP CƯỚI HỎI & GIA TIÊN */}
             {isWedding ? (
               <div className="space-y-6">
                 
@@ -227,28 +227,28 @@ export const ProductDetailModal = () => {
                   </h3>
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
                     <div className="p-2.5 bg-white rounded-xl border border-gray-200">
-                      <strong className="text-[#1B3B2B] block">1. Khảo sát 0đ</strong>
-                      <span>Đo đạc mặt bằng sân & lên phương án</span>
+                      <strong className="text-[#1B3B2B] block">1. Tư Vấn Mẫu 0đ</strong>
+                      <span>Chọn bộ tráp & hoa tươi hợp tuổi</span>
                     </div>
                     <div className="p-2.5 bg-white rounded-xl border border-gray-200">
-                      <strong className="text-[#1B3B2B] block">2. Lên Thiết Kế 3D</strong>
-                      <span>Duyệt tone màu & chất liệu</span>
+                      <strong className="text-[#1B3B2B] block">2. Kết Tráp Thủ Công</strong>
+                      <span>Nghệ nhân kết rồng phượng 3D tỉ mỉ</span>
                     </div>
                     <div className="p-2.5 bg-white rounded-xl border border-gray-200">
-                      <strong className="text-[#1B3B2B] block">3. Thi Công Chuẩn Xác</strong>
-                      <span>Hoàn thiện trước giờ đón dâu 6 - 24h</span>
+                      <strong className="text-[#1B3B2B] block">3. Duyệt Ảnh Thực Tế</strong>
+                      <span>Gửi ảnh hoàn thiện trước ngày cưới</span>
                     </div>
                     <div className="p-2.5 bg-white rounded-xl border border-gray-200">
-                      <strong className="text-[#1B3B2B] block">4. Nghiệm Thu & Trực Tiệc</strong>
-                      <span>Hỗ trợ kỹ thuật suốt buổi lễ</span>
+                      <strong className="text-[#1B3B2B] block">4. Bàn Giao Tận Nơi</strong>
+                      <span>Đúng giờ hoàng đạo đón dâu</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Form thông tin đặt lịch khảo sát nhanh */}
+                {/* Form thông tin đặt lịch tư vấn nhanh */}
                 <div className="bg-[#F4F7F5] p-4 rounded-2xl border border-[#D1DFD6] space-y-3">
                   <h4 className="text-xs font-bold text-[#1B3B2B] uppercase tracking-wider">
-                    Thông Tin Đặt Lịch Khảo Sát Sơ Bộ (Tùy chọn):
+                    Thông Tin Đặt Lịch Tư Vấn Tráp Cưới (Tùy chọn):
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -264,7 +264,7 @@ export const ProductDetailModal = () => {
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                        Khu vực / Địa chỉ khảo sát:
+                        Khu vực / Địa chỉ giao tráp:
                       </label>
                       <input
                         type="text"

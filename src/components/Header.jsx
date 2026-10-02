@@ -104,7 +104,7 @@ export const Header = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm hoa tươi, rạp cưới hỏi, giỏ trái cây..."
+              placeholder="Tìm hoa tươi, tráp cưới hỏi, giỏ trái cây..."
               aria-label="Tìm kiếm sản phẩm hoặc dịch vụ"
               className="w-full pl-10 pr-4 py-2 text-xs rounded-full bg-white border border-[#D1DFD6] focus:outline-none focus:border-[#1B3B2B] focus:ring-1 focus:ring-[#1B3B2B] transition-all"
             />
@@ -165,7 +165,7 @@ export const Header = () => {
           </span>
           {[
             { id: 'flowers', label: 'Hoa Tươi Buôn Ma Thuột', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
-            { id: 'weddings', label: 'Rạp Cưới Hỏi & Gia Tiên', icon: '🎪', badge: 'Khảo sát 0đ' },
+            { id: 'weddings', label: 'Tráp Cưới Hỏi & Gia Tiên', icon: '🧧', badge: 'Tư vấn 0đ' },
             { id: 'fruits', label: 'Giỏ Trái Cây & Quà Tặng', icon: '🍇', badge: '100% Nhập khẩu' },
           ].map((cat) => {
             const isActive = activeCategory === cat.id;
@@ -256,8 +256,8 @@ export const Header = () => {
                 activeCategory === 'weddings' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🎪 Rạp Cưới Hỏi & Gia Tiên</span>
-              <span className="text-[11px] opacity-70">Khảo sát 0đ</span>
+              <span>🧧 Tráp Cưới Hỏi & Gia Tiên</span>
+              <span className="text-[11px] opacity-70">Tư vấn 0đ</span>
             </a>
             <a 
               href="#catalog" 

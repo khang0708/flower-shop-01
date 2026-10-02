@@ -11,12 +11,12 @@ export const SHOP_CATEGORIES = [
   },
   {
     id: 'weddings',
-    name: 'Rạp Cưới Hỏi & Gia Tiên',
-    shortName: 'Rạp Cưới Hỏi',
-    icon: '🎪',
-    badge: 'Khảo Sát Tận Nơi 0đ',
-    tagline: 'Không gian cưới hỏi trang trọng, trọn vẹn ngày hạnh phúc',
-    description: 'Thi công rạp cưới cao cấp, trang trí gia tiên, cổng hoa cưới nghệ thuật và bàn ghế sự kiện trọn gói.'
+    name: 'Tráp Cưới Hỏi & Gia Tiên',
+    shortName: 'Tráp Cưới Hỏi',
+    icon: '🧧',
+    badge: 'Tư Vấn Tận Nơi 0đ',
+    tagline: 'Mâm quả tráp cưới trang trọng, trọn vẹn ngày hạnh phúc',
+    description: 'Bộ tráp cưới hỏi rồng phụng cao cấp, trang trí gia tiên, cổng hoa cưới nghệ thuật và sính lễ cưới hỏi trọn gói.'
   },
   {
     id: 'fruits',
@@ -48,13 +48,12 @@ export const COLOR_TONES = [
   { id: 'purple', label: 'Tím Lavender Thơ', color: '#D4BCE8' },
 ];
 
-// Bộ lọc Rạp Cưới Hỏi & Gia Tiên
+// Bộ lọc Tráp Cưới Hỏi & Gia Tiên
 export const WEDDING_TYPES = [
   { id: 'all', label: 'Tất cả gói', icon: '✨' },
-  { id: 'giatien', label: 'Bàn Thờ Gia Tiên', icon: '🏛️' },
-  { id: 'rapcuoi', label: 'Rạp Cưới Ngoài Trời', icon: '🎪' },
-  { id: 'conghoa', label: 'Cổng Hoa Nghệ Thuật', icon: '💐' },
   { id: 'trapcuoi', label: 'Tráp Cưới Rồng Phụng', icon: '🐲' },
+  { id: 'giatien', label: 'Bàn Thờ Gia Tiên', icon: '🏛️' },
+  { id: 'conghoa', label: 'Cổng Hoa Nghệ Thuật', icon: '💐' },
   { id: 'combo', label: 'Combo Trọn Gói VIP', icon: '👑' },
 ];
 
@@ -194,26 +193,29 @@ export const FLOWERS_DATA = [
     freshDays: 5,
   },
 
-  // 2. RẠP CƯỚI HỎI & GIA TIÊN (Wedding Marquee & Ceremonies)
+  // 2. TRÁP CƯỚI HỎI & GIA TIÊN (Wedding Ceremonies & Dowry Trays)
   {
     id: 'wd-01',
     category: 'weddings',
-    weddingType: 'rapcuoi',
-    name: 'Gói Rạp Cưới Hoàng Gia "Versailles Palace"',
-    subtitle: 'Khung rạp nhôm kiên cố, voan lụa trần 2 lớp, bàn ghế Tiffany nơ nhung & dàn đèn led fairy light',
-    price: 18500000,
-    originalPrice: 22000000,
-    scale: 'Quy mô: 10 - 25 bàn tiệc',
-    setupTime: 'Thi công: 24 - 36 giờ trước lễ',
-    image: '/products/rap_cuoi_versailles.jpg',
-    tags: ['Khảo Sát 0đ', 'Thi Công Trọn Gói'],
-    meaning: 'Mang không gian tiệc cưới cổ tích châu Âu sang trọng về sân nhà của bạn.',
+    weddingType: 'trapcuoi',
+    name: 'Bộ 8 Tráp Cưới Hoàng Gia "Long Phụng Hòa Minh"',
+    subtitle: 'Bộ 8 tráp sơn mài cao cấp: Rồng phượng kết hoa tươi, trầu cau dán chữ Hỷ, rượu ngoại & bánh gia truyền',
+    price: 9500000,
+    originalPrice: 11500000,
+    scale: 'Quy mô: Bộ 8 tráp sơn mài dát vàng',
+    setupTime: 'Bàn giao: Sáng sớm ngày làm lễ',
+    image: '/products/trap_cuoi_rong_phung.jpg',
+    tags: ['Tư Vấn 0đ', 'Tráp Rồng Phượng VIP'],
+    meaning: 'Long Phụng sum vầy, phú quý viên mãn cho đôi uyên ương trăm năm hạnh phúc.',
     includedItems: [
-      'Khung nhà bạt nhôm khẩu độ 8m - 12m kiên cố chống mưa nắng',
-      'Trần phủ lụa voan 2 lớp cao cấp kết hợp thả đèn fairy lights',
-      'Bàn ghế nệm Tiffany bọc nơ nhung cùng tone màu chủ đạo',
-      'Cổng hoa cưới nghệ thuật đón khách & thảm đỏ lối đi',
-      'Hệ thống quạt làm mát công suất lớn & đèn chiếu sáng toàn rạp'
+      'Tráp Trầu Cau kết đôi chim phụng xòe cánh hoa tươi nhập khẩu',
+      'Tráp Hoa Quả Rồng bay lượn kết nho Mẫu Đơn & táo Envy',
+      'Tráp Rượu Vang Ngoại & Trà Tân Cương thượng hạng',
+      'Tráp Bánh Cốm Hàng Than gia truyền thơm dẻo',
+      'Tráp Bánh Phu Thê truyền thống gấm đỏ Song Hỷ',
+      'Tráp Hạt Sen & Chè Thái Nguyên thượng phẩm',
+      'Tráp Xôi Gấc Song Hỷ dập hoa tinh xảo',
+      'Tráp Heo Quay nguyên con kèm hoa tươi trang trí sang trọng'
     ],
     rating: 5.0,
     reviewsCount: 42,
@@ -291,21 +293,21 @@ export const FLOWERS_DATA = [
     id: 'wd-05',
     category: 'weddings',
     weddingType: 'combo',
-    name: 'Combo Ngày Cưới Hạnh Phúc VIP (Rạp + Gia Tiên + Cổng Hoa)',
-    subtitle: 'Trọn gói trang trí cưới hỏi từ ngoài cổng vào trong nhà: Rạp 15 bàn + Gia tiên VIP + Cổng hoa check-in',
-    price: 26500000,
-    originalPrice: 32000000,
+    name: 'Combo Ngày Cưới Hạnh Phúc VIP (Tráp Cưới + Gia Tiên + Cổng Hoa)',
+    subtitle: 'Trọn gói sính lễ cưới hỏi từ ngoài cổng vào trong nhà: Bộ 6 Tráp VIP + Gia Tiên VIP + Cổng hoa check-in',
+    price: 15500000,
+    originalPrice: 18000000,
     scale: 'Trọn gói đầy đủ cho ngày trọng đại',
-    setupTime: 'Đội ngũ 6 kỹ thuật viên thi công tận nhà',
+    setupTime: 'Đội ngũ nghệ nhân chuẩn bị & bàn giao tận nhà',
     image: '/products/combo_cuoi_hoi_vip.jpg',
-    tags: ['Tiết Kiệm 5.5Tr', 'Khuyên Dùng Nhất'],
+    tags: ['Tiết Kiệm 2.5Tr', 'Khuyên Dùng Nhất'],
     meaning: 'Giải pháp hoàn hảo tiết kiệm chi phí & đồng bộ thẩm mỹ tối đa cho gia đình.',
     includedItems: [
-      'Toàn bộ gói Rạp Cưới Versailles 15 bàn tiệc sang trọng',
+      'Toàn bộ Bộ 6 Tráp Cưới Rồng Phụng kết hoa tươi cao cấp',
       'Toàn bộ gói Bàn Thờ Gia Tiên Song Hỷ hoa tươi cao cấp',
       'Cổng hoa đón khách phong cách Hàn Quốc',
       'Tặng kèm 1 Bó hoa cầm tay cô dâu + Hoa cài áo chú rể',
-      'Miễn phí vận chuyển & dọn dẹp mặt bằng sau tiệc 100%'
+      'Miễn phí vận chuyển & bàn giao tận nhà 100%'
     ],
     rating: 5.0,
     reviewsCount: 89,
