@@ -29,7 +29,7 @@ export const HeroSection = () => {
             <div className="inline-flex items-center gap-2 bg-white/95 border border-[#D1DFD6] px-3.5 py-1.5 rounded-full shadow-xs">
               <span className="w-2 h-2 rounded-full bg-[#5C8A70] animate-pulse" />
               <span className="text-[11px] font-semibold text-[#1B3B2B] uppercase tracking-wider">
-                Tiệm Hoa Tươi • Tráp Cưới Hỏi & Gia Tiên • Giỏ Trái Cây Nhập Khẩu
+                Tiệm Hoa Tươi • Tráp Cưới • Giỏ Trái Cây Nhập Khẩu
               </span>
             </div>
 
@@ -38,7 +38,7 @@ export const HeroSection = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-sans font-light">
-              <strong>Ngọc Flower</strong> cung cấp hoa tươi thiết kế thủ công độc bản, dịch vụ kết tráp cưới hỏi & bàn thờ gia tiên tư vấn tận nơi 0đ, cùng giỏ trái cây nhập khẩu cao cấp kết hoa tươi trao trọn tình cảm.
+              <strong>Ngọc Flower</strong> cung cấp hoa tươi thiết kế thủ công độc bản, dịch vụ kết tráp cưới hỏi nghệ thuật tư vấn tận nơi 0đ, cùng giỏ trái cây nhập khẩu cao cấp kết hoa tươi trao trọn tình cảm.
             </p>
 
             {/* 3 Trụ cột danh mục nhanh (Interactive Pillar Selector) */}

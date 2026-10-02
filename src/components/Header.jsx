@@ -162,9 +162,9 @@ export const Header = () => {
             Danh mục:
           </span>
           {[
-            { id: 'flowers', label: 'Hoa Tươi Buôn Ma Thuột', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
-            { id: 'weddings', label: 'Tráp Cưới Hỏi & Gia Tiên', icon: '🧧', badge: 'Tư vấn 0đ' },
-            { id: 'fruits', label: 'Giỏ Trái Cây & Quà Tặng', icon: '🍇', badge: '100% Nhập khẩu' },
+            { id: 'flowers', label: 'Hoa Tươi', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
+            { id: 'weddings', label: 'Tráp Cưới', icon: '🧧', badge: 'Tư vấn 0đ' },
+            { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇', badge: '100% Nhập khẩu' },
           ].map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
@@ -254,7 +254,7 @@ export const Header = () => {
                 activeCategory === 'weddings' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🧧 Tráp Cưới Hỏi & Gia Tiên</span>
+              <span>🧧 Tráp Cưới</span>
               <span className="text-[11px] opacity-70">Tư vấn 0đ</span>
             </a>
             <a 
@@ -267,7 +267,7 @@ export const Header = () => {
                 activeCategory === 'fruits' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🍇 Giỏ Trái Cây & Quà Tặng</span>
+              <span>🍇 Giỏ Trái Cây</span>
               <span className="text-[11px] opacity-70">100% Nhập khẩu</span>
             </a>
             <a 

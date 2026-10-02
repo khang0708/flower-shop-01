@@ -104,11 +104,11 @@ export const ProductDetailModal = () => {
         <div className="bg-[#1B3B2B] text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">
-              {isWedding ? '🎪' : isFruit ? '🍇' : '🌿'}
+              {isWedding ? '🧧' : isFruit ? '🍇' : '🌿'}
             </span>
             <span className="font-serif text-base sm:text-lg font-bold">
               {isWedding 
-                ? 'Chi Tiết Gói Dịch Vụ Cưới Hỏi & Gia Tiên' 
+                ? 'Chi Tiết Bộ Tráp Cưới Hỏi Nghệ Thuật' 
                 : isFruit 
                 ? 'Chi Tiết & Tùy Biến Giỏ Trái Cây Nghệ Thuật' 
                 : 'Tùy Biến Bó Hoa Nghệ Thuật'}
@@ -158,7 +158,7 @@ export const ProductDetailModal = () => {
                 <>
                   <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
                     <CheckCircle2 className="w-4 h-4 text-[#5C8A70]" />
-                    <span>Tư vấn mẫu tráp & gia tiên tận nơi 0đ</span>
+                    <span>Tư vấn mẫu tráp cưới tận nơi 0đ</span>
                   </div>
                   <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
                     <ShieldCheck className="w-4 h-4 text-[#C4685A]" />
@@ -194,7 +194,7 @@ export const ProductDetailModal = () => {
           {/* CỘT PHẢI: TRÌNH TÙY BIẾN HOẶC HẠNG MỤC CƯỚI HỎI (7 Cột) */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* TRƯỜNG HỢP 1: TRÁP CƯỚI HỎI & GIA TIÊN */}
+            {/* TRƯỜNG HỢP 1: TRÁP CƯỚI */}
             {isWedding ? (
               <div className="space-y-6">
                 

@@ -364,9 +364,9 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     ],
     weddings: [
       { name: 'Tráp Cưới Rồng Phụng', url: '/products/trap_cuoi_rong_phung.jpg' },
-      { name: 'Gia Tiên Song Hỷ', url: '/products/gia_tien_song_hy.jpg' },
-      { name: 'Cổng Hoa Cưới Hàn Quốc', url: '/products/cong_hoa_cuoi.jpg' },
-      { name: 'Combo Cưới Hỏi VIP', url: '/products/combo_cuoi_hoi_vip.jpg' }
+      { name: 'Tráp Cưới Sơn Mài', url: '/products/trap_cuoi_rong_phung.jpg' },
+      { name: 'Tráp Dạm Ngõ', url: '/products/trap_cuoi_rong_phung.jpg' },
+      { name: 'Cặp Rồng Phụng VIP', url: '/products/trap_cuoi_rong_phung.jpg' }
     ],
     fruits: [
       { name: 'Giỏ Phú Quý Đại Cát', url: '/products/gio_trai_cay_phu_quy.jpg' },
@@ -1478,7 +1478,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     Quản Lý Danh Mục Sản Phẩm (CMS)
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Quản lý toàn diện 3 trụ cột: Hoa tươi Buôn Ma Thuột, Tráp cưới hỏi & gia tiên và Giỏ trái cây quà tặng.
+                    Quản lý toàn diện 3 danh mục: Hoa tươi, Tráp cưới và Giỏ trái cây.
                   </p>
                 </div>
 
@@ -3214,11 +3214,11 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100 space-y-3">
                   <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs pb-1 border-b border-rose-100">
                     <span>🧧</span>
-                    <span>Thông Số Chuyên Biệt: Tráp Cưới Hỏi & Gia Tiên</span>
+                    <span>Thông Số Chuyên Biệt: Tráp Cưới</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-gray-700 mb-1">Phân loại dịch vụ cưới *</label>
+                      <label className="block font-bold text-gray-700 mb-1">Phân loại mẫu tráp cưới *</label>
                       <select
                         value={formData.weddingType}
                         onChange={(e) => setFormData({ ...formData, weddingType: e.target.value })}

@@ -136,7 +136,7 @@ export const OccasionFilter = () => {
         </div>
       )}
 
-      {/* TH2: TRÁP CƯỚI HỎI & GIA TIÊN */}
+      {/* TH2: TRÁP CƯỚI */}
       {activeCategory === 'weddings' && (
         <div className="space-y-4 animate-fade-in">
           {/* Row 1: Wedding Types Tabs */}
@@ -164,7 +164,7 @@ export const OccasionFilter = () => {
           <div className="pt-3 border-t border-[#E8EFEA] flex flex-wrap items-center justify-center sm:justify-between gap-2 text-xs text-gray-600 bg-white/60 p-3 rounded-2xl border border-gray-100">
             <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
               <ShieldCheck className="w-4 h-4 text-[#5C8A70]" />
-              <span>Tư vấn mẫu tráp & gia tiên tận nơi 0đ</span>
+              <span>Tư vấn mẫu tráp cưới tận nơi 0đ</span>
             </div>
             <div className="flex items-center gap-2 text-[#1B3B2B] font-semibold">
               <CheckCircle className="w-4 h-4 text-[#C4685A]" />
