@@ -114,10 +114,10 @@ export const FlowerGrid = () => {
   }, [activeCategory, filteredAndSortedFlowers.length]);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <section className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pb-16">
       
       {/* THANH CÔNG CỤ ĐIỀU KHIỂN & SẮP XẾP SẢN PHẨM */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8EFEA] shadow-xs mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-[#E8EFEA] shadow-xs mb-4 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         
         {/* Số lượng sản phẩm */}
         <div className="flex flex-wrap items-center gap-3">
@@ -157,9 +157,9 @@ export const FlowerGrid = () => {
 
       </div>
 
-      {/* Grid danh sách sản phẩm */}
+      {/* Grid danh sách sản phẩm: 2 cột trên mobile, 2 cột tablet, 3 cột desktop */}
       {filteredAndSortedFlowers.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 lg:gap-8 animate-fade-in">
           {filteredAndSortedFlowers.map((flower) => (
             <FlowerCard key={flower.id} flower={flower} />
           ))}

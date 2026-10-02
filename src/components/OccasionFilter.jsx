@@ -26,10 +26,10 @@ export const OccasionFilter = () => {
   const currentCategoryObj = SHOP_CATEGORIES.find(c => c.id === activeCategory) || SHOP_CATEGORIES[0];
 
   return (
-    <div id="catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+    <div id="catalog" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4">
       
       {/* 1. THANH CHUYỂN ĐỔI 3 TRỤ CỘT DANH MỤC (PILLAR SEGMENTED TABS) */}
-      <div className="bg-[#FAF8F5] p-1.5 sm:p-2 rounded-3xl border border-[#D1DFD6] shadow-xs max-w-3xl mx-auto mb-8">
+      <div className="bg-[#FAF8F5] p-1.5 sm:p-2 rounded-3xl border border-[#D1DFD6] shadow-xs max-w-3xl mx-auto mb-6 sm:mb-8">
         <div className="grid grid-cols-3 gap-1 sm:gap-2">
           {SHOP_CATEGORIES.map((cat) => {
             const isActive = activeCategory === cat.id;
@@ -60,17 +60,18 @@ export const OccasionFilter = () => {
       </div>
 
       {/* 2. TIÊU ĐỀ THEO TRỤ CỘT ĐANG CHỌN */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-1.5 bg-[#F4F7F5] px-3 py-1 rounded-full border border-[#D1DFD6] mb-2">
+      <div className="text-center mb-5 sm:mb-6">
+        <div className="inline-flex items-center gap-1.5 bg-[#F4F7F5] px-3 py-1 rounded-full border border-[#D1DFD6] mb-1.5 sm:mb-2">
           <Sparkles className="w-3.5 h-3.5 text-[#5C8A70]" />
-          <span className="text-[11px] font-bold text-[#1B3B2B] uppercase tracking-wider">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#1B3B2B] uppercase tracking-wider">
             {currentCategoryObj.badge}
           </span>
         </div>
-        <h2 className="font-serif text-2xl sm:text-4xl text-[#1B3B2B] font-bold">
-          {currentCategoryObj.name}
+        <h2 className="font-serif text-xl sm:text-4xl text-[#1B3B2B] font-bold flex items-center justify-center gap-2">
+          <span>{currentCategoryObj.name}</span>
+          <span className="text-lg sm:text-2xl">{currentCategoryObj.icon}</span>
         </h2>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1.5 max-w-xl mx-auto">
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-1.5 max-w-xl mx-auto px-2">
           {currentCategoryObj.description}
         </p>
       </div>
