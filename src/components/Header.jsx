@@ -45,36 +45,6 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#E8EFEA]">
-      {/* Top Banner Thông Báo Khách Hàng - Responsive Toàn Diện */}
-      <div className="bg-[#1B3B2B] text-[#E8EFEA] text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          
-          {/* Thông tin Giao hàng & Cam kết */}
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <span className="flex items-center gap-1 truncate font-medium">
-              <span className="flex-shrink-0">🚚</span>
-              <span className="font-semibold truncate">Giao hoa hỏa tốc nội thành BMT</span>
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-emerald-200">
-              📸 <strong>Chụp ảnh hoa thật</strong> gửi duyệt trước khi ship
-            </span>
-          </div>
-
-          {/* Hotline & Zalo Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <a 
-              href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`} 
-              className="hover:text-white font-semibold flex items-center gap-1 text-[11px] sm:text-xs whitespace-nowrap bg-white/10 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-full"
-              title={`Hotline / Zalo: ${shopZaloPhone}`}
-            >
-              <span className="hidden xs:inline">Hotline/Zalo:</span>
-              <span className="xs:hidden">📞</span>
-              <strong>{shopZaloPhone}</strong>
-            </a>
-          </div>
-
-        </div>
-      </div>
 
       {/* Main Header Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
