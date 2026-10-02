@@ -8,7 +8,8 @@ import {
   ArrowDown, 
   Star, 
   Clock, 
-  Tag
+  Tag,
+  ChevronDown
 } from 'lucide-react';
 import { openPersonalZaloChat } from '../services/zaloService';
 
@@ -117,41 +118,62 @@ export const FlowerGrid = () => {
     <section className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pb-16">
       
       {/* THANH CÔNG CỤ ĐIỀU KHIỂN & SẮP XẾP SẢN PHẨM */}
-      <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-[#E8EFEA] shadow-xs mb-4 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#E8EFEA] shadow-xs mb-3 sm:mb-6 flex flex-row items-center justify-between gap-2">
         
         {/* Số lượng sản phẩm */}
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-3.5 py-1.5 rounded-xl border border-[#D1DFD6]">
+        <div className="flex items-center">
+          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-[#D1DFD6]">
             {counterLabel}
           </span>
         </div>
 
-        {/* BỘ SẮP XẾP SẢN PHẨM (SORTING BAR) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mr-1 flex-shrink-0">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#5C8A70]" />
-            <span className="hidden sm:inline">Sắp xếp:</span>
+        {/* BỘ SẮP XẾP SẢN PHẨM (SORTING) */}
+        <div className="flex items-center gap-2">
+          {/* Mobile Sort Dropdown: Gọn gàng trên cùng 1 dòng, không đẩy sản phẩm xuống */}
+          <div className="relative md:hidden flex items-center bg-[#FAF8F5] border border-gray-200 rounded-xl px-2.5 py-1 shadow-2xs">
+            <ArrowUpDown className="w-3 h-3 text-[#5C8A70] mr-1 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sắp xếp sản phẩm"
+              className="bg-transparent text-xs font-semibold text-[#1B3B2B] focus:outline-none pr-4 appearance-none cursor-pointer py-0.5"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-gray-500 absolute right-1.5 pointer-events-none" />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-2xl border border-gray-200">
-            {SORT_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              const isActive = sortBy === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setSortBy(opt.id)}
-                  className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-                    isActive
-                      ? 'bg-[#1B3B2B] text-white shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-                  }`}
-                >
-                  <Icon className={`w-3 h-3 ${isActive ? 'text-[#F5D6CE]' : 'text-gray-400'}`} />
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
+          {/* Desktop Sort Segmented Buttons */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mr-1 flex-shrink-0">
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#5C8A70]" />
+              <span>Sắp xếp:</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-2xl border border-gray-200">
+              {SORT_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const isActive = sortBy === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setSortBy(opt.id)}
+                    className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1B3B2B] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isActive ? 'text-[#F5D6CE]' : 'text-gray-400'}`} />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
