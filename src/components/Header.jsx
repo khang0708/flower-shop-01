@@ -8,7 +8,8 @@ import {
   Phone, 
   PackageCheck,
   Menu,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
@@ -248,6 +249,20 @@ export const Header = () => {
               <span>⭐ Cảm nhận khách hàng thực tế</span>
               <span className="text-gray-400">→</span>
             </a>
+            <button 
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                window.location.hash = 'admin';
+              }} 
+              className="w-full py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between mt-1 text-gray-500 hover:text-[#1B3B2B] text-xs cursor-pointer border-t border-gray-100"
+            >
+              <span className="flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Cổng Quản Trị / Nội Bộ</span>
+              </span>
+              <span className="text-gray-400">🔒</span>
+            </button>
           </div>
         </div>
       )}
