@@ -153,7 +153,7 @@ const AdminChangePasswordForm = () => {
             type={showPass ? 'text' : 'password'}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Nhập mật khẩu đang dùng (Mặc định: Flora@2026)"
+            placeholder="Nhập mật khẩu hiện tại..."
             required
             className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
           />

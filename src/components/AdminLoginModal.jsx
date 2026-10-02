@@ -6,14 +6,13 @@ import {
   EyeOff, 
   ShieldAlert, 
   CheckCircle2, 
-  Sparkles,
   ArrowRight
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { adminLoginApi } from '../api';
 
 export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -87,7 +86,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin hoặc email quản trị"
+                  placeholder="Nhập tài khoản quản trị..."
                   required
                   autoFocus
                   className="w-full pl-10 pr-4 py-3 bg-[#FAF8F5] border border-gray-200 focus:border-[#1B3B2B] focus:bg-white rounded-xl text-xs text-gray-900 focus:outline-hidden transition-all"
@@ -143,19 +142,11 @@ export const AdminLoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             </button>
           </form>
 
-          {/* Gợi ý đăng nhập ban đầu */}
-          <div className="bg-[#FAF8F5] border border-emerald-100 rounded-2xl p-4 text-[11px] text-gray-600 space-y-1.5">
-            <div className="flex items-center gap-1.5 font-bold text-[#1B3B2B]">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Thông tin khởi tạo ban đầu:</span>
-            </div>
-            <p>
-              Tài khoản: <code className="bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold">admin</code>
-              {' • '}
-              Mật khẩu: <code className="bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold">Flora@2026</code>
-            </p>
-            <p className="text-[10px] text-gray-400 italic">
-              🔒 Bạn có thể đổi mật khẩu mới bất kỳ lúc nào trong tab <b>Cấu Hình & Vận Hành</b> của Admin.
+          {/* Lưu ý an toàn & bảo mật */}
+          <div className="bg-[#FAF8F5] border border-gray-100 rounded-2xl p-3.5 text-[11px] text-gray-500 flex items-start gap-2.5">
+            <Lock className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Khu vực dành riêng cho người điều hành cửa hàng hoa. Vui lòng sử dụng tài khoản được cấp quyền để truy cập hệ thống.
             </p>
           </div>
 
