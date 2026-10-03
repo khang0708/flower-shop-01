@@ -2,12 +2,12 @@
 export const SHOP_CATEGORIES = [
   {
     id: 'flowers',
-    name: 'Hoa Tươi',
+    name: 'Hoa Tươi Buôn Ma Thuột',
     shortName: 'Hoa Tươi',
     icon: '🌸',
     badge: 'Cắm Mới Mỗi Sáng',
     tagline: 'Gửi gắm yêu thương qua từng cánh hoa thủ công độc bản',
-    description: 'Bó hoa, lẵng hoa, hoa sinh nhật, hoa tình yêu và hoa chúc mừng giao hỏa tốc 60-90 phút.'
+    description: 'Hoa sinh nhật, hoa tình yêu, hoa khai trương, hoa cưới, hoa ngày lễ và hoa tang lễ – giao hoa tận nơi tại Buôn Ma Thuột.'
   },
   {
     id: 'weddings',

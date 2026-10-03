@@ -30,10 +30,10 @@ export const OccasionFilter = () => {
       {/* TIÊU ĐỀ THEO TRỤ CỘT ĐANG CHỌN */}
       <div className="text-center mb-2.5 sm:mb-5">
         <h2 className="font-serif text-lg sm:text-3xl text-[#1B3B2B] font-bold flex items-center justify-center gap-1.5 sm:gap-2">
-          <span>{currentCategoryObj.name}</span>
           <span className="text-base sm:text-2xl">{currentCategoryObj.icon}</span>
+          <span>{currentCategoryObj.name}</span>
         </h2>
-        <p className="hidden sm:block text-xs sm:text-sm text-gray-500 mt-1 max-w-xl mx-auto px-2">
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-xl mx-auto px-2 leading-relaxed">
           {currentCategoryObj.description}
         </p>
       </div>
