@@ -10,6 +10,41 @@ if (fs.existsSync('.env.local')) {
   dotenv.config({ path: '.env.local', override: true });
 }
 import { neon } from '@neondatabase/serverless';
+import { 
+  verifyPassword, 
+  hashPassword, 
+  createJwtToken, 
+  checkLoginRateLimit, 
+  recordFailedLogin, 
+  clearFailedLogin,
+  requireAdminMiddleware,
+  getInitialAdminCredentials 
+} from './auth.js';
+import {
+  notifyServerError,
+  notifyServerWarning,
+  notifyServerStartup,
+  testDeveloperServerAlert,
+  escapeTelegramHtml
+} from './monitoringBot.js';
+
+// ----------------------------------------------------
+// GLOBAL PROCESS EXCEPTION MONITORING (TELEGRAM BOT ALERT)
+// ----------------------------------------------------
+process.on('uncaughtException', async (error) => {
+  console.error('💥 [Server Process] Uncaught Exception:', error);
+  try {
+    await notifyServerError(error, { location: 'process.uncaughtException', critical: true });
+  } catch (e) {}
+});
+
+process.on('unhandledRejection', async (reason) => {
+  console.error('💥 [Server Process] Unhandled Rejection:', reason);
+  try {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    await notifyServerError(err, { location: 'process.unhandledRejection' });
+  } catch (e) {}
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +66,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 // ----------------------------------------------------
 // SHARED PERSISTENT STORAGE (Neon Database & In-Memory Fallback)
-// Giải quyết dứt điểm vấn đề mất dữ liệu giữa các Vercel container
+// Lưu trữ dữ liệu bền vững qua Neon PostgreSQL & Local fallback
 // ----------------------------------------------------
 let sql = null;
 if (process.env.DATABASE_URL) {
@@ -42,17 +77,41 @@ if (process.env.DATABASE_URL) {
   }
 }
 
+// Bọc mọi promise (DB query, fetch bên thứ 3, ...) bằng timeout để tránh
+// request treo khi bên ngoài không phản hồi (kết nối mạng treo, DB không reachable, API bên thứ 3 hang).
+const withTimeout = (promise, ms, label = 'operation') => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
+const DB_TIMEOUT_MS = 10000;
+
+// fetch() ra API bên thứ 3 kèm timeout (mặc định 15s) qua AbortController,
+// để không bao giờ treo tới giới hạn tối đa của function.
+const fetchWithTimeout = async (url, options = {}, ms = 15000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 let isTableInitialized = false;
 const ensureTable = async () => {
   if (!sql || isTableInitialized) return;
   try {
-    await sql`
+    await withTimeout(sql`
       CREATE TABLE IF NOT EXISTS flora_store (
         key VARCHAR(50) PRIMARY KEY,
         data JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
-    `;
+    `, DB_TIMEOUT_MS, 'ensureTable');
     isTableInitialized = true;
   } catch (err) {
     console.warn('ensureTable note:', err.message);
@@ -66,11 +125,15 @@ const memoryDb = new Map();
 const readJson = async (fileName) => {
   const key = fileName.replace('.json', '');
 
-  // 1. Neon Database (Lưu trữ dùng chung giữa tất cả container Vercel & mọi thiết bị)
+  // 1. Neon Database (Lưu trữ dùng chung giữa backend & mọi thiết bị)
   if (sql) {
     try {
       await ensureTable();
-      const rows = await sql`SELECT data FROM flora_store WHERE key = ${key}`;
+      const rows = await withTimeout(
+        sql`SELECT data FROM flora_store WHERE key = ${key}`,
+        DB_TIMEOUT_MS,
+        `readJson(${key})`
+      );
       if (rows && rows.length > 0 && rows[0].data !== undefined) {
         const data = rows[0].data;
         memoryDb.set(fileName, data);
@@ -121,11 +184,11 @@ const writeJson = async (fileName, data) => {
     try {
       await ensureTable();
       const jsonStr = JSON.stringify(data);
-      await sql`
+      await withTimeout(sql`
         INSERT INTO flora_store (key, data, updated_at)
         VALUES (${key}, ${jsonStr}, NOW())
         ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
-      `;
+      `, DB_TIMEOUT_MS, `writeJson(${key})`);
     } catch (dbErr) {
       console.error(`[Neon DB] Lỗi ghi ${key}:`, dbErr.message);
     }
@@ -161,7 +224,7 @@ export const broadcastAdminEvent = (eventPayload) => {
   });
 };
 
-// GET /api/admin/events (SSE Stream)
+// GET /api/admin/events (SSE Stream - Real-time push cho Admin Dashboard)
 app.get('/api/admin/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -174,6 +237,98 @@ app.get('/api/admin/events', (req, res) => {
   req.on('close', () => {
     sseClients.delete(res);
   });
+});
+
+// ----------------------------------------------------
+// 0. ADMIN AUTHENTICATION API (Xác thực đăng nhập & Đổi mật khẩu)
+// ----------------------------------------------------
+
+// POST /api/admin/login
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown';
+    const rateLimit = checkLoginRateLimit(ip);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ success: false, message: rateLimit.message });
+    }
+
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tài khoản và mật khẩu.' });
+    }
+
+    let adminData = await readJson('admin.json');
+    if (!adminData || !adminData.hash || !adminData.salt) {
+      adminData = getInitialAdminCredentials();
+      await writeJson('admin.json', adminData);
+    }
+
+    const isMatchUser = (adminData.username || 'admin').toLowerCase() === String(username).trim().toLowerCase();
+    const isMatchPass = verifyPassword(password, adminData.hash, adminData.salt);
+
+    if (!isMatchUser || !isMatchPass) {
+      recordFailedLogin(ip);
+      return res.status(401).json({ success: false, message: 'Tài khoản hoặc mật khẩu không chính xác.' });
+    }
+
+    clearFailedLogin(ip);
+    const userPayload = {
+      username: adminData.username,
+      name: adminData.name || 'Quản Trị Viên',
+      role: adminData.role || 'SUPER_ADMIN'
+    };
+
+    const token = createJwtToken(userPayload);
+    res.json({
+      success: true,
+      token,
+      user: userPayload,
+      message: 'Đăng nhập quản trị viên thành công.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/admin/me
+app.get('/api/admin/me', requireAdminMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    user: req.adminUser
+  });
+});
+
+// POST /api/admin/change-password
+app.post('/api/admin/change-password', requireAdminMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới.' });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có tối thiểu 6 ký tự.' });
+    }
+
+    let adminData = await readJson('admin.json');
+    if (!adminData || !adminData.hash || !adminData.salt) {
+      adminData = getInitialAdminCredentials();
+    }
+
+    if (!verifyPassword(currentPassword, adminData.hash, adminData.salt)) {
+      return res.status(401).json({ success: false, message: 'Mật khẩu hiện tại không chính xác.' });
+    }
+
+    const { hash, salt } = hashPassword(newPassword);
+    adminData.hash = hash;
+    adminData.salt = salt;
+    adminData.updatedAt = new Date().toISOString();
+
+    await writeJson('admin.json', adminData);
+    res.json({ success: true, message: 'Đổi mật khẩu quản trị thành công!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // ----------------------------------------------------
@@ -192,7 +347,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 // POST /api/products (Thêm mẫu hoa mới)
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAdminMiddleware, async (req, res) => {
   try {
     const products = (await readJson('products.json')) || [];
     const newProduct = {
@@ -227,7 +382,7 @@ app.post('/api/products', async (req, res) => {
 });
 
 // PUT /api/products/:id (Cập nhật mẫu hoa)
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -276,7 +431,7 @@ app.put('/api/products/:id', async (req, res) => {
 });
 
 // PATCH /api/products/:id/toggle (Bật/Tắt hiển thị)
-app.patch('/api/products/:id/toggle', async (req, res) => {
+app.patch('/api/products/:id/toggle', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -298,7 +453,7 @@ app.patch('/api/products/:id/toggle', async (req, res) => {
 });
 
 // DELETE /api/products/:id (Xóa mẫu hoa)
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAdminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
@@ -325,6 +480,18 @@ app.delete('/api/products/:id', async (req, res) => {
 app.get('/api/orders', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    let isAdmin = false;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = (await import('./auth.js')).verifyJwtToken(authHeader.slice(7).trim());
+      if (decoded) isAdmin = true;
+    }
+
+    if (!isAdmin) {
+      // Khách vãng lai không được phép xem toàn bộ danh sách đơn hàng chứa thông tin riêng tư
+      return res.json({ success: true, data: [], total: 0, isGuest: true });
+    }
+
     const orders = await readJson('orders.json');
     res.json({ success: true, data: orders, total: orders.length });
   } catch (error) {
@@ -373,6 +540,37 @@ app.post('/api/orders', async (req, res) => {
       order: newOrder,
       timestamp: new Date().toISOString()
     });
+
+    // Tự động thông báo đơn hàng mới qua Telegram Bot tới chủ tiệm (từ cấu hình Admin)
+    (async () => {
+      try {
+        const settings = (await readJson('settings.json')) || {};
+        const token = cleanTelegramToken(settings.telegramBotToken);
+        const chatId = cleanTelegramChatId(settings.telegramChatId);
+        if (!token || !chatId) return;
+
+        const orderHtml = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(newOrder.orderCode)})\n\n` +
+          `👤 <b>Khách đặt:</b> ${escapeTelegramHtml(newOrder.customerName)} (${escapeTelegramHtml(newOrder.customerPhone)})\n` +
+          `💐 <b>Mẫu hoa:</b> ${escapeTelegramHtml(newOrder.productName)}\n` +
+          `💰 <b>Tổng tiền:</b> ${Number(newOrder.totalAmount).toLocaleString('vi-VN')}đ\n` +
+          `⏱️ <b>Khung giờ:</b> ${escapeTelegramHtml(newOrder.deliverySlot)}\n` +
+          `📍 <b>Giao tới:</b> ${escapeTelegramHtml(newOrder.receiverAddress)}\n\n` +
+          `👉 <i>Mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
+
+        const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+        await fetchWithTimeout(telegramUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: orderHtml,
+            parse_mode: 'HTML'
+          })
+        }, 10000);
+      } catch (tgErr) {
+        console.warn('Lỗi gửi Telegram đơn hàng tới tiệm:', tgErr.message);
+      }
+    })().catch(() => {});
 
     res.status(201).json({ success: true, data: newOrder });
   } catch (error) {
@@ -435,7 +633,7 @@ app.post('/api/notifications/telegram-get-chat-id', async (req, res) => {
 
     const token = cleanTelegramToken(rawToken);
     const updatesUrl = `https://api.telegram.org/bot${token}/getUpdates`;
-    const tgRes = await fetch(updatesUrl);
+    const tgRes = await fetchWithTimeout(updatesUrl, {}, 10000);
     const tgData = await tgRes.json();
 
     if (!tgData.ok) {
@@ -512,7 +710,7 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
       `👉 <i>Hãy mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
 
     const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
-    const tgRes = await fetch(telegramUrl, {
+    const tgRes = await fetchWithTimeout(telegramUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -539,6 +737,24 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
   }
 });
 
+// Endpoint test gửi cảnh báo sự cố máy chủ cho Developer
+app.post('/api/notifications/telegram-server-alert-test', async (req, res) => {
+  try {
+    const { botToken, chatId } = req.body;
+    const result = await testDeveloperServerAlert(botToken, chatId);
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: `Lỗi từ Telegram: ${result.message}` });
+    }
+    res.json({ 
+      success: true, 
+      message: '🚨 Đã gửi thành công tin nhắn cảnh báo sự cố máy chủ mẫu tới Telegram Developer!', 
+      data: result.data 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ----------------------------------------------------
 // 4. INVENTORY API
 // ----------------------------------------------------
@@ -552,7 +768,7 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-app.put('/api/inventory', async (req, res) => {
+app.put('/api/inventory', requireAdminMiddleware, async (req, res) => {
   try {
     const newInventory = req.body;
     await writeJson('inventory.json', newInventory);
@@ -657,14 +873,14 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 
     if (accessToken) {
       try {
-        const response = await fetch('https://business.openapi.zalo.me/message/template', {
+        const response = await fetchWithTimeout('https://business.openapi.zalo.me/message/template', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'access_token': accessToken
           },
           body: JSON.stringify(payload)
-        });
+        }, 10000);
         const liveData = await response.json();
         return res.json({ success: true, isLiveApi: true, data: liveData });
       } catch (err) {
@@ -689,14 +905,35 @@ app.post('/api/zalo/send-zns', async (req, res) => {
 app.get('/api/settings', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    const settings = await readJson('settings.json');
+    const settings = (await readJson('settings.json')) || {};
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    let isAdmin = false;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = (await import('./auth.js')).verifyJwtToken(authHeader.slice(7).trim());
+      if (decoded) isAdmin = true;
+    }
+
+    if (!isAdmin) {
+      // Giấu các token nhạy cảm đối với người dùng thông thường
+      const safeSettings = {
+        ...settings,
+        telegramBotToken: settings.telegramBotToken ? '••••••••' : '',
+        facebookSettings: {
+          ...(settings.facebookSettings || {}),
+          pageAccessToken: settings.facebookSettings?.pageAccessToken ? '••••••••' : '',
+          verifyToken: settings.facebookSettings?.verifyToken ? '••••••••' : ''
+        }
+      };
+      return res.json({ success: true, data: safeSettings });
+    }
+
     res.json({ success: true, data: settings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdminMiddleware, async (req, res) => {
   try {
     const current = (await readJson('settings.json')) || {};
     const updated = {
@@ -737,14 +974,14 @@ const callFacebookSendApi = async (pageAccessToken, recipientId, messageText, qu
   }
 
   const graphUrl = `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageAccessToken)}`;
-  const response = await fetch(graphUrl, {
+  const response = await fetchWithTimeout(graphUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       recipient: { id: recipientId },
       message: messagePayload
     })
-  });
+  }, 10000);
 
   const resData = await response.json();
   if (resData.error) {
@@ -953,17 +1190,44 @@ app.get('/api/health', (req, res) => {
     status: 'ONLINE',
     service: 'Ngọc Flower Atelier Backend API',
     time: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.1.0-auth'
   });
 });
 
-if (!process.env.VERCEL) {
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
-  });
+// ----------------------------------------------------
+// 8. GLOBAL EXPRESS ERROR HANDLER & TELEGRAM BOT ALERT
+// ----------------------------------------------------
+app.use(async (err, req, res, next) => {
+  console.error('💥 [Express Error Handler]:', err);
+  try {
+    await notifyServerError(err, {
+      location: 'Express Error Middleware',
+      method: req.method,
+      url: req.originalUrl || req.url,
+      ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress
+    });
+  } catch (alertErr) {
+    console.warn('Lỗi gửi cảnh báo Telegram:', alertErr.message);
+  }
 
-  process.on('SIGTERM', () => server.close());
-  process.on('SIGINT', () => server.close());
-}
+  if (!res.headersSent) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Đã xảy ra sự cố máy chủ nội bộ. Quản trị viên và Bot giám sát đã được thông báo tự động.' 
+    });
+  }
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
+  // Tự động gửi thông báo Telegram khi server khởi động / reboot thành công
+  notifyServerStartup({
+    database: sql ? 'Neon PostgreSQL' : 'Local Storage Fallback',
+    port: PORT
+  }).catch((e) => console.warn('Note startup notify:', e.message));
+});
+
+process.on('SIGTERM', () => server.close());
+process.on('SIGINT', () => server.close());
 
 export default app;

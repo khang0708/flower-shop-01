@@ -8,7 +8,8 @@ import {
   ArrowDown, 
   Star, 
   Clock, 
-  Tag
+  Tag,
+  ChevronDown
 } from 'lucide-react';
 import { openPersonalZaloChat } from '../services/zaloService';
 
@@ -104,7 +105,7 @@ export const FlowerGrid = () => {
   const counterLabel = useMemo(() => {
     switch (activeCategory) {
       case 'weddings':
-        return `🎪 ${filteredAndSortedFlowers.length} gói rạp cưới & gia tiên trọn gói`;
+        return `🧧 ${filteredAndSortedFlowers.length} bộ tráp cưới hỏi thủ công`;
       case 'fruits':
         return `🍇 ${filteredAndSortedFlowers.length} mẫu giỏ trái cây cao cấp`;
       case 'flowers':
@@ -114,52 +115,73 @@ export const FlowerGrid = () => {
   }, [activeCategory, filteredAndSortedFlowers.length]);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <section className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 pb-16">
       
       {/* THANH CÔNG CỤ ĐIỀU KHIỂN & SẮP XẾP SẢN PHẨM */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8EFEA] shadow-xs mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#E8EFEA] shadow-xs mb-3 sm:mb-6 flex flex-row items-center justify-between gap-2">
         
         {/* Số lượng sản phẩm */}
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-3.5 py-1.5 rounded-xl border border-[#D1DFD6]">
+        <div className="flex items-center">
+          <span className="text-xs font-bold text-[#1B3B2B] bg-[#F4F7F5] px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-[#D1DFD6]">
             {counterLabel}
           </span>
         </div>
 
-        {/* BỘ SẮP XẾP SẢN PHẨM (SORTING BAR) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mr-1 flex-shrink-0">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#5C8A70]" />
-            <span className="hidden sm:inline">Sắp xếp:</span>
+        {/* BỘ SẮP XẾP SẢN PHẨM (SORTING) */}
+        <div className="flex items-center gap-2">
+          {/* Mobile Sort Dropdown: Gọn gàng trên cùng 1 dòng, không đẩy sản phẩm xuống */}
+          <div className="relative md:hidden flex items-center bg-[#FAF8F5] border border-gray-200 rounded-xl px-2.5 py-1 shadow-2xs">
+            <ArrowUpDown className="w-3 h-3 text-[#5C8A70] mr-1 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sắp xếp sản phẩm"
+              className="bg-transparent text-xs font-semibold text-[#1B3B2B] focus:outline-none pr-4 appearance-none cursor-pointer py-0.5"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-gray-500 absolute right-1.5 pointer-events-none" />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-2xl border border-gray-200">
-            {SORT_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              const isActive = sortBy === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setSortBy(opt.id)}
-                  className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-                    isActive
-                      ? 'bg-[#1B3B2B] text-white shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-                  }`}
-                >
-                  <Icon className={`w-3 h-3 ${isActive ? 'text-[#F5D6CE]' : 'text-gray-400'}`} />
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
+          {/* Desktop Sort Segmented Buttons */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mr-1 flex-shrink-0">
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#5C8A70]" />
+              <span>Sắp xếp:</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-2xl border border-gray-200">
+              {SORT_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const isActive = sortBy === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setSortBy(opt.id)}
+                    className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1B3B2B] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isActive ? 'text-[#F5D6CE]' : 'text-gray-400'}`} />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* Grid danh sách sản phẩm */}
+      {/* Grid danh sách sản phẩm: 2 cột trên mobile, 2 cột tablet, 3 cột desktop */}
       {filteredAndSortedFlowers.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 lg:gap-8 animate-fade-in">
           {filteredAndSortedFlowers.map((flower) => (
             <FlowerCard key={flower.id} flower={flower} />
           ))}
@@ -178,7 +200,7 @@ export const FlowerGrid = () => {
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
             {activeCategory === 'weddings'
-              ? 'Ngọc Flower nhận thiết kế và thi công rạp cưới theo kích thước sân nhà riêng. Nhắn Zalo để được đội ngũ kỹ thuật khảo sát miễn phí!'
+              ? 'Ngọc Flower nhận kết tráp cưới hỏi rồng phụng theo yêu cầu riêng. Nhắn Zalo để được nghệ nhân tư vấn miễn phí!'
               : activeCategory === 'fruits'
               ? 'Bạn có thể yêu cầu mix trái cây theo sở thích và ngân sách riêng từ 500k. Đội ngũ nghệ nhân sẽ chụp ảnh duyệt trước khi giao!'
               : 'Bạn có thể thử chọn lại dịp tặng khác hoặc nhắn tin Zalo để nghệ nhân cắm hoa thiết kế riêng theo ngân sách của bạn.'}
@@ -188,7 +210,7 @@ export const FlowerGrid = () => {
             onClick={() => openPersonalZaloChat(
               shopZaloPhone, 
               activeCategory === 'weddings'
-                ? 'Chào shop Ngọc Flower, tôi muốn được khảo sát và báo giá gói rạp cưới hỏi theo kích thước sân nhà!'
+                ? 'Chào shop Ngọc Flower, tôi muốn được tư vấn và báo giá gói tráp cưới hỏi!'
                 : activeCategory === 'fruits'
                 ? 'Chào shop Ngọc Flower, tôi muốn đặt mix giỏ trái cây theo ngân sách và hoa tươi riêng!'
                 : 'Chào shop Ngọc Flower, tôi muốn được tư vấn cắm hoa theo yêu cầu riêng!'
@@ -204,18 +226,18 @@ export const FlowerGrid = () => {
       <div className="mt-16 bg-[#F4F7F5] rounded-3xl p-8 border border-[#D1DFD6] flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center md:text-left">
           <span className="text-xs font-bold text-[#5C8A70] uppercase tracking-wider">
-            {activeCategory === 'weddings' ? 'Dịch Vụ Cưới Hỏi Trọn Gói' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Nghệ Thuật' : 'Ngọc Flower Quality'}
+            {activeCategory === 'weddings' ? 'Tráp Cưới Nghệ Thuật' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Nghệ Thuật' : 'Ngọc Flower Quality'}
           </span>
           <h3 className="font-serif text-2xl text-[#1B3B2B] font-bold">
             {activeCategory === 'weddings'
-              ? 'Bạn cần khảo sát mặt bằng rạp cưới tại nhà?'
+              ? 'Bạn cần tư vấn đặt bộ tráp cưới hỏi?'
               : activeCategory === 'fruits'
               ? 'Bạn cần thiết kế giỏ trái cây quà biếu theo yêu cầu?'
               : 'Bạn cần cắm hoa theo ngân sách riêng?'}
           </h3>
           <p className="text-xs text-gray-600 max-w-lg">
             {activeCategory === 'weddings'
-              ? 'Đội ngũ kỹ thuật viên của Ngọc Flower đến tận nơi đo đạc diện tích sân nhà, tư vấn dựng rạp chống mưa nắng và lên phối cảnh 3D hoàn toàn miễn phí.'
+              ? 'Đội ngũ nghệ nhân của Ngọc Flower tư vấn mẫu tráp rồng phụng, tráp sơn mài, cau bắp, quả nhập khẩu kết hoa tươi và sính lễ chu đáo hoàn toàn miễn phí.'
               : activeCategory === 'fruits'
               ? 'Lựa chọn từng loại quả nhập khẩu cao cấp (Nho Mẫu Đơn, Táo Envy, Cherry đỏ, Kiwi vàng...) phối cùng hoa tươi nghệ thuật, in thiệp và ruy băng miễn phí.'
               : 'Đội ngũ nghệ nhân của chúng tôi nhận thiết kế hoa tiệc cưới, hoa sự kiện doanh nghiệp và cắm hoa theo yêu cầu tone màu riêng từ 500.000đ.'}
@@ -228,7 +250,7 @@ export const FlowerGrid = () => {
             onClick={() => openPersonalZaloChat(
               shopZaloPhone, 
               activeCategory === 'weddings'
-                ? 'Chào shop Ngọc Flower, tôi cần khảo sát mặt bằng dựng rạp cưới tại nhà và nhận báo giá chi tiết!'
+                ? 'Chào shop Ngọc Flower, tôi cần tư vấn bộ tráp cưới hỏi và nhận báo giá chi tiết!'
                 : activeCategory === 'fruits'
                 ? 'Chào shop Ngọc Flower, tôi muốn nhận báo giá giỏ trái cây quà tặng theo ngân sách!'
                 : 'Chào nghệ nhân Ngọc Flower, tôi muốn tư vấn thiết kế mẫu hoa theo ngân sách riêng!'

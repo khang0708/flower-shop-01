@@ -144,9 +144,34 @@ assert(cleanedReview.comment.length <= 500, 'Comment bị giới hạn độ dà
 assert(cleanedReview.proofImage === null, 'Chặn link ảnh chứa scheme nguy hiểm (javascript:)');
 
 // ----------------------------------------------------
-// 5. KIỂM TRA KIỂM SOÁT PHÂN QUYỀN ADMIN (ACCESS CONTROL)
+// 5. KIỂM TRA KIỂM SOÁT PHÂN QUYỀN ADMIN (ACCESS CONTROL & JWT AUTH)
 // ----------------------------------------------------
-console.log('\n5️⃣ KIỂM TRA KIỂM SOÁT PHÂN QUYỀN ADMIN (ACCESS CONTROL):');
+console.log('\n5️⃣ KIỂM TRA KIỂM SOÁT PHÂN QUYỀN ADMIN & MẬT KHẨU MÃ HÓA (PBKDF2 & JWT):');
+
+import { hashPassword, verifyPassword, createJwtToken, verifyJwtToken } from '../server/auth.js';
+
+// Kiểm thử mã hóa PBKDF2
+const testPass = 'Flora@2026';
+const { hash, salt } = hashPassword(testPass);
+assert(verifyPassword(testPass, hash, salt), 'PBKDF2: Mật khẩu đúng được xác thực thành công');
+assert(!verifyPassword('WrongPass123', hash, salt), 'PBKDF2: Mật khẩu sai bị từ chối');
+assert(!verifyPassword('', hash, salt), 'PBKDF2: Mật khẩu rỗng bị từ chối');
+
+// Kiểm thử tạo và xác thực JWT
+const adminPayload = { username: 'admin', role: 'SUPER_ADMIN' };
+const validToken = createJwtToken(adminPayload);
+const decoded = verifyJwtToken(validToken);
+assert(decoded && decoded.username === 'admin' && decoded.role === 'SUPER_ADMIN', 'JWT Token: Token hợp lệ được giải mã chuẩn xác');
+
+// Kiểm thử chữ ký giả mạo
+const tamperedToken = validToken.slice(0, -5) + 'abcde';
+assert(verifyJwtToken(tamperedToken) === null, 'JWT Token: Chữ ký giả mạo bị từ chối an toàn');
+assert(verifyJwtToken('invalid.token.format') === null, 'JWT Token: Token sai định dạng bị từ chối');
+assert(verifyJwtToken(null) === null, 'JWT Token: Token rỗng bị từ chối');
+
+// Kiểm thử token hết hạn
+const expiredToken = createJwtToken(adminPayload, undefined, -1000);
+assert(verifyJwtToken(expiredToken) === null, 'JWT Token: Token hết hạn bị từ chối');
 
 function verifyAdminSession(session) {
   if (!session) return false;

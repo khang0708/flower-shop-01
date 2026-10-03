@@ -22,8 +22,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.vercel
 .env*
+!.env.example
+
+server/data/dev-alerts.json
+server/data/.watchdog_state.json
 
 guide_assets/
 capture_guide_screens.js
+
+# Lưu ý: server/data/settings.json được commit dưới dạng bản mặc định (không có token).
+# Token thật được quản lý qua admin UI và lưu trong Neon DB.
+# Để tránh git track thay đổi local, chạy:
+#   git update-index --skip-worktree server/data/settings.json

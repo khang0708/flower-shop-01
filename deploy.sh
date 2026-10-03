@@ -5,6 +5,7 @@
 # ==============================================================================
 
 set -e # Dừng script ngay khi có lỗi
+export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
 
 # Màu sắc thông báo
 GREEN='\033[0;32m'
@@ -14,7 +15,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 APP_DIR="/var/www/flower-shop"
-BRANCH="development"
+BRANCH="main"
 APP_NAME="flower-shop-api"
 
 echo -e "${BLUE}======================================================${NC}"
@@ -47,10 +48,10 @@ echo -e "${GREEN}🔨 Đang build Frontend React (Vite)...${NC}"
 npm run build
 
 # 4. Quản lý tiến trình Backend với PM2
-echo -e "${GREEN}⚙️  Đang khởi động / reload Backend API qua PM2...${NC}"
+echo -e "${GREEN}⚙️  Đang khởi động / restart Backend API qua PM2...${NC}"
 if pm2 list | grep -q "$APP_NAME"; then
-    echo -e "   -> Tiến trình $APP_NAME đã tồn tại, tiến hành reload..."
-    pm2 reload "$APP_NAME"
+    echo -e "   -> Tiến trình $APP_NAME đã tồn tại, tiến hành restart..."
+    pm2 restart "$APP_NAME" --update-env
 else
     echo -e "   -> Khởi động mới tiến trình $APP_NAME trên port 3001..."
     pm2 start server/server.js --name "$APP_NAME"

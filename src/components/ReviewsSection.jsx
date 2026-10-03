@@ -163,7 +163,8 @@ export const ReviewsSection = () => {
   };
 
   return (
-    <section id="reviews-section" className="py-16 bg-[#FAF8F5] border-t border-[#E8EFEA]">
+    <section id="reviews" className="py-16 bg-[#FAF8F5] border-t border-[#E8EFEA] scroll-mt-12">
+      <div id="reviews-section" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         {/* Header Section */}
