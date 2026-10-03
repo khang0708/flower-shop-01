@@ -143,12 +143,12 @@ const updatedSample = {
 };
 assert(updatedSample.price === 990000 && updatedSample.id === sampleProduct.id, 'Merge cập nhật giá mẫu hoa chính xác mà không mất id');
 
-// 9. Telegram Server Monitoring Bot Tests
+// 9. Telegram Server Monitoring Bot Tests (Dành riêng cho Developer)
 import {
   escapeTelegramHtml,
   cleanTelegramToken as cleanTgBotToken,
   cleanTelegramChatId as cleanTgChatId,
-  getTelegramConfig,
+  getDeveloperTelegramConfig,
   notifyServerError
 } from '../server/monitoringBot.js';
 
@@ -157,10 +157,10 @@ assert(cleanTgBotToken('  bot998877  ') === '998877', 'cleanTgBotToken loại b�
 assert(cleanTgChatId('  -100123456789  ') === '-100123456789', 'cleanTgChatId chuẩn hóa chuỗi Chat ID');
 assert(escapeTelegramHtml('<div>Test & "Quote" <script></div>') === '&lt;div&gt;Test &amp; "Quote" &lt;script&gt;&lt;/div&gt;', 'escapeTelegramHtml mã hóa an toàn các ký tự HTML nguy hiểm');
 
-const tgConfig = getTelegramConfig();
-assert(typeof tgConfig === 'object' && 'botToken' in tgConfig && 'chatId' in tgConfig && 'isEnabled' in tgConfig, 'getTelegramConfig trả về cấu hình chuẩn');
+const tgConfig = getDeveloperTelegramConfig();
+assert(typeof tgConfig === 'object' && 'botToken' in tgConfig && 'chatId' in tgConfig && 'isConfigured' in tgConfig, 'getDeveloperTelegramConfig trả về cấu hình chuẩn');
 
-// Test notifyServerError an toàn không văng lỗi khi chưa có token
+// Test notifyServerError an toàn không văng lỗi khi chưa có token Developer
 const errorRes = await notifyServerError(new Error('Test mock error'), { location: 'unit-test' });
 assert(typeof errorRes === 'object', 'notifyServerError xử lý an toàn không gây crash');
 

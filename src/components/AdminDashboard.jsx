@@ -21,13 +21,7 @@ import {
   requestBrowserNotificationPermission, 
   getBrowserNotificationPermission 
 } from '../services/notificationService';
-import { 
-  sendTelegramTestApi, 
-  sendTelegramServerAlertTestApi, 
-  getTelegramChatIdAutoApi, 
-  sendFacebookTestApi, 
-  adminChangePasswordApi 
-} from '../api';
+import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
@@ -77,9 +71,7 @@ import {
   Menu,
   RefreshCw,
   Lock,
-  KeyRound,
-  AlertCircle,
-  AlertTriangle
+  KeyRound
 } from 'lucide-react';
 
 const AdminChangePasswordForm = () => {
@@ -447,7 +439,6 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [inputChatId, setInputChatId] = useState(telegramChatId);
   const [saveZaloSuccess, setSaveZaloSuccess] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState(null);
-  const [serverAlertStatus, setServerAlertStatus] = useState(null);
   const [isDetectingChatId, setIsDetectingChatId] = useState(false);
   const [autoDetectMsg, setAutoDetectMsg] = useState(null);
   const [copyToast, setCopyToast] = useState('');
@@ -666,16 +657,6 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       setTelegramStatus({ success: true, message: res.message });
     } catch (err) {
       setTelegramStatus({ success: false, message: err.message });
-    }
-  };
-
-  const handleTestServerAlert = async () => {
-    setServerAlertStatus({ loading: true, message: 'Đang gửi cảnh báo lỗi sự cố máy chủ mẫu tới Telegram...' });
-    try {
-      const res = await sendTelegramServerAlertTestApi(inputBotToken, inputChatId);
-      setServerAlertStatus({ success: true, message: res.message });
-    } catch (err) {
-      setServerAlertStatus({ success: false, message: err.message });
     }
   };
 
@@ -2474,33 +2455,14 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       </div>
                     )}
 
-                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-[11px] text-amber-900 space-y-1">
-                      <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                        <span>Giám Sát Sự Cố Máy Chủ & Lỗi Tự Động 24/7:</span>
-                      </div>
-                      <p className="text-gray-600 text-[10.5px]">
-                        Khi cấu hình Bot Token & Chat ID, bot sẽ tự động gửi cảnh báo khẩn cấp tới Telegram của bạn nếu: máy chủ bị lỗi crash, kết nối cơ sở dữ liệu gián đoạn, hoặc máy chủ vừa khởi động lại.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 pt-1">
+                    <div className="flex gap-2 pt-1">
                       <button
                         type="button"
                         onClick={handleTestTelegram}
-                        className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                        className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
                       >
                         <MessageSquareShare className="w-3.5 h-3.5" />
-                        <span>Thử Tin Đơn Hàng</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleTestServerAlert}
-                        className="bg-rose-500 hover:bg-rose-600 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
-                      >
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        <span>🚨 Thử Cảnh Báo Lỗi Server</span>
+                        <span>Gửi Thử Tin Nhắn Đơn Hàng Tới Telegram Của Tiệm</span>
                       </button>
                     </div>
 
@@ -2508,13 +2470,6 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${telegramStatus.success ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
                         {telegramStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
                         <span>{telegramStatus.message}</span>
-                      </div>
-                    )}
-
-                    {serverAlertStatus && (
-                      <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${serverAlertStatus.success ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-                        {serverAlertStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
-                        <span>{serverAlertStatus.message}</span>
                       </div>
                     )}
                   </div>

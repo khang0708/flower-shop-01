@@ -24,10 +24,8 @@ import {
   notifyServerError,
   notifyServerWarning,
   notifyServerStartup,
-  testServerAlert,
-  sendTelegramMessage,
-  escapeTelegramHtml,
-  getTelegramConfig
+  testDeveloperServerAlert,
+  escapeTelegramHtml
 } from './monitoringBot.js';
 
 // ----------------------------------------------------
@@ -543,10 +541,14 @@ app.post('/api/orders', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Tự động thông báo đơn hàng mới qua Telegram Bot tới chủ tiệm
-    try {
-      const tgConfig = getTelegramConfig();
-      if (tgConfig.isEnabled) {
+    // Tự động thông báo đơn hàng mới qua Telegram Bot tới chủ tiệm (từ cấu hình Admin)
+    (async () => {
+      try {
+        const settings = (await readJson('settings.json')) || {};
+        const token = cleanTelegramToken(settings.telegramBotToken);
+        const chatId = cleanTelegramChatId(settings.telegramChatId);
+        if (!token || !chatId) return;
+
         const orderHtml = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(newOrder.orderCode)})\n\n` +
           `👤 <b>Khách đặt:</b> ${escapeTelegramHtml(newOrder.customerName)} (${escapeTelegramHtml(newOrder.customerPhone)})\n` +
           `💐 <b>Mẫu hoa:</b> ${escapeTelegramHtml(newOrder.productName)}\n` +
@@ -554,11 +556,21 @@ app.post('/api/orders', async (req, res) => {
           `⏱️ <b>Khung giờ:</b> ${escapeTelegramHtml(newOrder.deliverySlot)}\n` +
           `📍 <b>Giao tới:</b> ${escapeTelegramHtml(newOrder.receiverAddress)}\n\n` +
           `👉 <i>Mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
-        sendTelegramMessage(orderHtml).catch(() => {});
+
+        const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+        await fetchWithTimeout(telegramUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: orderHtml,
+            parse_mode: 'HTML'
+          })
+        }, 10000);
+      } catch (tgErr) {
+        console.warn('Lỗi gửi Telegram đơn hàng tới tiệm:', tgErr.message);
       }
-    } catch (tgErr) {
-      console.warn('Lỗi gửi Telegram đơn hàng:', tgErr.message);
-    }
+    })().catch(() => {});
 
     res.status(201).json({ success: true, data: newOrder });
   } catch (error) {
@@ -725,17 +737,17 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
   }
 });
 
-// Endpoint test gửi cảnh báo sự cố máy chủ qua Telegram
+// Endpoint test gửi cảnh báo sự cố máy chủ cho Developer
 app.post('/api/notifications/telegram-server-alert-test', async (req, res) => {
   try {
     const { botToken, chatId } = req.body;
-    const result = await testServerAlert(chatId, botToken);
+    const result = await testDeveloperServerAlert(botToken, chatId);
     if (!result.success) {
       return res.status(400).json({ success: false, message: `Lỗi từ Telegram: ${result.message}` });
     }
     res.json({ 
       success: true, 
-      message: '🚨 Đã gửi thành công tin nhắn cảnh báo sự cố máy chủ mẫu tới Telegram của bạn!', 
+      message: '🚨 Đã gửi thành công tin nhắn cảnh báo sự cố máy chủ mẫu tới Telegram Developer!', 
       data: result.data 
     });
   } catch (error) {

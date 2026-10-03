@@ -4,66 +4,28 @@
  * Script giám sát độc lập hoạt động 24/7 từ bên ngoài:
  * - Ping endpoint /api/health mỗi 60 giây (hoặc chạy qua Cron / PM2)
  * - Nếu server bị sập (downtime), mất kết nối hoặc Nginx 502:
- *   -> Gửi cảnh báo BÁO ĐỘNG ĐỎ tới Telegram của quản trị viên!
+ *   -> Gửi cảnh báo BÁO ĐỘNG ĐỎ tới Telegram CỦA DEVELOPER!
  *   -> Tự động thử kích hoạt lệnh restart (PM2 / Systemd / Node)
  * - Khi server hoạt động trở lại:
- *   -> Gửi thông báo PHỤC HỒI màu xanh.
+ *   -> Gửi thông báo PHỤC HỒI màu xanh tới Developer.
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
+import { 
+  getDeveloperTelegramConfig, 
+  sendDeveloperTelegramAlert 
+} from '../server/monitoringBot.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.join(__dirname, '..');
-const SETTINGS_FILE = path.join(ROOT_DIR, 'server', 'data', 'settings.json');
 const STATE_FILE = path.join(ROOT_DIR, 'server', 'data', '.watchdog_state.json');
 
 const HEALTH_URL = process.env.HEALTH_CHECK_URL || 'http://127.0.0.1:3001/api/health';
 const CHECK_INTERVAL_MS = Number(process.env.WATCHDOG_INTERVAL_MS) || 60000;
-
-// Đọc cấu hình Telegram
-const getTelegramConfig = () => {
-  let token = process.env.TELEGRAM_ALERT_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
-  let chatId = process.env.TELEGRAM_ALERT_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '';
-
-  if ((!token || !chatId) && fs.existsSync(SETTINGS_FILE)) {
-    try {
-      const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-      const settings = JSON.parse(raw);
-      if (!token && settings.telegramBotToken) token = settings.telegramBotToken;
-      if (!chatId && settings.telegramChatId) chatId = settings.telegramChatId;
-    } catch (e) {}
-  }
-
-  token = token.trim().replace(/^bot/i, '');
-  chatId = String(chatId).trim();
-  return { token, chatId, isConfigured: Boolean(token && chatId) };
-};
-
-// Gửi tin nhắn Telegram
-const sendTelegram = async (text) => {
-  const { token, chatId, isConfigured } = getTelegramConfig();
-  if (!isConfigured) return;
-
-  try {
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'HTML',
-        disable_web_page_preview: true
-      })
-    });
-  } catch (err) {
-    console.error('Watchdog: Lỗi gửi Telegram:', err.message);
-  }
-};
 
 // Đọc & Ghi trạng thái
 const readState = () => {
@@ -98,8 +60,8 @@ export const checkServerHealth = async () => {
       if (state.isDown) {
         // Vừa phục hồi từ sự cố!
         console.log(`[Watchdog] ✅ Server đã phục hồi lúc ${timeStr}!`);
-        await sendTelegram(
-          `🟢 <b>[NGỌC FLOWER] MÁY CHỦ ĐÃ PHỤC HỒI HOẠT ĐỘNG!</b>\n` +
+        await sendDeveloperTelegramAlert(
+          `🟢 <b>[NGỌC FLOWER - DEV OPS] MÁY CHỦ ĐÃ PHỤC HỒI!</b>\n` +
           `━━━━━━━━━━━━━━━━━━━━\n` +
           `✅ <b>Trạng thái:</b> Backend đã Online & phản hồi tốt.\n` +
           `🌐 <b>URL:</b> ${HEALTH_URL}\n` +
@@ -122,9 +84,9 @@ export const checkServerHealth = async () => {
     // Nếu thất bại >= 2 lần liên tiếp và chưa đánh dấu là Down
     if (state.failedCount >= 2 && !state.isDown) {
       state.isDown = true;
-      console.error(`[Watchdog] 🚨 Báo động downtime tới Telegram!`);
-      await sendTelegram(
-        `🚨🚨 <b>[NGỌC FLOWER - BÁO ĐỘNG ĐỎ] MÁY CHỦ BỊ SẬP (DOWNTIME)!</b>\n` +
+      console.error(`[Watchdog] 🚨 Báo động downtime tới Telegram Developer!`);
+      await sendDeveloperTelegramAlert(
+        `🚨🚨 <b>[NGỌC FLOWER - DEV OPS BÁO ĐỘNG ĐỎ] MÁY CHỦ BỊ SẬP (DOWNTIME)!</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `❌ <b>Sự cố:</b> Không thể kết nối tới Backend API!\n` +
         `💬 <b>Chi tiết:</b> <code>${err.message}</code>\n` +
@@ -151,6 +113,10 @@ export const checkServerHealth = async () => {
 // Nếu script được chạy trực tiếp bằng lệnh `node scripts/server-watchdog.js`
 if (process.argv[1] && process.argv[1].endsWith('server-watchdog.js')) {
   console.log(`🌸 [Ngọc Flower Watchdog] Bắt đầu giám sát ${HEALTH_URL} (chu kỳ: ${CHECK_INTERVAL_MS / 1000}s)...`);
+  const devConfig = getDeveloperTelegramConfig();
+  if (!devConfig.isConfigured) {
+    console.warn('⚠️ [Watchdog Note] Chưa cấu hình DEV_ALERT_TELEGRAM_TOKEN trong .env - Cảnh báo downtime sẽ chỉ ghi ra log.');
+  }
   checkServerHealth();
   setInterval(checkServerHealth, CHECK_INTERVAL_MS);
 }

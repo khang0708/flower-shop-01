@@ -25,6 +25,9 @@ dist-ssr
 .env*
 !.env.example
 
+server/data/dev-alerts.json
+server/data/.watchdog_state.json
+
 guide_assets/
 capture_guide_screens.js
 

@@ -4,8 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.join(__dirname, '..');
-const SETTINGS_FILE = path.join(__dirname, 'data', 'settings.json');
+const DEV_ALERTS_FILE = path.join(__dirname, 'data', 'dev-alerts.json');
 
 // Helper escape HTML cho Telegram parse_mode: 'HTML'
 export const escapeTelegramHtml = (text) => {
@@ -27,36 +26,44 @@ export const cleanTelegramChatId = (chatId) => {
   return String(chatId).trim();
 };
 
-// Lấy thông tin Telegram Bot Token & Chat ID từ ENV hoặc settings.json
-export const getTelegramConfig = () => {
-  // 1. Ưu tiên biến môi trường (an toàn tuyệt đối, không sợ file hỏng)
-  let token = process.env.TELEGRAM_ALERT_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
-  let chatId = process.env.TELEGRAM_ALERT_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '';
-  let isAlertsEnabled = true;
+/**
+ * LẤY CẤU HÌNH BOT CỦA NHÀ PHÁT TRIỂN / KỸ THUẬT (DEVELOPER / DEVOPS BOT)
+ * 
+ * LƯU Ý QUAN TRỌNG:
+ * - Bot này hoàn toàn độc lập với Bot nhận đơn hàng của khách hàng trong trang Admin.
+ * - Khách hàng sẽ KHÔNG BAO GIỜ nhận được các thông báo kỹ thuật, lỗi crash hoặc stack trace.
+ * - Bot này CHỈ gửi cho lập trình viên / chủ quản trị server.
+ * 
+ * Nguồn đọc:
+ * 1. Biến môi trường .env trên VPS: DEV_ALERT_TELEGRAM_TOKEN & DEV_ALERT_TELEGRAM_CHAT_ID
+ * 2. File cấu hình riêng tư server/data/dev-alerts.json (không bị git track)
+ */
+export const getDeveloperTelegramConfig = () => {
+  let token = process.env.DEV_ALERT_TELEGRAM_TOKEN || 
+              process.env.DEV_TELEGRAM_BOT_TOKEN || 
+              process.env.TELEGRAM_ALERT_BOT_TOKEN || '';
 
-  // 2. Nếu thiếu, đọc từ server/data/settings.json
-  if ((!token || !chatId) && fs.existsSync(SETTINGS_FILE)) {
+  let chatId = process.env.DEV_ALERT_TELEGRAM_CHAT_ID || 
+               process.env.DEV_TELEGRAM_CHAT_ID || 
+               process.env.TELEGRAM_ALERT_CHAT_ID || '';
+
+  // Đọc từ file dev-alerts.json nếu có
+  if ((!token || !chatId) && fs.existsSync(DEV_ALERTS_FILE)) {
     try {
-      const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-      const settings = JSON.parse(raw);
-      if (!token && settings.telegramBotToken) {
-        token = settings.telegramBotToken;
-      }
-      if (!chatId && settings.telegramChatId) {
-        chatId = settings.telegramChatId;
-      }
-      if (settings.telegramAlertsEnabled !== undefined) {
-        isAlertsEnabled = Boolean(settings.telegramAlertsEnabled);
-      }
-    } catch (err) {
-      console.warn('⚠️ [MonitoringBot] Không thể đọc settings.json:', err.message);
-    }
+      const raw = fs.readFileSync(DEV_ALERTS_FILE, 'utf-8');
+      const devConfig = JSON.parse(raw);
+      if (!token && devConfig.botToken) token = devConfig.botToken;
+      if (!chatId && devConfig.chatId) chatId = devConfig.chatId;
+    } catch (e) {}
   }
 
+  const cleanToken = cleanTelegramToken(token);
+  const cleanId = cleanTelegramChatId(chatId);
+
   return {
-    botToken: cleanTelegramToken(token),
-    chatId: cleanTelegramChatId(chatId),
-    isEnabled: isAlertsEnabled && Boolean(cleanTelegramToken(token) && cleanTelegramChatId(chatId))
+    botToken: cleanToken,
+    chatId: cleanId,
+    isConfigured: Boolean(cleanToken && cleanId)
   };
 };
 
@@ -71,23 +78,25 @@ const fetchWithTimeout = async (url, options = {}, ms = 10000) => {
   }
 };
 
-// Gửi tin nhắn đến Telegram API
-export const sendTelegramMessage = async (htmlText, customChatId = null, customToken = null) => {
+// Gửi tin nhắn đến Telegram API của Developer
+export const sendDeveloperTelegramAlert = async (htmlText) => {
   try {
-    const config = getTelegramConfig();
-    const token = cleanTelegramToken(customToken || config.botToken);
-    const chatId = cleanTelegramChatId(customChatId || config.chatId);
+    const config = getDeveloperTelegramConfig();
 
-    if (!token || !chatId) {
-      return { success: false, message: 'Chưa cấu hình Telegram Bot Token hoặc Chat ID' };
+    if (!config.isConfigured) {
+      // Nếu Developer chưa cấu hình token riêng, ghi log ra console và không gửi
+      return { 
+        success: false, 
+        message: 'Developer Telegram Bot chưa được cấu hình qua DEV_ALERT_TELEGRAM_TOKEN trong .env' 
+      };
     }
 
-    const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    const telegramUrl = `https://api.telegram.org/bot${config.botToken}/sendMessage`;
     const response = await fetchWithTimeout(telegramUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: config.chatId,
         text: htmlText,
         parse_mode: 'HTML',
         disable_web_page_preview: true
@@ -96,13 +105,13 @@ export const sendTelegramMessage = async (htmlText, customChatId = null, customT
 
     const data = await response.json();
     if (!data.ok) {
-      console.error('❌ [MonitoringBot] Telegram API error:', data.description);
+      console.error('❌ [DevAlertBot] Telegram API error:', data.description);
       return { success: false, message: data.description };
     }
 
     return { success: true, data: data.result };
   } catch (err) {
-    console.error('❌ [MonitoringBot] Network error when sending to Telegram:', err.message);
+    console.error('❌ [DevAlertBot] Lỗi mạng khi gửi Telegram cho Developer:', err.message);
     return { success: false, message: err.message };
   }
 };
@@ -132,7 +141,7 @@ const shouldSendAlert = (key) => {
 };
 
 // ----------------------------------------------------
-// CÁC HÀM CẢNH BÁO CHUYÊN DỤNG (SPECIALIZED ALERTS)
+// CÁC HÀM CẢNH BÁO SỰ CỐ DÀNH RIÊNG CHO DEVELOPER
 // ----------------------------------------------------
 
 /**
@@ -161,21 +170,21 @@ export const notifyServerError = async (error, context = {}) => {
       suppressionNote = `\n🔁 <i>(Lưu ý: Lỗi này vừa lặp lại <b>${throttle.suppressedCount} lần</b> trong 60 giây qua)</i>\n`;
     }
 
-    const html = `🚨 <b>[NGỌC FLOWER] CẢNH BÁO SỰ CỐ MÁY CHỦ!</b>\n` +
+    const html = `🚨 <b>[NGỌC FLOWER - DEV OPS] CẢNH BÁO SỰ CỐ SERVER!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `⚠️ <b>Phân loại:</b> <code>${escapeTelegramHtml(errorName)}</code>\n` +
+      `⚠️ <b>Lỗi:</b> <code>${escapeTelegramHtml(errorName)}</code>\n` +
       `💬 <b>Mô tả:</b> <b>${escapeTelegramHtml(errorMessage)}</b>\n` +
-      `📍 <b>Nơi xảy ra:</b> <code>${escapeTelegramHtml(errorLocation)}</code>\n` +
+      `📍 <b>Nơi phát sinh:</b> <code>${escapeTelegramHtml(errorLocation)}</code>\n` +
       (context.method ? `🌐 <b>Request:</b> <code>${escapeTelegramHtml(context.method)} ${escapeTelegramHtml(context.url || '')}</code>\n` : '') +
       (context.ip ? `🖥️ <b>Client IP:</b> <code>${escapeTelegramHtml(context.ip)}</code>\n` : '') +
       `⏱️ <b>Thời gian:</b> ${escapeTelegramHtml(timeStr)}\n` +
       `📊 <b>RAM Server:</b> ${memoryMB} MB\n` +
       suppressionNote +
-      `\n🔍 <b>Chi tiết Stack Trace:</b>\n<pre>${stackSnippet}</pre>\n` +
+      `\n🔍 <b>Stack Trace:</b>\n<pre>${stackSnippet}</pre>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `👉 <i>Vui lòng kiểm tra log hệ thống trên VPS (hoatuoibmt.vn) ngay lập tức!</i>`;
+      `👉 <i>Vui lòng SSH vào VPS (hoatuoibmt.vn) kiểm tra tiến trình!</i>`;
 
-    return await sendTelegramMessage(html);
+    return await sendDeveloperTelegramAlert(html);
   } catch (e) {
     console.error('Error in notifyServerError:', e);
     return { success: false, message: e.message };
@@ -194,7 +203,7 @@ export const notifyServerWarning = async (title, message, extra = {}) => {
     const timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     const memoryMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
 
-    const html = `⚠️ <b>[NGỌC FLOWER] CẢNH BÁO CẢNH GIÁC MÁY CHỦ</b>\n` +
+    const html = `⚠️ <b>[NGỌC FLOWER - DEV OPS] CẢNH BÁO CẢNH GIÁC</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `🔔 <b>Sự kiện:</b> <b>${escapeTelegramHtml(title)}</b>\n` +
       `📝 <b>Chi tiết:</b> ${escapeTelegramHtml(message)}\n` +
@@ -203,7 +212,7 @@ export const notifyServerWarning = async (title, message, extra = {}) => {
       (extra.details ? `\n📌 <code>${escapeTelegramHtml(JSON.stringify(extra.details, null, 2))}</code>\n` : '') +
       `━━━━━━━━━━━━━━━━━━━━`;
 
-    return await sendTelegramMessage(html);
+    return await sendDeveloperTelegramAlert(html);
   } catch (e) {
     console.error('Error in notifyServerWarning:', e);
     return { success: false, message: e.message };
@@ -211,25 +220,25 @@ export const notifyServerWarning = async (title, message, extra = {}) => {
 };
 
 /**
- * Thông báo khi máy chủ khởi động thành công (Server Boot / Reboot)
+ * Thông báo khi máy chủ khởi động thành công (Server Boot / Reboot / Deploy)
  */
 export const notifyServerStartup = async (extra = {}) => {
   try {
     const timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     const memoryMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
 
-    const html = `🟢 <b>[NGỌC FLOWER] MÁY CHỦ ĐÃ KHỞI ĐỘNG THÀNH CÔNG!</b>\n` +
+    const html = `🟢 <b>[NGỌC FLOWER - DEV OPS] MÁY CHỦ KHỞI ĐỘNG THÀNH CÔNG!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `✅ <b>Trạng thái:</b> Backend Online & Hoạt động bình thường\n` +
       `🌐 <b>Website:</b> https://hoatuoibmt.vn\n` +
-      `💻 <b>Node.js:</b> ${process.version} (PID: ${process.pid})\n` +
+      `💻 <b>Môi trường:</b> Node.js ${process.version} (PID: ${process.pid})\n` +
       `⏱️ <b>Thời gian khởi động:</b> ${escapeTelegramHtml(timeStr)}\n` +
       `📊 <b>RAM ban đầu:</b> ${memoryMB} MB\n` +
       (extra.database ? `🗄️ <b>Cơ sở dữ liệu:</b> ${escapeTelegramHtml(extra.database)}\n` : '') +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `🤖 <i>Hệ thống giám sát lỗi tự động 24/7 đã được kích hoạt.</i>`;
+      `🤖 <i>Bot giám sát sự cố riêng cho Developer đã kích hoạt.</i>`;
 
-    return await sendTelegramMessage(html);
+    return await sendDeveloperTelegramAlert(html);
   } catch (e) {
     console.error('Error in notifyServerStartup:', e);
     return { success: false, message: e.message };
@@ -237,21 +246,35 @@ export const notifyServerStartup = async (extra = {}) => {
 };
 
 /**
- * Gửi tin nhắn test kiểm tra bot cảnh báo
+ * Thử nghiệm tin nhắn cảnh báo dành riêng cho Developer
  */
-export const testServerAlert = async (customChatId = null, customToken = null) => {
+export const testDeveloperServerAlert = async (customToken = null, customChatId = null) => {
   const timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
   const memoryMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
 
-  const html = `🚨 <b>[TEST] THỬ NGHIỆM BOT CẢNH BÁO SỰ CỐ MÁY CHỦ</b>\n` +
+  const html = `🚨 <b>[TEST] THỬ NGHIỆM BOT GIÁM SÁT MÁY CHỦ (DÀNH CHO DEVELOPER)</b>\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `✅ <b>Kết nối:</b> Bot hoạt động hoàn hảo!\n` +
-    `🤖 <b>Tên bot:</b> Ngọc Flower Server Monitor Bot\n` +
+    `✅ <b>Kết nối:</b> Bot của Developer hoạt động hoàn hảo!\n` +
     `🌐 <b>Domain:</b> https://hoatuoibmt.vn\n` +
     `⏱️ <b>Thời gian test:</b> ${escapeTelegramHtml(timeStr)}\n` +
     `📊 <b>Tài nguyên RAM:</b> ${memoryMB} MB\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `🎉 <i>Từ nay, bất kỳ lỗi nghiêm trọng, sập kết nối hoặc restart máy chủ nào sẽ được bot gửi cảnh báo ngay tức thì tới Telegram của bạn!</i>`;
+    `🎉 <i>Bot này chỉ gửi sự cố kỹ thuật riêng cho bạn, hoàn toàn không liên quan đến Bot nhận đơn của khách hàng!</i>`;
 
-  return await sendTelegramMessage(html, customChatId, customToken);
+  if (customToken && customChatId) {
+    const telegramUrl = `https://api.telegram.org/bot${cleanTelegramToken(customToken)}/sendMessage`;
+    const res = await fetchWithTimeout(telegramUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: cleanTelegramChatId(customChatId),
+        text: html,
+        parse_mode: 'HTML'
+      })
+    });
+    const data = await res.json();
+    return { success: Boolean(data.ok), message: data.ok ? 'Thành công' : data.description, data: data.result };
+  }
+
+  return await sendDeveloperTelegramAlert(html);
 };
