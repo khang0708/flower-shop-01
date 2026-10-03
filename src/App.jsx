@@ -82,6 +82,23 @@ function AppContent() {
     };
   }, [isAdminAuthenticated]);
 
+  // Điều hướng tự động khi người dùng truy cập trực tiếp URL SEO (/catalog, /reviews)
+  useEffect(() => {
+    const handlePathScroll = () => {
+      const path = (window.location.pathname || '').replace(/\/+$/, '');
+      if (path === '/catalog') {
+        const el = document.getElementById('catalog');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else if (path === '/reviews') {
+        const el = document.getElementById('reviews') || document.getElementById('reviews-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    const timer = setTimeout(handlePathScroll, 350);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLoginSuccess = (userData) => {
     setAdminUser(userData);
     setIsAdminLoginOpen(false);
