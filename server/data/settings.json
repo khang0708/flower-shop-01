@@ -3,6 +3,7 @@
   "shopAddress": "44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk",
   "telegramBotToken": "",
   "telegramChatId": "",
+  "telegramAlertsEnabled": true,
   "isSoundEnabled": true,
   "shippingSettings": {
     "standardFee": 35000,

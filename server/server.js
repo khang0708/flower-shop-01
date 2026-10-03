@@ -20,6 +20,33 @@ import {
   requireAdminMiddleware,
   getInitialAdminCredentials 
 } from './auth.js';
+import {
+  notifyServerError,
+  notifyServerWarning,
+  notifyServerStartup,
+  testServerAlert,
+  sendTelegramMessage,
+  escapeTelegramHtml,
+  getTelegramConfig
+} from './monitoringBot.js';
+
+// ----------------------------------------------------
+// GLOBAL PROCESS EXCEPTION MONITORING (TELEGRAM BOT ALERT)
+// ----------------------------------------------------
+process.on('uncaughtException', async (error) => {
+  console.error('💥 [Server Process] Uncaught Exception:', error);
+  try {
+    await notifyServerError(error, { location: 'process.uncaughtException', critical: true });
+  } catch (e) {}
+});
+
+process.on('unhandledRejection', async (reason) => {
+  console.error('💥 [Server Process] Unhandled Rejection:', reason);
+  try {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    await notifyServerError(err, { location: 'process.unhandledRejection' });
+  } catch (e) {}
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -516,6 +543,23 @@ app.post('/api/orders', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
+    // Tự động thông báo đơn hàng mới qua Telegram Bot tới chủ tiệm
+    try {
+      const tgConfig = getTelegramConfig();
+      if (tgConfig.isEnabled) {
+        const orderHtml = `🌸 <b>CÓ ĐƠN ĐẶT HOA MỚI!</b> (#${escapeTelegramHtml(newOrder.orderCode)})\n\n` +
+          `👤 <b>Khách đặt:</b> ${escapeTelegramHtml(newOrder.customerName)} (${escapeTelegramHtml(newOrder.customerPhone)})\n` +
+          `💐 <b>Mẫu hoa:</b> ${escapeTelegramHtml(newOrder.productName)}\n` +
+          `💰 <b>Tổng tiền:</b> ${Number(newOrder.totalAmount).toLocaleString('vi-VN')}đ\n` +
+          `⏱️ <b>Khung giờ:</b> ${escapeTelegramHtml(newOrder.deliverySlot)}\n` +
+          `📍 <b>Giao tới:</b> ${escapeTelegramHtml(newOrder.receiverAddress)}\n\n` +
+          `👉 <i>Mở Bảng Điều Hành Admin Ngọc Flower để duyệt ảnh và cắm hoa nhé!</i>`;
+        sendTelegramMessage(orderHtml).catch(() => {});
+      }
+    } catch (tgErr) {
+      console.warn('Lỗi gửi Telegram đơn hàng:', tgErr.message);
+    }
+
     res.status(201).json({ success: true, data: newOrder });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -676,6 +720,24 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
     }
 
     res.json({ success: true, message: '🎉 Thành công! Bot vừa gửi tin nhắn thông báo đến Telegram của bạn!', data: tgData.result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Endpoint test gửi cảnh báo sự cố máy chủ qua Telegram
+app.post('/api/notifications/telegram-server-alert-test', async (req, res) => {
+  try {
+    const { botToken, chatId } = req.body;
+    const result = await testServerAlert(chatId, botToken);
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: `Lỗi từ Telegram: ${result.message}` });
+    }
+    res.json({ 
+      success: true, 
+      message: '🚨 Đã gửi thành công tin nhắn cảnh báo sự cố máy chủ mẫu tới Telegram của bạn!', 
+      data: result.data 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1120,8 +1182,37 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ----------------------------------------------------
+// 8. GLOBAL EXPRESS ERROR HANDLER & TELEGRAM BOT ALERT
+// ----------------------------------------------------
+app.use(async (err, req, res, next) => {
+  console.error('💥 [Express Error Handler]:', err);
+  try {
+    await notifyServerError(err, {
+      location: 'Express Error Middleware',
+      method: req.method,
+      url: req.originalUrl || req.url,
+      ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress
+    });
+  } catch (alertErr) {
+    console.warn('Lỗi gửi cảnh báo Telegram:', alertErr.message);
+  }
+
+  if (!res.headersSent) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Đã xảy ra sự cố máy chủ nội bộ. Quản trị viên và Bot giám sát đã được thông báo tự động.' 
+    });
+  }
+});
+
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌸 Ngọc Flower API Server đang chạy tại: http://127.0.0.1:${PORT}`);
+  // Tự động gửi thông báo Telegram khi server khởi động / reboot thành công
+  notifyServerStartup({
+    database: sql ? 'Neon PostgreSQL' : 'Local Storage Fallback',
+    port: PORT
+  }).catch((e) => console.warn('Note startup notify:', e.message));
 });
 
 process.on('SIGTERM', () => server.close());

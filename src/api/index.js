@@ -259,6 +259,19 @@ export const sendTelegramTestApi = async (botToken, chatId, testOrder) => {
   }
 };
 
+export const sendTelegramServerAlertTestApi = async (botToken, chatId) => {
+  const token = (botToken || '').trim().replace(/^bot/i, '');
+  const targetChatId = String(chatId || '').trim();
+  if (!token || !targetChatId) {
+    throw new Error('Vui lòng cung cấp đầy đủ cả Bot Token và Chat ID trước khi gửi test');
+  }
+
+  return await request('/notifications/telegram-server-alert-test', {
+    method: 'POST',
+    body: JSON.stringify({ botToken: token, chatId: targetChatId })
+  });
+};
+
 export const getTelegramChatIdAutoApi = async (botToken) => {
   const token = (botToken || '').trim().replace(/^bot/i, '');
   if (!token) {
