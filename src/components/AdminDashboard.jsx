@@ -2546,7 +2546,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                             <div className="space-y-1">
                               <span><strong>Cấu hình Webhook trên Meta for Developers:</strong></span>
                               <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
-                                🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://tiemhoaflorabloom.vn/api/facebook/webhook'}</span>
+                                🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://hoatuoibmt.vn/api/facebook/webhook'}</span>
                               </p>
                               <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
                                 🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || 'flora_bloom_webhook_secret_2026'}</span>

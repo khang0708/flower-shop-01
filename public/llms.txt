@@ -4,18 +4,18 @@
 
 ## Dịch Vụ & Mẫu Hoa Tươi
 
-- [Danh Mục Mẫu Hoa Tươi](https://florabloom.vn/#catalog): Bộ sưu tập các mẫu bó hoa, giỏ hoa, bình hoa nghệ thuật cập nhật mỗi sáng.
-- [Hoa Sinh Nhật & Kỷ Niệm](https://florabloom.vn/#birthday): Mẫu hoa thiết kế tinh tế tặng người thương, bạn bè, đối tác.
-- [Hoa Khai Trương Tài Lộc](https://florabloom.vn/#opening): Giỏ hoa sang trọng chúc mừng đối tác, doanh nghiệp hồng phát.
-- [Theo Dõi Đơn & Duyệt Ảnh Hoa Thật](https://florabloom.vn/#tracking): Khách hàng duyệt ảnh hoa cắm thực tế trước khi shipper giao hàng.
+- [Danh Mục Mẫu Hoa Tươi](https://hoatuoibmt.vn/#catalog): Bộ sưu tập các mẫu bó hoa, giỏ hoa, bình hoa nghệ thuật cập nhật mỗi sáng.
+- [Hoa Sinh Nhật & Kỷ Niệm](https://hoatuoibmt.vn/#birthday): Mẫu hoa thiết kế tinh tế tặng người thương, bạn bè, đối tác.
+- [Hoa Khai Trương Tài Lộc](https://hoatuoibmt.vn/#opening): Giỏ hoa sang trọng chúc mừng đối tác, doanh nghiệp hồng phát.
+- [Theo Dõi Đơn & Duyệt Ảnh Hoa Thật](https://hoatuoibmt.vn/#tracking): Khách hàng duyệt ảnh hoa cắm thực tế trước khi shipper giao hàng.
 
 ## Kênh Liên Hệ & Đặt Hoa Nhanh
 
 - [Tư Vấn Zalo Trực Tiếp](https://zalo.me/0387970583): Hotline/Zalo cá nhân nghệ nhân tiệm hoa 0387970583.
-- [Thông Tin Cửa Hàng](https://florabloom.vn/#about): 44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk.
-- [Đánh Giá Khách Hàng Thực Tế](https://florabloom.vn/#reviews): Trải nghiệm và hình ảnh nhận hoa thực tế từ khách hàng.
+- [Thông Tin Cửa Hàng](https://hoatuoibmt.vn/#about): 44 Đỗ Nhuận, Phường Buôn Ma Thuột, Đắk Lắk.
+- [Đánh Giá Khách Hàng Thực Tế](https://hoatuoibmt.vn/#reviews): Trải nghiệm và hình ảnh nhận hoa thực tế từ khách hàng.
 
 ## API & Tích Hợp Hệ Thống
 
-- [Products API](https://florabloom.vn/api/products): REST API lấy danh sách các mẫu hoa tươi và giá bán.
-- [Orders API](https://florabloom.vn/api/orders): REST API tạo và theo dõi trạng thái đơn đặt hoa.
+- [Products API](https://hoatuoibmt.vn/api/products): REST API lấy danh sách các mẫu hoa tươi và giá bán.
+- [Orders API](https://hoatuoibmt.vn/api/orders): REST API tạo và theo dõi trạng thái đơn đặt hoa.
