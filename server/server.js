@@ -59,7 +59,11 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-const DATA_DIR = path.join(__dirname, 'data');
+// SEED_DIR: dữ liệu mẫu theo git (chỉ đọc). DATA_DIR: nơi lưu dữ liệu thật (đơn hàng, sản phẩm...).
+// Trên VPS đặt DATA_DIR ngoài thư mục repo (vd /var/lib/flower-shop-data) để `git reset --hard`
+// khi deploy không bao giờ ghi đè dữ liệu đang chạy.
+const SEED_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || SEED_DIR;
 if (!fs.existsSync(DATA_DIR)) {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -162,7 +166,11 @@ const readJson = async (fileName) => {
   }
 
   // 4. Fallback DATA_DIR (tệp bundle gốc)
-  const filePath = path.join(DATA_DIR, fileName);
+  let filePath = path.join(DATA_DIR, fileName);
+  if (!fs.existsSync(filePath) && DATA_DIR !== SEED_DIR) {
+    // Lần chạy đầu với DATA_DIR mới: lấy dữ liệu mẫu từ git làm điểm khởi đầu
+    filePath = path.join(SEED_DIR, fileName);
+  }
   if (!fs.existsSync(filePath)) {
     return fileName.includes('settings') ? {} : [];
   }
@@ -199,7 +207,9 @@ const writeJson = async (fileName, data) => {
   // 2. Ghi fallback vào filesystem cục bộ
   try {
     const filePath = path.join(DATA_DIR, fileName);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+    const tmpFile = `${filePath}.tmp`;
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpFile, filePath);
   } catch (err) {
     try {
       const tmpPath = path.join('/tmp', fileName);
