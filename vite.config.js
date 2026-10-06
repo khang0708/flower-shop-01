@@ -3,6 +3,13 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { 
+  verifyPassword, 
+  hashPassword, 
+  createJwtToken, 
+  verifyJwtToken, 
+  getInitialAdminCredentials 
+} from './server/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -153,6 +160,105 @@ function fullstackApiPlugin() {
           });
           req.on('error', () => resolve({}));
         });
+
+        // 2.5 Admin Authentication API
+        if (url === '/api/admin/login' && req.method === 'POST') {
+          const body = await readBody();
+          const { username, password } = body || {};
+          let adminData = readJson('admin.json');
+          if (!adminData || !adminData.hash || !adminData.salt) {
+            adminData = getInitialAdminCredentials();
+            writeJson('admin.json', adminData);
+          }
+
+          const isMatchUser = (adminData.username || 'admin').toLowerCase() === String(username || '').trim().toLowerCase();
+          const isMatchPass = verifyPassword(password, adminData.hash, adminData.salt);
+
+          res.setHeader('Content-Type', 'application/json');
+          if (!isMatchUser || !isMatchPass) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ success: false, message: 'Tài khoản hoặc mật khẩu không chính xác.' }));
+            return;
+          }
+
+          const userPayload = {
+            username: adminData.username,
+            name: adminData.name || 'Quản Trị Viên',
+            role: adminData.role || 'SUPER_ADMIN'
+          };
+          const token = createJwtToken(userPayload);
+          res.end(JSON.stringify({
+            success: true,
+            token,
+            user: userPayload,
+            message: 'Đăng nhập thành công.'
+          }));
+          return;
+        }
+
+        if (url === '/api/admin/me' && req.method === 'GET') {
+          const authHeader = req.headers.authorization || req.headers.Authorization;
+          let user = null;
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            user = verifyJwtToken(authHeader.slice(7).trim());
+          }
+          res.setHeader('Content-Type', 'application/json');
+          if (!user) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ success: false, message: 'Chưa đăng nhập hoặc phiên hết hạn.' }));
+            return;
+          }
+          res.end(JSON.stringify({ success: true, user }));
+          return;
+        }
+
+        if (url === '/api/admin/change-password' && req.method === 'POST') {
+          const authHeader = req.headers.authorization || req.headers.Authorization;
+          let user = null;
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            user = verifyJwtToken(authHeader.slice(7).trim());
+          }
+          res.setHeader('Content-Type', 'application/json');
+          if (!user) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ success: false, message: 'Chưa đăng nhập.' }));
+            return;
+          }
+
+          const body = await readBody();
+          const { currentPassword, newPassword } = body || {};
+          if (!currentPassword || !newPassword) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ success: false, message: 'Vui lòng điền đủ mật khẩu cũ và mới.' }));
+            return;
+          }
+
+          if (String(newPassword).length < 6) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ success: false, message: 'Mật khẩu mới phải từ 6 ký tự.' }));
+            return;
+          }
+
+          let adminData = readJson('admin.json');
+          if (!adminData) {
+            adminData = getInitialAdminCredentials();
+          }
+
+          if (!verifyPassword(currentPassword, adminData.hash, adminData.salt)) {
+            res.statusCode = 401;
+            res.end(JSON.stringify({ success: false, message: 'Mật khẩu hiện tại không đúng.' }));
+            return;
+          }
+
+          const { hash, salt } = hashPassword(newPassword);
+          adminData.hash = hash;
+          adminData.salt = salt;
+          adminData.updatedAt = new Date().toISOString();
+          writeJson('admin.json', adminData);
+
+          res.end(JSON.stringify({ success: true, message: 'Đổi mật khẩu thành công!' }));
+          return;
+        }
 
         // 3. Settings API (Lưu Token & Cấu hình máy chủ)
         if (url === '/api/settings') {

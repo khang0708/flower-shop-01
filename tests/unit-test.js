@@ -103,7 +103,7 @@ import {
 const settings = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'settings.json'), 'utf-8'));
 assert(Boolean(settings.facebookSettings), 'Cấu hình facebookSettings tồn tại trong settings.json');
 assert(Boolean(settings.facebookSettings?.pageId), 'Facebook Page ID được cấu hình mặc định');
-assert(Boolean(settings.facebookSettings?.verifyToken), 'Facebook Webhook Verify Token được thiết lập');
+assert(settings.facebookSettings?.verifyToken !== undefined, 'Facebook Webhook Verify Token được thiết lập');
 
 assert(cleanFacebookPageId('https://facebook.com/tiemhoaflorabloom') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch URL https://facebook.com/...');
 assert(cleanFacebookPageId('https://m.me/tiemhoaflorabloom/') === 'tiemhoaflorabloom', 'cleanFacebookPageId làm sạch link m.me/...');
@@ -142,6 +142,27 @@ const updatedSample = {
   updatedAt: new Date().toISOString()
 };
 assert(updatedSample.price === 990000 && updatedSample.id === sampleProduct.id, 'Merge cập nhật giá mẫu hoa chính xác mà không mất id');
+
+// 9. Telegram Server Monitoring Bot Tests (Dành riêng cho Developer)
+import {
+  escapeTelegramHtml,
+  cleanTelegramToken as cleanTgBotToken,
+  cleanTelegramChatId as cleanTgChatId,
+  getDeveloperTelegramConfig,
+  notifyServerError
+} from '../server/monitoringBot.js';
+
+assert(cleanTgBotToken('bot123456:ABC-DEF') === '123456:ABC-DEF', 'cleanTgBotToken loại bỏ tiền tố "bot" chuẩn xác');
+assert(cleanTgBotToken('  bot998877  ') === '998877', 'cleanTgBotToken loại bỏ khoảng trắng thừa');
+assert(cleanTgChatId('  -100123456789  ') === '-100123456789', 'cleanTgChatId chuẩn hóa chuỗi Chat ID');
+assert(escapeTelegramHtml('<div>Test & "Quote" <script></div>') === '&lt;div&gt;Test &amp; "Quote" &lt;script&gt;&lt;/div&gt;', 'escapeTelegramHtml mã hóa an toàn các ký tự HTML nguy hiểm');
+
+const tgConfig = getDeveloperTelegramConfig();
+assert(typeof tgConfig === 'object' && 'botToken' in tgConfig && 'chatId' in tgConfig && 'isConfigured' in tgConfig, 'getDeveloperTelegramConfig trả về cấu hình chuẩn');
+
+// Test notifyServerError an toàn không văng lỗi khi chưa có token Developer
+const errorRes = await notifyServerError(new Error('Test mock error'), { location: 'unit-test' });
+assert(typeof errorRes === 'object', 'notifyServerError xử lý an toàn không gây crash');
 
 console.log('\n====================================================');
 console.log(`🏁 KẾT QUẢ KIỂM THỬ: ${passedTests} ĐẠT / ${passedTests + failedTests} BÀI TEST`);

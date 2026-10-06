@@ -90,7 +90,7 @@ const INITIAL_ORDERS = [
 
 // ----------------------------------------------------
 // LOCAL-FIRST & CONFLICT RESOLUTION UTILITIES
-// Ngăn stale server container Vercel ghi đè dữ liệu mới
+// Đồng bộ đa thiết bị và ngăn dữ liệu cũ ghi đè dữ liệu mới
 // ----------------------------------------------------
 import { 
   getDeletedProductIds, 
@@ -245,8 +245,8 @@ export const ShopProvider = ({ children }) => {
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
-      isFreeShippingEnabled: true,
-      freeShippingNote: 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
+      isFreeShippingEnabled: false,
+      freeShippingNote: ''
     };
   });
 
@@ -270,7 +270,7 @@ export const ShopProvider = ({ children }) => {
     } catch (e) {}
     return {
       pageId: 'tiemhoaflorabloom',
-      pageName: 'Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật',
+      pageName: 'Ngọc Flower - Hoa Tươi Buôn Ma Thuột',
       pageAccessToken: '',
       verifyToken: 'flora_bloom_webhook_secret_2026',
       adminRecipientId: '',
@@ -298,7 +298,7 @@ export const ShopProvider = ({ children }) => {
       standardFee = 35000, 
       expressFee = 60000, 
       freeShippingThreshold = 1000000, 
-      isFreeShippingEnabled = true 
+      isFreeShippingEnabled = false 
     } = shippingSettings;
 
     const isFreeship = isFreeShippingEnabled && subtotal >= freeShippingThreshold;
@@ -795,10 +795,13 @@ export const ShopProvider = ({ children }) => {
       }
     }, 30000);
 
-    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác trên VPS
     let eventSource = null;
     try {
-      eventSource = new EventSource('/api/admin/events');
+      if (typeof window !== 'undefined' && 'EventSource' in window) {
+        eventSource = new EventSource('/api/admin/events');
+      }
+      if (eventSource) {
       eventSource.onmessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
@@ -835,6 +838,7 @@ export const ShopProvider = ({ children }) => {
           }
         } catch (err) {}
       };
+      }
     } catch (err) {}
 
     // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới, Cập nhật ảnh thật, Đồng bộ mẫu hoa)

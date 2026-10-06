@@ -91,19 +91,24 @@ export const Footer = ({ onOpenAdminLogin }) => {
         </div>
 
         {/* Sub-footer kín đáo dành riêng cho nhân viên */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-3">
-          <p>© 2026 Ngọc Flower. All rights reserved.</p>
-          
-          <div className="flex items-center gap-4">
-            {/* Link kín đáo ở chân trang */}
+        <div className="pt-6 pb-16 sm:pb-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-3">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
+            <p>© 2026 Ngọc Flower. All rights reserved.</p>
+            <span className="text-gray-600 hidden sm:inline">•</span>
+            {/* Link kín đáo ở chân trang - Đặt bên trái tránh bị nút CTA che */}
             <button
+              type="button"
               onClick={onOpenAdminLogin}
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]"
-              title="Đăng nhập dành cho nhân viên & nghệ nhân"
+              className="text-gray-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-white/5 cursor-pointer text-[11px] font-medium"
+              title="Đăng nhập dành cho quản trị viên & nghệ nhân"
             >
-              <Lock className="w-3 h-3" />
+              <Lock className="w-3.5 h-3.5 text-emerald-500" />
               <span>Cổng Nội Bộ</span>
             </button>
+          </div>
+          
+          <div className="hidden sm:flex items-center gap-4 pr-24 text-[10px] text-gray-500">
+            <span>Tiệm Hoa Tươi Buôn Ma Thuột</span>
           </div>
         </div>
 
