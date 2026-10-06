@@ -168,7 +168,7 @@ const readJson = async (fileName) => {
 
   // 4. Fallback DATA_DIR (tệp bundle gốc)
   let filePath = path.join(DATA_DIR, fileName);
-  if (!fs.existsSync(filePath) && DATA_DIR !== SEED_DIR) {
+  if (!fs.existsSync(filePath) && DATA_DIR !== SEED_DIR && fileName !== 'admin.json') {
     // Lần chạy đầu với DATA_DIR mới: lấy dữ liệu mẫu từ git làm điểm khởi đầu
     filePath = path.join(SEED_DIR, fileName);
   }
