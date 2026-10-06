@@ -97,7 +97,7 @@ export const checkServerHealth = async () => {
       );
 
       // Thử tự động kích hoạt restart nếu có pm2 trên VPS
-      exec('pm2 restart flower-shop || pm2 restart server || systemctl restart flower-shop', (execErr) => {
+      exec('pm2 restart flower-shop-api', (execErr) => {
         if (!execErr) {
           console.log('[Watchdog] Đã kích hoạt lệnh restart thành công.');
         }

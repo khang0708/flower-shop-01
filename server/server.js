@@ -50,6 +50,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// Chạy sau Nginx: req.ip lấy IP thật từ proxy, không tin header X-Forwarded-For do client tự đặt
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -246,7 +248,7 @@ app.get('/api/admin/events', (req, res) => {
 // POST /api/admin/login
 app.post('/api/admin/login', async (req, res) => {
   try {
-    const ip = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown';
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
     const rateLimit = checkLoginRateLimit(ip);
     if (!rateLimit.allowed) {
       return res.status(429).json({ success: false, message: rateLimit.message });

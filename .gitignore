@@ -26,6 +26,8 @@ dist-ssr
 !.env.example
 
 server/data/dev-alerts.json
+server/data/admin.json
+server/data/.watchdog_state.json
 server/data/.watchdog_state.json
 
 guide_assets/

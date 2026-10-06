@@ -21,15 +21,19 @@ import {
 import { ZaloIcon } from './ZaloIcon';
 
 export const ProductDetailModal = () => {
-  const { 
-    quickViewProduct, 
-    setQuickViewProduct, 
-    addToCart, 
-    shopZaloPhone, 
-    facebookSettings 
-  } = useShop();
-
+  const { quickViewProduct } = useShop();
   if (!quickViewProduct) return null;
+  return <ProductDetailModalContent />;
+};
+
+const ProductDetailModalContent = () => {
+  const {
+    quickViewProduct,
+    setQuickViewProduct,
+    addToCart,
+    shopZaloPhone,
+    facebookSettings
+  } = useShop();
 
   const isWedding = quickViewProduct.category === 'weddings';
   const isFruit = quickViewProduct.category === 'fruits';

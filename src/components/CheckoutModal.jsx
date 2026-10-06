@@ -66,9 +66,15 @@ const getDynamicDeliveryDates = () => {
 };
 
 export const CheckoutModal = () => {
-  const { 
-    isCheckoutOpen, 
-    setIsCheckoutOpen, 
+  const { isCheckoutOpen } = useShop();
+  if (!isCheckoutOpen) return null;
+  return <CheckoutModalContent />;
+};
+
+const CheckoutModalContent = () => {
+  const {
+    isCheckoutOpen,
+    setIsCheckoutOpen,
     cart, 
     cartTotal, 
     appliedCoupon,
@@ -80,8 +86,6 @@ export const CheckoutModal = () => {
     submitOrder,
     shopZaloPhone
   } = useShop();
-
-  if (!isCheckoutOpen) return null;
 
   // Coupon state in Checkout
   const [couponInput, setCouponInput] = useState('');
