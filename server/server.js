@@ -18,7 +18,8 @@ import {
   recordFailedLogin, 
   clearFailedLogin,
   requireAdminMiddleware,
-  getInitialAdminCredentials 
+  verifyJwtToken,
+  getInitialAdminCredentials
 } from './auth.js';
 import {
   notifyServerError,
@@ -601,9 +602,25 @@ app.patch('/api/orders/:id/status', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
+    const authHeader = req.headers.authorization || '';
+    const isAdmin = authHeader.startsWith('Bearer ') && Boolean(verifyJwtToken(authHeader.slice(7).trim()));
+
+    let changes = req.body || {};
+    if (isAdmin) {
+      // Admin không được đổi mã định danh của đơn
+      const { id: _id, orderCode: _code, ...rest } = changes;
+      changes = rest;
+    } else {
+      // Khách chỉ được duyệt ảnh hoa của đơn đang ở trạng thái "Chờ duyệt ảnh"
+      if (orders[index].status !== 'PHOTO_READY' || orders[index].isApproved) {
+        return res.status(403).json({ success: false, message: 'Không có quyền cập nhật đơn hàng này.' });
+      }
+      changes = { isApproved: true, status: 'DELIVERING' };
+    }
+
     orders[index] = {
       ...orders[index],
-      ...req.body,
+      ...changes,
       updatedAt: new Date().toISOString()
     };
 
@@ -636,7 +653,7 @@ const cleanTelegramChatId = (chatId) => {
 };
 
 // Endpoint tự động tìm Chat ID từ Bot Token 1-Chạm!
-app.post('/api/notifications/telegram-get-chat-id', async (req, res) => {
+app.post('/api/notifications/telegram-get-chat-id', requireAdminMiddleware, async (req, res) => {
   try {
     const rawToken = req.body.botToken;
     if (!rawToken) {
@@ -693,7 +710,7 @@ app.post('/api/notifications/telegram-get-chat-id', async (req, res) => {
 });
 
 // Endpoint test gửi thông báo đơn hàng qua Telegram
-app.post('/api/notifications/telegram-test', async (req, res) => {
+app.post('/api/notifications/telegram-test', requireAdminMiddleware, async (req, res) => {
   try {
     const { botToken, chatId, testOrder } = req.body;
     if (!botToken || !chatId) {
@@ -750,7 +767,7 @@ app.post('/api/notifications/telegram-test', async (req, res) => {
 });
 
 // Endpoint test gửi cảnh báo sự cố máy chủ cho Developer
-app.post('/api/notifications/telegram-server-alert-test', async (req, res) => {
+app.post('/api/notifications/telegram-server-alert-test', requireAdminMiddleware, async (req, res) => {
   try {
     const { botToken, chatId } = req.body;
     const result = await testDeveloperServerAlert(botToken, chatId);
@@ -866,7 +883,7 @@ app.post('/api/ai/analyze-flower', async (req, res) => {
 // ----------------------------------------------------
 // 7. ZALO ZNS & NOTIFICATION API
 // ----------------------------------------------------
-app.post('/api/zalo/send-zns', async (req, res) => {
+app.post('/api/zalo/send-zns', requireAdminMiddleware, async (req, res) => {
   try {
     const { phone, customerName, orderCode, photoUrl, accessToken } = req.body;
 
@@ -1115,7 +1132,7 @@ app.post('/api/facebook/webhook', async (req, res) => {
 });
 
 // 8.3. API gửi tin nhắn chủ động qua Facebook Messenger (Send Message / Push Notification)
-app.post('/api/facebook/send-message', async (req, res) => {
+app.post('/api/facebook/send-message', requireAdminMiddleware, async (req, res) => {
   try {
     const { recipientId, message, pageAccessToken, quickReplies } = req.body;
     const settings = (await readJson('settings.json')) || {};
@@ -1147,7 +1164,7 @@ app.post('/api/facebook/send-message', async (req, res) => {
 });
 
 // 8.4. API thử nghiệm kết nối Facebook Messenger (Test Connection)
-app.post('/api/facebook/test-connection', async (req, res) => {
+app.post('/api/facebook/test-connection', requireAdminMiddleware, async (req, res) => {
   try {
     const { pageId, pageAccessToken, recipientId, testOrder } = req.body;
     const cleanId = (pageId || 'tiemhoaflorabloom').trim();
