@@ -238,6 +238,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     restockInventoryItem,
     deleteInventoryItem,
     products, 
+    productsSynced,
     addProduct, 
     updateProduct, 
     deleteProduct, 
@@ -541,6 +542,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   };
 
   const handleOpenEditModal = (prod) => {
+    if (!productsSynced) return;
     setEditingProductId(prod.id);
     const cat = prod.category || 'flowers';
     setFormData({
@@ -591,6 +593,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     // Chặn bấm đúp / bấm lại khi đang lưu (ref chặn ngay trong cùng tick, state để khóa nút)
     // và chưa cho lưu khi ảnh vừa chọn còn đang được nén (nếu không sẽ lưu nhầm ảnh cũ/ảnh mặc định)
     if (savingProductRef.current || processingImageRef.current) return;
+    if (editingProductId && !productsSynced) {
+      showErrorToast('Danh sách sản phẩm chưa tải xong từ máy chủ nên chưa thể lưu thay đổi. Vui lòng đợi vài giây rồi thử lại.');
+      return;
+    }
     savingProductRef.current = true;
     setIsSavingProduct(true);
     try {
@@ -1560,6 +1566,16 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 </div>
               </div>
 
+              {!productsSynced && (
+                <div role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                  <span className="flex-shrink-0">⏳</span>
+                  <span>
+                    <strong>Đang tải danh sách mới nhất từ máy chủ.</strong> Các nút Sửa, Ẩn/Hiện và Xóa sẽ mở khi tải xong, để tránh
+                    lưu nhầm ảnh hoặc nội dung cũ đè lên dữ liệu thật. Nếu chờ quá lâu, hãy kiểm tra kết nối mạng.
+                  </span>
+                </div>
+              )}
+
               {/* Thanh Điều Khiển: Bộ Lọc Danh Mục & Ô Tìm Kiếm */}
               <div className="bg-white p-4 rounded-2xl border border-[#E8EFEA] shadow-xs flex flex-wrap items-center justify-between gap-3">
                 {/* 4 Tabs Phân Loại */}
@@ -1712,12 +1728,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           <div className="absolute top-3 right-3">
                             <button
                               onClick={() => toggleProductAvailability(prod.id)}
-                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all ${
+                              disabled={!productsSynced}
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                 prod.isAvailable !== false
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                   : 'bg-red-100 text-red-800 border border-red-300 hover:bg-red-200'
                               }`}
-                              title={prod.isAvailable !== false ? 'Bấm để ẩn khỏi web' : 'Bấm để hiển thị lên web'}
+                              title={!productsSynced ? 'Đang tải danh sách từ máy chủ...' : prod.isAvailable !== false ? 'Bấm để ẩn khỏi web' : 'Bấm để hiển thị lên web'}
                             >
                               {prod.isAvailable !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                               <span>{prod.isAvailable !== false ? 'Đang hiển thị' : 'Đã ẩn'}</span>
@@ -1810,15 +1827,17 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                             <div className="flex gap-1.5">
                               <button
                                 onClick={() => handleOpenEditModal(prod)}
-                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                                title="Chỉnh sửa sản phẩm này"
+                                disabled={!productsSynced}
+                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={productsSynced ? 'Chỉnh sửa sản phẩm này' : 'Đang tải danh sách từ máy chủ...'}
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => setProductPendingDelete({ id: prod.id, name: prod.name })}
-                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                                title="Xóa sản phẩm"
+                                disabled={!productsSynced}
+                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={productsSynced ? 'Xóa sản phẩm' : 'Đang tải danh sách từ máy chủ...'}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

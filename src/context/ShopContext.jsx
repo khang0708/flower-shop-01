@@ -149,6 +149,8 @@ export const ShopProvider = ({ children }) => {
 
   // true sau khi lần tải danh sách đầu tiên từ server kết thúc (thành công hoặc phải dùng dữ liệu mẫu dự phòng)
   const [productsLoaded, setProductsLoaded] = useState(false);
+  // true chỉ khi danh sách đã về từ SERVER (không tính cache cũ hay dữ liệu mẫu hiện tạm): admin chỉ được sửa khi đó
+  const [productsSynced, setProductsSynced] = useState(false);
   const productsLoadedRef = useRef(false);
   const productsRef = useRef(products);
 
@@ -655,6 +657,7 @@ export const ShopProvider = ({ children }) => {
         updateProductsLocalAndBroadcast(() => merged);
         productsLoadedRef.current = true;
         setProductsLoaded(true);
+        setProductsSynced(true);
 
         // Chỉ đẩy lại các sản phẩm server ĐÃ CÓ mà bản local sửa mới hơn. Không bao giờ đẩy sản phẩm server không có
         // (nếu không sản phẩm đã xóa sẽ sống lại từ cache của một trình duyệt cũ).
@@ -1381,6 +1384,7 @@ export const ShopProvider = ({ children }) => {
         updateProduct,
         deleteProduct,
         productsLoaded,
+        productsSynced,
         toggleProductAvailability,
         shopZaloPhone,
         setShopZaloPhone,
