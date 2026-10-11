@@ -20,7 +20,9 @@ import {
   clearFailedLogin,
   requireAdminMiddleware,
   verifyJwtToken,
-  getInitialAdminCredentials
+  getInitialAdminCredentials,
+  issueSseTicket,
+  consumeSseTicket
 } from './auth.js';
 import {
   notifyServerError,
@@ -228,11 +230,16 @@ const writeJson = async (fileName, data) => {
 // ----------------------------------------------------
 // REAL-TIME SERVER-SENT EVENTS (SSE) FOR ADMINS
 // ----------------------------------------------------
-const sseClients = new Set();
+const sseClients = new Map(); // res -> { isAdmin }
+
+// Sự kiện chứa thông tin riêng tư của khách (tên, SĐT, địa chỉ) chỉ gửi cho kết nối admin đã xác thực
+const ADMIN_ONLY_EVENTS = new Set(['NEW_ORDER', 'ORDER_STATUS_CHANGED']);
 
 export const broadcastAdminEvent = (eventPayload) => {
   const message = `data: ${JSON.stringify(eventPayload)}\n\n`;
-  sseClients.forEach((client) => {
+  const adminOnly = ADMIN_ONLY_EVENTS.has(eventPayload?.type);
+  sseClients.forEach((meta, client) => {
+    if (adminOnly && !meta.isAdmin) return;
     try {
       client.write(message);
     } catch (e) {
@@ -241,15 +248,22 @@ export const broadcastAdminEvent = (eventPayload) => {
   });
 };
 
-// GET /api/admin/events (SSE Stream - Real-time push cho Admin Dashboard)
+// POST /api/admin/events-ticket (Admin đổi JWT lấy vé dùng một lần, hiệu lực 60s, để mở luồng SSE đầy đủ)
+app.post('/api/admin/events-ticket', requireAdminMiddleware, (req, res) => {
+  res.json({ success: true, ticket: issueSseTicket() });
+});
+
+// GET /api/admin/events (SSE Stream). Không có vé hợp lệ -> chỉ nhận sự kiện công khai (sản phẩm),
+// KHÔNG nhận đơn hàng.
 app.get('/api/admin/events', (req, res) => {
+  const isAdmin = consumeSseTicket(req.query.ticket);
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
 
-  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Admin Stream Active' })}\n\n`);
-  sseClients.add(res);
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Stream Active', isAdmin })}\n\n`);
+  sseClients.set(res, { isAdmin });
 
   req.on('close', () => {
     sseClients.delete(res);
@@ -1446,6 +1460,13 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     database: sql ? 'Neon PostgreSQL' : 'Local Storage Fallback',
     port: PORT
   }).catch((e) => console.warn('Note startup notify:', e.message));
+
+  // Cảnh báo nếu admin vẫn dùng mật khẩu mặc định cũ từng nằm trong repo công khai
+  readJson('admin.json').then((a) => {
+    if (a && a.hash && a.salt && verifyPassword('Flora@2026', a.hash, a.salt)) {
+      console.error('🚨 [Bảo mật] Tài khoản admin vẫn dùng mật khẩu mặc định công khai "Flora@2026". Hãy đổi mật khẩu NGAY (Admin > Đổi mật khẩu).');
+    }
+  }).catch(() => {});
 
   // Tạo sẵn ảnh thu nhỏ ở nền sau khi khởi động (chạy tuần tự, không chặn việc phục vụ khách)
   const warmTimer = setTimeout(() => {

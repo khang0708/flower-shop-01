@@ -4,13 +4,34 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Nạp .env TRƯỚC khi đọc JWT_SECRET: import ES được chạy trước mọi lệnh trong server.js,
+// nên nếu không nạp ở đây JWT_SECRET trong .env sẽ không bao giờ được thấy.
+dotenv.config();
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local', override: true });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, 'data');
 
-// Secret key dùng để ký JWT - lấy từ biến môi trường hoặc cố định an toàn
-export const JWT_SECRET = process.env.JWT_SECRET || 'flora_bloom_atelier_secure_jwt_secret_2026_buon_ma_thuot';
+// Secret key dùng để ký JWT - BẮT BUỘC đặt qua biến môi trường JWT_SECRET (openssl rand -hex 48).
+// Không có giá trị mặc định công khai: nếu thiếu, tạo secret ngẫu nhiên cho tiến trình này
+// (mọi phiên đăng nhập sẽ mất khi khởi động lại) và cảnh báo rõ ràng.
+const MIN_JWT_SECRET_LENGTH = 32;
+function resolveJwtSecret() {
+  const fromEnv = process.env.JWT_SECRET;
+  if (fromEnv && fromEnv.length >= MIN_JWT_SECRET_LENGTH) return fromEnv;
+  console.warn(
+    fromEnv
+      ? `⚠️ [Bảo mật] JWT_SECRET quá ngắn (<${MIN_JWT_SECRET_LENGTH} ký tự) - dùng secret ngẫu nhiên tạm thời.`
+      : '⚠️ [Bảo mật] Chưa đặt JWT_SECRET trong .env - dùng secret ngẫu nhiên tạm thời (phiên đăng nhập mất khi restart). Tạo bằng: openssl rand -hex 48'
+  );
+  return crypto.randomBytes(48).toString('hex');
+}
+export const JWT_SECRET = resolveJwtSecret();
 
 // ----------------------------------------------------
 // 1. PBKDF2 Password Hashing & Timing-Safe Verification
@@ -109,7 +130,12 @@ const ADMIN_FILE = path.join(DATA_DIR, 'admin.json');
 // Khởi tạo tài khoản Admin mặc định nếu chưa tồn tại
 export function getInitialAdminCredentials() {
   const defaultUser = process.env.ADMIN_USERNAME || 'admin';
-  const defaultPass = process.env.ADMIN_DEFAULT_PASSWORD || 'Flora@2026';
+  let defaultPass = process.env.ADMIN_DEFAULT_PASSWORD;
+  if (!defaultPass) {
+    // Không dùng mật khẩu mặc định công khai: sinh ngẫu nhiên và in ra log đúng một lần
+    defaultPass = crypto.randomBytes(9).toString('base64url');
+    console.warn(`⚠️ [Bảo mật] Chưa đặt ADMIN_DEFAULT_PASSWORD. Mật khẩu admin khởi tạo (đổi ngay sau khi đăng nhập): ${defaultPass}`);
+  }
   const { hash, salt } = hashPassword(defaultPass);
   return {
     username: defaultUser,
@@ -186,6 +212,28 @@ export function recordFailedLogin(ip) {
 
 export function clearFailedLogin(ip) {
   loginAttempts.delete(ip);
+}
+
+// ----------------------------------------------------
+// 4b. Vé SSE ngắn hạn (EventSource không gửi được header Authorization)
+// ----------------------------------------------------
+const sseTickets = new Map(); // ticket -> expiresAt
+const SSE_TICKET_TTL_MS = 60 * 1000;
+
+export function issueSseTicket() {
+  const now = Date.now();
+  for (const [t, exp] of sseTickets) if (exp <= now) sseTickets.delete(t);
+  const ticket = crypto.randomBytes(24).toString('hex');
+  sseTickets.set(ticket, now + SSE_TICKET_TTL_MS);
+  return ticket;
+}
+
+// Dùng một lần: hợp lệ thì xóa ngay
+export function consumeSseTicket(ticket) {
+  if (!ticket || typeof ticket !== 'string') return false;
+  const exp = sseTickets.get(ticket);
+  sseTickets.delete(ticket);
+  return Boolean(exp && exp > Date.now());
 }
 
 // ----------------------------------------------------

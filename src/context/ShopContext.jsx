@@ -23,7 +23,9 @@ import {
   fetchReviewsApi,
   createReviewApi,
   toggleReviewApi,
-  deleteReviewApi
+  deleteReviewApi,
+  fetchSseTicketApi,
+  ADMIN_AUTH_EVENT
 } from '../api';
 import { playNewOrderChime } from '../services/soundService';
 import { 
@@ -816,14 +818,11 @@ export const ShopProvider = ({ children }) => {
       }
     }, 30000);
 
-    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác trên VPS
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác trên VPS.
+    // Admin đã đăng nhập đổi JWT lấy vé một lần để nhận cả sự kiện đơn hàng; khách chỉ nhận sự kiện sản phẩm.
     let eventSource = null;
-    try {
-      if (typeof window !== 'undefined' && 'EventSource' in window) {
-        eventSource = new EventSource('/api/admin/events');
-      }
-      if (eventSource) {
-      eventSource.onmessage = (e) => {
+    let sseDisposed = false;
+    const handleSseMessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
           if (payload.type === 'NEW_ORDER' && payload.order) {
@@ -858,9 +857,26 @@ export const ShopProvider = ({ children }) => {
             updateProductsLocalAndBroadcast(prev => prev.filter(p => p.id !== payload.productId));
           }
         } catch (err) {}
-      };
-      }
-    } catch (err) {}
+    };
+    const connectSse = async () => {
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      try {
+        if (typeof window === 'undefined' || !('EventSource' in window)) return;
+        let url = '/api/admin/events';
+        if (localStorage.getItem('flora_admin_token')) {
+          try {
+            url += `?ticket=${encodeURIComponent(await fetchSseTicketApi())}`;
+          } catch (err) {
+            // Token hết hạn/không hợp lệ: vẫn nghe luồng công khai
+          }
+        }
+        if (sseDisposed) return;
+        eventSource = new EventSource(url);
+        eventSource.onmessage = handleSseMessage;
+      } catch (err) {}
+    };
+    connectSse();
+    if (typeof window !== 'undefined') window.addEventListener(ADMIN_AUTH_EVENT, connectSse);
 
     // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới, Cập nhật ảnh thật, Đồng bộ mẫu hoa)
     const cleanupTabListener = listenToCrossTabOrders(
@@ -902,6 +918,8 @@ export const ShopProvider = ({ children }) => {
     return () => {
       clearTimeout(timer);
       clearTimeout(slowLoadTimer);
+      sseDisposed = true;
+      if (typeof window !== 'undefined') window.removeEventListener(ADMIN_AUTH_EVENT, connectSse);
       if (eventSource) eventSource.close();
       cleanupTabListener();
       if (typeof document !== 'undefined') {

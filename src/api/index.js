@@ -434,6 +434,12 @@ export const sendFacebookMessageApi = async (payload) => {
 // ----------------------------------------------------
 // 11. ADMIN AUTHENTICATION API
 // ----------------------------------------------------
+// Báo cho các thành phần khác (vd luồng SSE) biết trạng thái đăng nhập admin đã đổi
+export const ADMIN_AUTH_EVENT = 'flora-admin-auth';
+const notifyAdminAuthChanged = () => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(ADMIN_AUTH_EVENT));
+};
+
 export const adminLoginApi = async (username, password) => {
   const res = await request('/admin/login', {
     method: 'POST',
@@ -442,6 +448,7 @@ export const adminLoginApi = async (username, password) => {
   if (res.token) {
     localStorage.setItem('flora_admin_token', res.token);
     localStorage.setItem('flora_admin_user', JSON.stringify(res.user));
+    notifyAdminAuthChanged();
   }
   return res;
 };
@@ -469,6 +476,13 @@ export const adminChangePasswordApi = async (currentPassword, newPassword) => {
 export const adminLogoutApi = () => {
   localStorage.removeItem('flora_admin_token');
   localStorage.removeItem('flora_admin_user');
+  notifyAdminAuthChanged();
+};
+
+// Lấy vé một lần để mở luồng SSE đầy đủ (EventSource không gửi được header Authorization)
+export const fetchSseTicketApi = async () => {
+  const res = await request('/admin/events-ticket', { method: 'POST' });
+  return res.ticket;
 };
 
 
