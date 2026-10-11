@@ -463,7 +463,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [inputFbPageId, setInputFbPageId] = useState(facebookSettings?.pageId || 'tiemhoaflorabloom');
   const [inputFbPageName, setInputFbPageName] = useState(facebookSettings?.pageName || 'Ngọc Flower - Tiệm Hoa Tươi');
   const [inputFbToken, setInputFbToken] = useState(facebookSettings?.pageAccessToken || '');
-  const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026');
+  const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || '');
   const [inputFbRecipientId, setInputFbRecipientId] = useState(facebookSettings?.adminRecipientId || '');
   const [inputFbEnabled, setInputFbEnabled] = useState(facebookSettings?.isEnabled !== false);
   const [inputFbWelcomeMsg, setInputFbWelcomeMsg] = useState(facebookSettings?.welcomeMessage || 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn.');
@@ -2625,7 +2625,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                 🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://hoatuoibmt.vn/api/facebook/webhook'}</span>
                               </p>
                               <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
-                                🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || 'flora_bloom_webhook_secret_2026'}</span>
+                                🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || '(chưa đặt)'}</span>
                               </p>
                               <span className="text-gray-600 block text-[10px]">Trường sự kiện cần tick: <code>messages</code>, <code>messaging_postbacks</code></span>
                             </div>
@@ -2675,7 +2675,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           type="text"
                           value={inputFbVerifyToken}
                           onChange={(e) => setInputFbVerifyToken(e.target.value)}
-                          placeholder="flora_bloom_webhook_secret_2026"
+                          placeholder="Chuỗi bí mật ngẫu nhiên tự đặt"
                           className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-[11px]"
                         />
                       </div>

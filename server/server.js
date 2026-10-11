@@ -59,9 +59,73 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+// CORS: chỉ cho phép origin nằm trong ALLOWED_ORIGINS (phân tách bằng dấu phẩy). Frontend chạy cùng origin
+// qua Nginx nên không cần CORS; request không có header Origin (curl, server-to-server) luôn được qua.
+// Ngoài production, tự cho phép localhost để chạy dev.
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean)
+);
+const isLocalDevOrigin = (origin) =>
+  process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin) || isLocalDevOrigin(origin)) return callback(null, true);
+    return callback(null, false); // không gửi header CORS -> trình duyệt chặn
+  }
+}));
+
+// Body parser: giới hạn lớn (ảnh sản phẩm/ảnh hoa dạng data URI) CHỈ dành cho admin đã đăng nhập;
+// khách vãng lai bị giới hạn nhỏ để không thể làm cạn RAM bằng body khổng lồ. rawBody giữ lại để
+// xác thực chữ ký webhook Facebook.
+const captureRawBody = (req, _res, buf) => { req.rawBody = buf; };
+const adminJsonParser = express.json({ limit: '25mb', verify: captureRawBody });
+const guestJsonParser = express.json({ limit: '3mb', verify: captureRawBody });
+const adminUrlencodedParser = express.urlencoded({ extended: true, limit: '25mb' });
+const guestUrlencodedParser = express.urlencoded({ extended: true, limit: '100kb' });
+const isAdminRequest = (req) => {
+  const h = req.headers.authorization || '';
+  return h.startsWith('Bearer ') && Boolean(verifyJwtToken(h.slice(7).trim()));
+};
+app.use((req, res, next) => (isAdminRequest(req) ? adminJsonParser : guestJsonParser)(req, res, next));
+app.use((req, res, next) => (isAdminRequest(req) ? adminUrlencodedParser : guestUrlencodedParser)(req, res, next));
+
+// Rate limiter đơn giản trong bộ nhớ theo IP (Nginx đã đặt trust proxy = 1 nên req.ip là IP thật)
+const createRateLimiter = ({ windowMs, max, message, skip = () => false }) => {
+  const hits = new Map(); // ip -> { count, resetAt }
+  const sweep = setInterval(() => {
+    const now = Date.now();
+    for (const [ip, r] of hits) if (r.resetAt <= now) hits.delete(ip);
+  }, windowMs);
+  sweep.unref?.();
+  return (req, res, next) => {
+    if (skip(req)) return next();
+    const now = Date.now();
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    let rec = hits.get(ip);
+    if (!rec || rec.resetAt <= now) {
+      rec = { count: 0, resetAt: now + windowMs };
+      hits.set(ip, rec);
+    }
+    rec.count += 1;
+    if (rec.count > max) {
+      res.setHeader('Retry-After', Math.ceil((rec.resetAt - now) / 1000));
+      return res.status(429).json({ success: false, message });
+    }
+    next();
+  };
+};
+const orderCreateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000, max: 10, skip: isAdminRequest,
+  message: 'Bạn đặt hoa quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau ít phút hoặc liên hệ shop.'
+});
+const orderStatusLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000, max: 30, skip: isAdminRequest,
+  message: 'Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.'
+});
+const reviewLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000, max: 5, skip: isAdminRequest,
+  message: 'Bạn gửi đánh giá quá nhiều lần. Vui lòng thử lại sau.'
+});
 
 // SEED_DIR: dữ liệu mẫu theo git (chỉ đọc). DATA_DIR: nơi lưu dữ liệu thật (đơn hàng, sản phẩm...).
 // Trên VPS đặt DATA_DIR ngoài thư mục repo (vd /var/lib/flower-shop-data) để `git reset --hard`
@@ -718,37 +782,105 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
+// Mã đơn là "khóa" để khách xem/duyệt ảnh đơn của mình nên phải không đoán được:
+// 8 ký tự ngẫu nhiên mật mã học (bảng chữ cái bỏ ký tự dễ nhầm 0/O/1/I) ~ 40 bit.
+const ORDER_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const generateOrderCode = (existing) => {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const bytes = crypto.randomBytes(8);
+    let code = 'FB-';
+    for (let i = 0; i < 8; i++) code += ORDER_CODE_ALPHABET[bytes[i] % ORDER_CODE_ALPHABET.length];
+    if (!existing.some((o) => o.id === code || o.orderCode === code)) return code;
+  }
+  throw new Error('Không tạo được mã đơn hàng');
+};
+
+const cleanText = (v, max, fallback = '') => {
+  if (typeof v !== 'string') return fallback;
+  const t = v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
+  return t || fallback;
+};
+const PHONE_RE = /^[0-9+\s.()-]{8,20}$/;
+const MAX_ORDER_AMOUNT = 200000000;
+const MAX_ORDER_ITEMS = 50;
+
+// Kiểm tra và làm sạch dữ liệu đơn hàng do khách gửi; trả về { error } hoặc { value }
+const validateOrderInput = (body) => {
+  const b = body || {};
+  const customerPhone = cleanText(b.customerPhone || b.senderPhone, 20);
+  const receiverPhone = cleanText(b.receiverPhone, 20);
+  if (customerPhone && !PHONE_RE.test(customerPhone)) return { error: 'Số điện thoại người đặt không hợp lệ.' };
+  if (receiverPhone && !PHONE_RE.test(receiverPhone)) return { error: 'Số điện thoại người nhận không hợp lệ.' };
+
+  const totalAmount = Number(b.totalAmount);
+  if (!Number.isFinite(totalAmount) || totalAmount < 0 || totalAmount > MAX_ORDER_AMOUNT) {
+    return { error: 'Tổng tiền đơn hàng không hợp lệ.' };
+  }
+
+  const rawItems = Array.isArray(b.items) ? b.items : [];
+  if (rawItems.length > MAX_ORDER_ITEMS) return { error: 'Đơn hàng có quá nhiều sản phẩm.' };
+  const items = [];
+  for (const it of rawItems) {
+    const price = Number(it && it.price);
+    if (!it || !Number.isFinite(price) || price < 0 || price > MAX_ORDER_AMOUNT) {
+      return { error: 'Thông tin sản phẩm trong đơn không hợp lệ.' };
+    }
+    items.push({ name: cleanText(it.name, 300, 'Sản phẩm'), price });
+  }
+
+  return {
+    value: {
+      customerName: cleanText(b.customerName || b.senderName, 100, 'Khách hàng'),
+      customerPhone: customerPhone || '0901 234 567',
+      receiverName: cleanText(b.receiverName, 100, 'Người nhận hoa'),
+      receiverPhone: receiverPhone || '0988 765 432',
+      receiverAddress: cleanText(b.receiverAddress, 300, 'TP. Buôn Ma Thuột, Đắk Lắk'),
+      productName: cleanText(b.productName, 300, 'Bó hoa tươi nghệ thuật'),
+      cardMessage: cleanText(b.cardMessage, 1000, 'Gửi gắm yêu thương!'),
+      senderSign: cleanText(b.senderSign || b.senderName, 100, 'Người gửi'),
+      deliverySlot: cleanText(b.deliverySlot, 100, 'Hỏa tốc 90 phút'),
+      isAnonymous: Boolean(b.isAnonymous),
+      totalAmount,
+      items
+    }
+  };
+};
+
 // POST /api/orders
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', orderCreateLimiter, async (req, res) => {
   try {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
     const currentTime = `${timeStr} (${dateStr})`;
-    const newOrderCode = req.body.orderCode || req.body.id || ('FB-' + Math.floor(10000 + Math.random() * 90000));
+
+    const input = validateOrderInput(req.body);
+    if (input.error) return res.status(400).json({ success: false, message: input.error });
+    const v = input.value;
 
     const orders = (await readJson('orders.json')) || [];
+    const newOrderCode = generateOrderCode(orders);
     const newOrder = {
       id: newOrderCode,
       orderCode: newOrderCode,
-      customerName: req.body.customerName || req.body.senderName || 'Khách hàng',
-      customerPhone: req.body.customerPhone || req.body.senderPhone || '0901 234 567',
-      receiverName: req.body.receiverName || 'Người nhận hoa',
-      receiverPhone: req.body.receiverPhone || '0988 765 432',
-      receiverAddress: req.body.receiverAddress || 'TP. Buôn Ma Thuột, Đắk Lắk',
-      isAnonymous: Boolean(req.body.isAnonymous),
-      productName: req.body.productName || 'Bó hoa tươi nghệ thuật',
-      cardMessage: req.body.cardMessage || 'Gửi gắm yêu thương!',
-      senderSign: req.body.senderSign || req.body.senderName || 'Người gửi',
-      deliverySlot: req.body.deliverySlot || 'Hỏa tốc 90 phút',
-      totalAmount: Number(req.body.totalAmount) || 850000,
+      customerName: v.customerName,
+      customerPhone: v.customerPhone,
+      receiverName: v.receiverName,
+      receiverPhone: v.receiverPhone,
+      receiverAddress: v.receiverAddress,
+      isAnonymous: v.isAnonymous,
+      productName: v.productName,
+      cardMessage: v.cardMessage,
+      senderSign: v.senderSign,
+      deliverySlot: v.deliverySlot,
+      totalAmount: v.totalAmount,
       status: 'ARRANGING',
       florist: 'Thợ cắm hoa Minh Thư (Studio A)',
       floristAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      proofPhotoUrl: req.body.proofPhotoUrl || null,
+      proofPhotoUrl: null, // chỉ admin được gắn ảnh hoa thật sau khi cắm xong
       isApproved: false,
       createdAt: currentTime,
-      items: req.body.items || []
+      items: v.items
     };
 
     orders.unshift(newOrder);
@@ -798,7 +930,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // PATCH /api/orders/:id/status
-app.patch('/api/orders/:id/status', async (req, res) => {
+app.patch('/api/orders/:id/status', orderStatusLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     let orders = (await readJson('orders.json')) || [];
@@ -1036,14 +1168,30 @@ app.get('/api/reviews', async (req, res) => {
   }
 });
 
-app.post('/api/reviews', async (req, res) => {
+const SAFE_REVIEW_IMAGE_RE = /^(https?:\/\/|data:image\/(jpeg|png|webp|gif);base64,)/i;
+
+app.post('/api/reviews', reviewLimiter, async (req, res) => {
   try {
+    const b = req.body || {};
+    const rating = Math.min(5, Math.max(1, Math.round(Number(b.rating)) || 5));
+    const comment = cleanText(b.comment, 500);
+    if (!comment) return res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung đánh giá.' });
+    const proofImage = typeof b.proofImage === 'string' && SAFE_REVIEW_IMAGE_RE.test(b.proofImage) && b.proofImage.length <= 2500000
+      ? b.proofImage
+      : null;
+
     const reviews = (await readJson('reviews.json')) || [];
+    // Chỉ nhận các trường được phép (không spread body: tránh khách tự đặt id/likes/isVisible...)
     const newReview = {
-      id: req.body.id || `REV-${Date.now()}`,
-      ...req.body,
-      createdAt: req.body.createdAt || new Date().toISOString().split('T')[0],
-      likes: req.body.likes || 0,
+      id: `REV-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`,
+      customerName: cleanText(b.customerName, 80, 'Khách hàng Ngọc Flower'),
+      productName: cleanText(b.productName, 200),
+      occasion: cleanText(b.occasion, 100),
+      rating,
+      comment,
+      proofImage,
+      createdAt: new Date().toISOString().split('T')[0],
+      likes: 0,
       isVisible: true
     };
     reviews.unshift(newReview);
@@ -1233,10 +1381,11 @@ app.get('/api/facebook/webhook', async (req, res) => {
     const challenge = req.query['hub.challenge'];
 
     const settings = (await readJson('settings.json')) || {};
-    const expectedToken = settings.facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026';
+    // Không còn verify token mặc định công khai: phải cấu hình trong Admin > Cài đặt Facebook
+    const expectedToken = settings.facebookSettings?.verifyToken;
 
     if (mode && token) {
-      if (mode === 'subscribe' && token === expectedToken) {
+      if (expectedToken && mode === 'subscribe' && token === expectedToken) {
         console.log('✅ [Facebook Webhook] Đã xác thực thành công Webhook với Meta for Developers!');
         return res.status(200).send(challenge);
       } else {
@@ -1251,8 +1400,27 @@ app.get('/api/facebook/webhook', async (req, res) => {
 });
 
 // 8.2. Nhận tin nhắn sự kiện từ Webhook Facebook Messenger & Tự động phản hồi thông minh (Chatbot)
+// Xác thực chữ ký X-Hub-Signature-256 (HMAC-SHA256 của body thô với App Secret). Thiếu secret -> từ chối hết.
+const verifyFacebookSignature = (req) => {
+  const appSecret = process.env.FACEBOOK_APP_SECRET;
+  const header = req.headers['x-hub-signature-256'];
+  if (!appSecret || typeof header !== 'string' || !req.rawBody) return false;
+  const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(req.rawBody).digest('hex');
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
 app.post('/api/facebook/webhook', async (req, res) => {
   try {
+    if (!process.env.FACEBOOK_APP_SECRET) {
+      console.warn('⚠️ [Facebook Webhook] Từ chối: chưa đặt FACEBOOK_APP_SECRET trong .env');
+      return res.sendStatus(503);
+    }
+    if (!verifyFacebookSignature(req)) {
+      console.warn('⚠️ [Facebook Webhook] Từ chối: chữ ký X-Hub-Signature-256 không hợp lệ');
+      return res.sendStatus(403);
+    }
     const body = req.body;
 
     if (body.object === 'page') {
@@ -1433,6 +1601,13 @@ app.get('/api/health', (req, res) => {
 // 8. GLOBAL EXPRESS ERROR HANDLER & TELEGRAM BOT ALERT
 // ----------------------------------------------------
 app.use(async (err, req, res, next) => {
+  // Lỗi do client (body quá lớn, JSON sai) trả đúng mã 4xx, không cảnh báo Telegram như sự cố máy chủ
+  if (err && err.status >= 400 && err.status < 500 && !res.headersSent) {
+    return res.status(err.status).json({
+      success: false,
+      message: err.status === 413 ? 'Dữ liệu gửi lên quá lớn.' : 'Yêu cầu không hợp lệ.'
+    });
+  }
   console.error('💥 [Express Error Handler]:', err);
   try {
     await notifyServerError(err, {

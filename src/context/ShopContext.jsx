@@ -279,7 +279,7 @@ export const ShopProvider = ({ children }) => {
       pageId: 'tiemhoaflorabloom',
       pageName: 'Ngọc Flower - Hoa Tươi Buôn Ma Thuột',
       pageAccessToken: '',
-      verifyToken: 'flora_bloom_webhook_secret_2026',
+      verifyToken: '',
       adminRecipientId: '',
       isEnabled: true,
       welcomeMessage: 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.',

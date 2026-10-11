@@ -680,7 +680,7 @@ function fullstackApiPlugin() {
           const challenge = queryParams.get('hub.challenge');
 
           const settings = readJson('settings.json') || {};
-          const expectedToken = settings.facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026';
+          const expectedToken = settings.facebookSettings?.verifyToken || '';
 
           if (mode && token) {
             if (mode === 'subscribe' && token === expectedToken) {
