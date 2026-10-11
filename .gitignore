@@ -37,3 +37,6 @@ capture_guide_screens.js
 # Token thật được quản lý qua admin UI và lưu trong Neon DB.
 # Để tránh git track thay đổi local, chạy:
 #   git update-index --skip-worktree server/data/settings.json
+
+# Ảnh sản phẩm thu nhỏ do server tự tạo (dữ liệu dẫn xuất, tạo lại được)
+server/data/image-cache/

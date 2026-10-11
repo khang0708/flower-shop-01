@@ -16,6 +16,7 @@ import { openPersonalZaloChat } from '../services/zaloService';
 export const FlowerGrid = () => {
   const { 
     products, 
+    productsLoaded,
     activeCategory,
     selectedOccasion, 
     selectedColor, 
@@ -180,7 +181,12 @@ export const FlowerGrid = () => {
       </div>
 
       {/* Grid danh sách sản phẩm: 2 cột trên mobile, 2 cột tablet, 3 cột desktop */}
-      {filteredAndSortedFlowers.length > 0 ? (
+      {!productsLoaded && products.length === 0 ? (
+        <div role="status" aria-live="polite" className="text-center py-16 bg-white rounded-3xl border border-dashed border-[#D1DFD6] p-8">
+          <p className="text-3xl mb-2 animate-pulse">🌸</p>
+          <h3 className="font-serif text-lg font-bold text-[#1B3B2B]">Đang tải danh mục mẫu hoa...</h3>
+        </div>
+      ) : filteredAndSortedFlowers.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 lg:gap-8 animate-fade-in">
           {filteredAndSortedFlowers.map((flower) => (
             <FlowerCard key={flower.id} flower={flower} />

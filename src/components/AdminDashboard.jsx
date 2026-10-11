@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   SHOP_CATEGORIES, 
@@ -23,6 +23,9 @@ import {
 } from '../services/notificationService';
 import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
+import { ConfirmDialog } from './ConfirmDialog';
+import { isCustomProductImage, productImageUrl } from '../utils/productImage';
+import { compressImageToDataUrl } from '../utils/imageCompress';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
 import { 
@@ -377,21 +380,24 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     ]
   };
 
-  const handleImageFileUpload = (e) => {
+  const handleImageFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn một file hình ảnh (JPG, PNG, WEBP,...)');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64Data = uploadEvent.target?.result;
-      if (base64Data) {
-        setFormData(prev => ({ ...prev, image: base64Data }));
-      }
-    };
-    reader.readAsDataURL(file);
+    processingImageRef.current = true;
+    setIsProcessingImage(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      if (dataUrl) setFormData(prev => ({ ...prev, image: dataUrl }));
+    } catch (err) {
+      alert('Không đọc được file ảnh này. Vui lòng chọn ảnh khác.');
+    } finally {
+      processingImageRef.current = false;
+      setIsProcessingImage(false);
+    }
   };
 
   // State Modal Thêm Voucher
@@ -442,6 +448,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [isDetectingChatId, setIsDetectingChatId] = useState(false);
   const [autoDetectMsg, setAutoDetectMsg] = useState(null);
   const [copyToast, setCopyToast] = useState('');
+  const [errorToast, setErrorToast] = useState('');
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const savingProductRef = useRef(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const processingImageRef = useRef(false);
+  const [productPendingDelete, setProductPendingDelete] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
 
@@ -553,8 +566,34 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setIsProductModalOpen(true);
   };
 
+  const showErrorToast = (message) => {
+    setErrorToast(message);
+    setTimeout(() => setErrorToast(''), 6000);
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!productPendingDelete || isDeletingProduct) return;
+    const { id, name } = productPendingDelete;
+    setIsDeletingProduct(true);
+    const result = await deleteProduct(id);
+    setIsDeletingProduct(false);
+    setProductPendingDelete(null);
+    if (result?.success) {
+      setCopyToast(`Đã xóa "${name}".`);
+      setTimeout(() => setCopyToast(''), 3000);
+    } else {
+      showErrorToast(`Không xóa được "${name}": ${String(result?.message || 'lỗi không xác định').replace(/[.\s]+$/, '')}. Danh sách đã được tải lại từ máy chủ.`);
+    }
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+    // Chặn bấm đúp / bấm lại khi đang lưu (ref chặn ngay trong cùng tick, state để khóa nút)
+    // và chưa cho lưu khi ảnh vừa chọn còn đang được nén (nếu không sẽ lưu nhầm ảnh cũ/ảnh mặc định)
+    if (savingProductRef.current || processingImageRef.current) return;
+    savingProductRef.current = true;
+    setIsSavingProduct(true);
+    try {
     const cat = formData.category || 'flowers';
     const now = new Date().toISOString();
 
@@ -594,6 +633,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     }
     setIsProductModalOpen(false);
     setEditingProductId(null);
+    } catch (err) {
+      showErrorToast(err?.message || 'Không lưu được sản phẩm. Vui lòng thử lại.');
+    } finally {
+      savingProductRef.current = false;
+      setIsSavingProduct(false);
+    }
   };
 
 
@@ -799,6 +844,22 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     <div className="min-h-screen bg-[#F4F7F5] text-[#222523] font-sans">
       
       {/* Toast thông báo copy tin nhắn */}
+      {errorToast && (
+        <div role="alert" className="fixed top-20 right-6 z-[110] max-w-sm bg-red-700 text-white px-4 py-3 rounded-2xl shadow-2xl border border-red-300 text-xs flex items-start gap-2 animate-fade-in">
+          <span className="flex-shrink-0">⚠️</span>
+          <span>{errorToast}</span>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(productPendingDelete)}
+        title="Xóa sản phẩm này?"
+        itemName={productPendingDelete?.name}
+        busy={isDeletingProduct}
+        onConfirm={handleConfirmDeleteProduct}
+        onCancel={() => setProductPendingDelete(null)}
+      />
+
       {copyToast && (
         <div className="fixed top-20 right-6 z-50 bg-[#1B3B2B] text-white px-4 py-3 rounded-2xl shadow-2xl border border-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -1615,7 +1676,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       >
                         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                           <img
-                            src={prod.image}
+                            src={productImageUrl(prod.image, 480)}
                             alt={prod.name}
                             className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           />
@@ -1755,11 +1816,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => {
-                                  if (window.confirm(`Bạn có chắc chắn muốn xóa "${prod.name}" không?`)) {
-                                    deleteProduct(prod.id);
-                                  }
-                                }}
+                                onClick={() => setProductPendingDelete({ id: prod.id, name: prod.name })}
                                 className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
                                 title="Xóa sản phẩm"
                               >
@@ -3424,7 +3481,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 {formData.image ? (
                   <div className="flex items-center gap-3 p-2.5 bg-white rounded-2xl border border-[#E8EFEA] shadow-xs">
                     <img
-                      src={formData.image}
+                      src={productImageUrl(formData.image, 240)}
                       alt="Xem trước ảnh mẫu sản phẩm"
                       className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
                     />
@@ -3434,7 +3491,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         <span>Đã nạp ảnh thành công</span>
                       </span>
                       <span className="text-[10px] text-gray-400 block truncate mt-0.5">
-                        {formData.image.startsWith('data:') ? 'Tệp ảnh từ máy tính (Data URI)' : formData.image}
+                        {isCustomProductImage(formData.image) ? 'Tệp ảnh từ máy tính' : formData.image}
                       </span>
                     </div>
                     <button
@@ -3456,9 +3513,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="pt-4 border-t border-gray-200 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98"
+                  disabled={isSavingProduct || isProcessingImage}
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
+                  {isSavingProduct ? 'Đang lưu...' : isProcessingImage ? 'Đang xử lý ảnh...' : editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
                 </button>
                 <button
                   type="button"

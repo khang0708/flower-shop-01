@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
+import { productImageUrl } from '../utils/productImage';
 import { 
   X, 
   Clock, 
@@ -108,6 +109,7 @@ const CheckoutModalContent = () => {
 
   // Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
@@ -157,7 +159,8 @@ const CheckoutModalContent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submittingRef.current) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     const computedSlot = deliveryType === 'express' 
@@ -180,6 +183,7 @@ const CheckoutModalContent = () => {
     } catch (err) {
       console.error('Lỗi khi gửi đơn hàng:', err);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -486,7 +490,7 @@ const CheckoutModalContent = () => {
               <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                 {cart.map((item) => (
                   <div key={item.cartItemId || item.id} className="flex gap-2.5 text-xs pb-2 border-b border-gray-100">
-                    <img src={item.image} alt={item.name} className="w-12 h-14 object-cover rounded-lg border flex-shrink-0" />
+                    <img src={productImageUrl(item.image, 240)} alt={item.name} className="w-12 h-12 object-contain bg-white rounded-lg border flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <h5 className="font-serif font-bold text-[#1B3B2B] truncate">{item.name}</h5>
                       <span className="text-[10px] text-gray-500">{item.size?.name || 'Tiêu chuẩn'} × {item.quantity}</span>

@@ -4,6 +4,7 @@ import { openPersonalZaloChat } from '../services/zaloService';
 import { openFacebookMessenger } from '../services/facebookService';
 import { X, Trash2, Plus, Minus, ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
 import { ZaloIcon } from './ZaloIcon';
+import { productImageUrl } from '../utils/productImage';
 
 export const CartDrawer = () => {
   const { 
@@ -96,9 +97,9 @@ export const CartDrawer = () => {
                   >
                     <div className="flex gap-3">
                       <img
-                        src={item.image}
+                        src={productImageUrl(item.image, 240)}
                         alt={item.name}
-                        className="w-16 h-20 object-cover rounded-xl border border-gray-200 flex-shrink-0"
+                        className="w-16 h-16 object-contain bg-white rounded-xl border border-gray-200 flex-shrink-0"
                       />
                       
                       <div className="flex-1 min-w-0">
