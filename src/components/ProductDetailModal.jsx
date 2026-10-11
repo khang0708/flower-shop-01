@@ -131,15 +131,17 @@ const ProductDetailModalContent = () => {
           
           {/* CỘT TRÁI: ẢNH & THÔNG TIN CỐT LÕI (5 Cột) */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md border border-[#E8EFEA]">
-              <img
-                src={quickViewProduct.image}
-                alt={quickViewProduct.name}
-                className="w-full h-full object-cover"
-              />
-              <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[11px] px-3 py-1 rounded-full">
+            <div>
+              <div className="relative aspect-square rounded-2xl overflow-hidden shadow-md border border-[#E8EFEA] bg-white">
+                <img
+                  src={quickViewProduct.image}
+                  alt={quickViewProduct.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <p className="mt-2 text-[11px] text-gray-500">
                 {isWedding ? '📸 Ảnh thực tế thi công' : '📸 Ảnh chụp mẫu tại tiệm'}
-              </span>
+              </p>
             </div>
 
             <div>

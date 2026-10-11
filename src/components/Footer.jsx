@@ -90,8 +90,8 @@ export const Footer = ({ onOpenAdminLogin }) => {
 
         </div>
 
-        {/* Sub-footer kín đáo dành riêng cho nhân viên */}
-        <div className="pt-6 pb-16 sm:pb-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-3">
+        {/* Sub-footer kín đáo dành riêng cho nhân viên. Dưới 768px chừa 220px (> cụm nút nổi cao 176px + cách đáy 24px) để link cuối trang không bị che */}
+        <div className="pt-6 pb-[220px] md:pb-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-3">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
             <p>© 2026 Ngọc Flower. All rights reserved.</p>
             <span className="text-gray-600 hidden sm:inline">•</span>
