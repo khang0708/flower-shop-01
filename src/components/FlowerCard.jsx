@@ -2,6 +2,7 @@ import React from 'react';
 import { useShop } from '../context/ShopContext';
 import { Heart, Star, Plus, Eye, Check, MessageCircle, CalendarCheck, Sparkles } from 'lucide-react';
 import { openPersonalZaloChat } from '../services/zaloService';
+import { productImageUrl, productImageSrcSet } from '../utils/productImage';
 
 export const FlowerCard = ({ flower }) => {
   const { wishlist, toggleWishlist, addToCart, setQuickViewProduct, shopZaloPhone } = useShop();
@@ -31,7 +32,9 @@ export const FlowerCard = ({ flower }) => {
         className="relative aspect-square overflow-hidden bg-white cursor-pointer"
       >
         <img
-          src={flower.image}
+          src={productImageUrl(flower.image, 800)}
+          srcSet={productImageSrcSet(flower.image)}
+          sizes="(min-width: 1024px) 33vw, 50vw"
           alt={flower.name}
           width="400"
           height="400"

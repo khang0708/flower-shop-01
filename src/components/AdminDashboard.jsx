@@ -24,7 +24,8 @@ import {
 import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { ConfirmDialog } from './ConfirmDialog';
-import { isCustomProductImage } from '../utils/productImage';
+import { isCustomProductImage, productImageUrl } from '../utils/productImage';
+import { compressImageToDataUrl } from '../utils/imageCompress';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
 import { 
@@ -379,21 +380,24 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     ]
   };
 
-  const handleImageFileUpload = (e) => {
+  const handleImageFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn một file hình ảnh (JPG, PNG, WEBP,...)');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64Data = uploadEvent.target?.result;
-      if (base64Data) {
-        setFormData(prev => ({ ...prev, image: base64Data }));
-      }
-    };
-    reader.readAsDataURL(file);
+    processingImageRef.current = true;
+    setIsProcessingImage(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      if (dataUrl) setFormData(prev => ({ ...prev, image: dataUrl }));
+    } catch (err) {
+      alert('Không đọc được file ảnh này. Vui lòng chọn ảnh khác.');
+    } finally {
+      processingImageRef.current = false;
+      setIsProcessingImage(false);
+    }
   };
 
   // State Modal Thêm Voucher
@@ -447,6 +451,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [errorToast, setErrorToast] = useState('');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const savingProductRef = useRef(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const processingImageRef = useRef(false);
   const [productPendingDelete, setProductPendingDelete] = useState(null);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
@@ -583,7 +589,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     // Chặn bấm đúp / bấm lại khi đang lưu (ref chặn ngay trong cùng tick, state để khóa nút)
-    if (savingProductRef.current) return;
+    // và chưa cho lưu khi ảnh vừa chọn còn đang được nén (nếu không sẽ lưu nhầm ảnh cũ/ảnh mặc định)
+    if (savingProductRef.current || processingImageRef.current) return;
     savingProductRef.current = true;
     setIsSavingProduct(true);
     try {
@@ -1669,7 +1676,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       >
                         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                           <img
-                            src={prod.image}
+                            src={productImageUrl(prod.image, 480)}
                             alt={prod.name}
                             className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           />
@@ -3474,7 +3481,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 {formData.image ? (
                   <div className="flex items-center gap-3 p-2.5 bg-white rounded-2xl border border-[#E8EFEA] shadow-xs">
                     <img
-                      src={formData.image}
+                      src={productImageUrl(formData.image, 240)}
                       alt="Xem trước ảnh mẫu sản phẩm"
                       className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
                     />
@@ -3506,10 +3513,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="pt-4 border-t border-gray-200 flex gap-2">
                 <button
                   type="submit"
-                  disabled={isSavingProduct}
+                  disabled={isSavingProduct || isProcessingImage}
                   className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isSavingProduct ? 'Đang lưu...' : editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
+                  {isSavingProduct ? 'Đang lưu...' : isProcessingImage ? 'Đang xử lý ảnh...' : editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
                 </button>
                 <button
                   type="button"

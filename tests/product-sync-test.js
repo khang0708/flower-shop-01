@@ -19,7 +19,7 @@ const {
   RECENT_LOCAL_WINDOW_MS
 } = await import('../src/utils/conflictResolution.js');
 
-const { isCustomProductImage } = await import('../src/utils/productImage.js');
+const { isCustomProductImage, productImageUrl, productImageSrcSet } = await import('../src/utils/productImage.js');
 
 console.log('\n====================================================');
 console.log('🔄 KIỂM THỬ ĐỒNG BỘ SẢN PHẨM: MÁY CHỦ LÀ NGUỒN SỰ THẬT');
@@ -167,6 +167,32 @@ test('Ảnh mặc định, ảnh link ngoài hoặc rỗng KHÔNG phải ảnh t
   assert.strictEqual(isCustomProductImage('/api/products/fl-06/other'), false);
   assert.strictEqual(isCustomProductImage(''), false);
   assert.strictEqual(isCustomProductImage(undefined), false);
+});
+
+test('productImageUrl: ảnh do server phục vụ được thêm ?w= theo cỡ gần nhất không nhỏ hơn yêu cầu', () => {
+  const base = '/api/products/fl-06/image?v=abc123';
+  assert.strictEqual(productImageUrl(base, 200), `${base}&w=240`);
+  assert.strictEqual(productImageUrl(base, 240), `${base}&w=240`);
+  assert.strictEqual(productImageUrl(base, 300), `${base}&w=480`);
+  assert.strictEqual(productImageUrl(base, 800), `${base}&w=800`);
+  assert.strictEqual(productImageUrl(base, 5000), `${base}&w=1200`);
+  assert.strictEqual(productImageUrl('/api/products/fl-06/image', 480), '/api/products/fl-06/image?w=480');
+});
+
+test('productImageUrl: ảnh khác (link ngoài, ảnh tĩnh, data URI, đã có w=) giữ nguyên', () => {
+  for (const img of ['https://images.unsplash.com/photo-1?w=800', '/products/a.jpg', 'data:image/png;base64,AAAA', '', undefined, null]) {
+    assert.strictEqual(productImageUrl(img, 480), img);
+  }
+  const sized = '/api/products/x/image?v=1&w=480';
+  assert.strictEqual(productImageUrl(sized, 800), sized);
+});
+
+test('productImageSrcSet: chỉ tạo srcSet cho ảnh do server phục vụ, đủ các cỡ', () => {
+  const base = '/api/products/fl-06/image?v=abc123';
+  assert.strictEqual(productImageSrcSet(base), `${base}&w=480 480w, ${base}&w=800 800w, ${base}&w=1200 1200w`);
+  assert.strictEqual(productImageSrcSet(base, [800, 1200]), `${base}&w=800 800w, ${base}&w=1200 1200w`);
+  assert.strictEqual(productImageSrcSet('/products/a.jpg'), undefined);
+  assert.strictEqual(productImageSrcSet('data:image/png;base64,AAAA'), undefined);
 });
 
 console.log('\n====================================================');

@@ -409,22 +409,136 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// ----- Ảnh thu nhỏ -----
+// Ảnh gốc admin tải lên có thể 5-8MB; trang chỉ cần vài trăm px. ?w=<240|480|800|1200> trả bản thu nhỏ (WebP nếu trình
+// duyệt hỗ trợ, nếu không thì JPEG), tạo MỘT lần rồi cache trên đĩa. sharp là tùy chọn: không nạp được, bị tắt
+// (IMAGE_THUMBNAILS=off) hoặc ảnh lỗi thì tự phục vụ ảnh gốc như trước, không bao giờ làm hỏng API.
+const THUMB_WIDTHS = [240, 480, 800, 1200];
+const WARM_WIDTHS = [480, 800];
+const IMAGE_CACHE_DIR = path.resolve(DATA_DIR, 'image-cache');
+
+let sharpLib = null;
+const sharpReady = (async () => {
+  if (process.env.IMAGE_THUMBNAILS === 'off') return;
+  try {
+    const mod = await import('sharp');
+    sharpLib = mod.default;
+    sharpLib.cache(false);
+    sharpLib.concurrency(1);
+  } catch (e) {
+    console.warn('[ảnh] Không nạp được sharp, phục vụ ảnh gốc (không thu nhỏ):', e.message);
+  }
+})();
+
+const dataUriMime = (uri) => {
+  if (typeof uri !== 'string' || !uri.startsWith('data:')) return '';
+  const comma = uri.indexOf(',');
+  return comma === -1 ? '' : (uri.slice(5, comma).split(';')[0] || '').toLowerCase();
+};
+const canThumbnail = (mime) => /^image\/(jpeg|png|webp|bmp|avif)$/.test(mime);
+
+const thumbFileBase = (id) =>
+  `${String(id).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 40)}-${crypto.createHash('sha1').update(String(id)).digest('hex').slice(0, 6)}`;
+const thumbPath = (id, version, width, format) =>
+  path.join(IMAGE_CACHE_DIR, `${thumbFileBase(id)}__${version}__${width}.${format === 'webp' ? 'webp' : 'jpg'}`);
+
+const removeThumbnails = (id, keepVersion = null) => {
+  try {
+    const prefix = `${thumbFileBase(id)}__`;
+    for (const f of fs.readdirSync(IMAGE_CACHE_DIR)) {
+      if (f.startsWith(prefix) && !(keepVersion && f.startsWith(`${prefix}${keepVersion}__`))) {
+        fs.unlinkSync(path.join(IMAGE_CACHE_DIR, f));
+      }
+    }
+  } catch (e) {}
+};
+
+// Chỉ xử lý 1 ảnh tại một thời điểm (VPS 1 CPU / 1GB RAM) và gộp các yêu cầu trùng nhau
+let thumbChain = Promise.resolve();
+const thumbInflight = new Map();
+const ensureThumbnail = (product, width, format) => {
+  const version = imageVersion(product.id, product.image);
+  const file = thumbPath(product.id, version, width, format);
+  if (fs.existsSync(file)) return Promise.resolve(file);
+  if (thumbInflight.has(file)) return thumbInflight.get(file);
+
+  const job = thumbChain.then(async () => {
+    if (fs.existsSync(file)) return file;
+    const parsed = parseImageDataUri(product.image);
+    if (!parsed || !canThumbnail(parsed.mime)) throw new Error('định dạng ảnh không hỗ trợ thu nhỏ');
+    // rotate(): áp dụng hướng xoay EXIF của ảnh chụp điện thoại; đầu ra không mang EXIF (kể cả vị trí GPS)
+    let pipeline = sharpLib(parsed.buffer, { failOn: 'none' }).rotate().resize({ width, withoutEnlargement: true });
+    pipeline = format === 'webp'
+      ? pipeline.webp({ quality: 80 })
+      : pipeline.flatten({ background: '#ffffff' }).jpeg({ quality: 82, progressive: true, mozjpeg: true });
+    const out = await pipeline.toBuffer();
+    fs.mkdirSync(IMAGE_CACHE_DIR, { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, out);
+    fs.renameSync(tmp, file);
+    removeThumbnails(product.id, version);
+    return file;
+  });
+  thumbChain = job.catch(() => {});
+  const tracked = job.finally(() => thumbInflight.delete(file));
+  thumbInflight.set(file, tracked);
+  return tracked;
+};
+
+// Tạo sẵn ảnh thu nhỏ nền (sau khi khởi động và sau khi admin tải ảnh mới) để khách đầu tiên không phải chờ
+const warmThumbnails = async (products) => {
+  await sharpReady;
+  if (!sharpLib) return;
+  for (const p of products || []) {
+    if (!canThumbnail(dataUriMime(p && p.image))) continue;
+    for (const w of WARM_WIDTHS) {
+      try { await ensureThumbnail(p, w, 'webp'); } catch (e) {}
+    }
+  }
+};
+
 // GET /api/products/:id/image (ảnh sản phẩm tải lên; URL có ?v=<hash> nên cache được vô thời hạn)
 app.get('/api/products/:id/image', async (req, res) => {
   try {
     const products = (await readJson('products.json')) || [];
     const product = products.find(p => p.id === req.params.id);
-    const parsed = product ? parseImageDataUri(product.image) : null;
-    if (!parsed) {
+    const mime = product ? dataUriMime(product.image) : '';
+    if (!IMAGE_MIME_RE.test(mime)) {
       return res.status(404).json({ success: false, message: 'Sản phẩm không có ảnh tải lên' });
     }
-    res.setHeader('Content-Type', parsed.mime);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    if (parsed.mime === 'image/svg+xml') {
-      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'");
+    const cacheControl = req.query.v ? 'public, max-age=31536000, immutable' : 'public, max-age=300';
+
+    const sendOriginal = () => {
+      const parsed = parseImageDataUri(product.image);
+      if (!parsed) return res.status(404).json({ success: false, message: 'Sản phẩm không có ảnh tải lên' });
+      res.setHeader('Content-Type', parsed.mime);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      if (parsed.mime === 'image/svg+xml') {
+        res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'");
+      }
+      res.setHeader('Cache-Control', cacheControl);
+      return res.send(parsed.buffer);
+    };
+
+    const width = Number(req.query.w);
+    if (THUMB_WIDTHS.includes(width) && canThumbnail(mime)) {
+      await sharpReady;
+      if (sharpLib) {
+        try {
+          const format = /image\/webp/i.test(req.headers.accept || '') ? 'webp' : 'jpeg';
+          const file = await ensureThumbnail(product, width, format);
+          res.setHeader('Vary', 'Accept');
+          return res.sendFile(
+            file,
+            { cacheControl: false, headers: { 'Cache-Control': cacheControl, 'X-Content-Type-Options': 'nosniff' } },
+            (err) => { if (err && !res.headersSent) sendOriginal(); }
+          );
+        } catch (thumbErr) {
+          console.warn(`[ảnh] Không tạo được ảnh thu nhỏ cho ${product.id}, dùng ảnh gốc:`, thumbErr.message);
+        }
+      }
     }
-    res.setHeader('Cache-Control', req.query.v ? 'public, max-age=31536000, immutable' : 'public, max-age=300');
-    res.send(parsed.buffer);
+    return sendOriginal();
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -457,6 +571,7 @@ app.post('/api/products', requireAdminMiddleware, async (req, res) => {
 
     products.unshift(newProduct);
     await writeJson('products.json', products);
+    if (dataUriMime(newProduct.image)) warmThumbnails([newProduct]);
 
     broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: toPublicProduct(newProduct) });
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: toPublicProduct(newProduct) });
@@ -508,7 +623,9 @@ app.put('/api/products/:id', requireAdminMiddleware, async (req, res) => {
       };
     }
 
-await writeJson('products.json', products);
+    await writeJson('products.json', products);
+    if (dataUriMime(products[index].image)) warmThumbnails([products[index]]);
+    else removeThumbnails(id);
     broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: toPublicProduct(products[index]) });
     res.json({ success: true, data: toPublicProduct(products[index]) });
   } catch (error) {
@@ -551,6 +668,7 @@ app.delete('/api/products/:id', requireAdminMiddleware, async (req, res) => {
 
     await writeJson('products.json', filtered);
     imageVersionCache.delete(id);
+    removeThumbnails(id);
     broadcastAdminEvent({ type: 'PRODUCT_DELETED', productId: id });
     res.json({ success: true, message: 'Đã xóa mẫu hoa thành công' });
   } catch (error) {
@@ -1328,6 +1446,12 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     database: sql ? 'Neon PostgreSQL' : 'Local Storage Fallback',
     port: PORT
   }).catch((e) => console.warn('Note startup notify:', e.message));
+
+  // Tạo sẵn ảnh thu nhỏ ở nền sau khi khởi động (chạy tuần tự, không chặn việc phục vụ khách)
+  const warmTimer = setTimeout(() => {
+    readJson('products.json').then((list) => warmThumbnails(list)).catch(() => {});
+  }, 5000);
+  warmTimer.unref?.();
 });
 
 process.on('SIGTERM', () => server.close());

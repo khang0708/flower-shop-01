@@ -19,6 +19,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { ZaloIcon } from './ZaloIcon';
+import { productImageUrl, productImageSrcSet } from '../utils/productImage';
 
 export const ProductDetailModal = () => {
   const { quickViewProduct } = useShop();
@@ -134,7 +135,9 @@ const ProductDetailModalContent = () => {
             <div>
               <div className="relative aspect-square rounded-2xl overflow-hidden shadow-md border border-[#E8EFEA] bg-white">
                 <img
-                  src={quickViewProduct.image}
+                  src={productImageUrl(quickViewProduct.image, 1200)}
+                  srcSet={productImageSrcSet(quickViewProduct.image, [800, 1200])}
+                  sizes="(min-width: 1024px) 40vw, 90vw"
                   alt={quickViewProduct.name}
                   className="w-full h-full object-contain"
                 />

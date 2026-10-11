@@ -113,3 +113,15 @@ pm2 restart flora-bloom-api
 ## Ghi chú riêng cho dự án này
 - `server/server.js` chạy trực tiếp Node Express Server qua PM2 trên cổng 3001, được Nginx reverse proxy sang `/api/`.
 - Route SSE (`/api/admin/events`) hoạt động liên tục real-time giữa các thiết bị mà không bị giới hạn timeout của serverless.
+
+## Ảnh sản phẩm (thu nhỏ tự động)
+- Danh sách sản phẩm chỉ trả đường dẫn ảnh (`/api/products/<id>/image?v=...`); ảnh được phục vụ riêng và cache lâu.
+- Thêm `?w=240|480|800|1200` để lấy bản thu nhỏ (WebP, hoặc JPEG nếu trình duyệt không hỗ trợ). Server dùng thư viện `sharp`
+  (đã nằm trong `package.json`, `npm ci` tự tải bản dựng sẵn cho Linux) và lưu cache ở `$DATA_DIR/image-cache/`
+  (tạo lại được, không cần sao lưu). Sau khi khởi động ~5 giây server tự tạo sẵn các bản 480px và 800px ở nền.
+- An toàn: nếu `sharp` không nạp được hoặc ảnh hỏng, server tự trả ảnh gốc (không lỗi). Muốn tắt hẳn thu nhỏ:
+  đặt `IMAGE_THUMBNAILS=off` trong `.env` rồi `pm2 restart ... --update-env`.
+- Dữ liệu ảnh gốc vẫn nằm nguyên trong `products.json` (không cần di chuyển dữ liệu); admin tải ảnh mới lên sẽ được
+  trình duyệt nén về tối đa 1600px trước khi lưu.
+- Khuyến nghị (tùy chọn) cache thêm ở nginx cho đường dẫn ảnh, ví dụ:
+  `location ~ ^/api/products/[^/]+/image$ { proxy_pass http://127.0.0.1:3001; proxy_cache_valid 200 365d; ... }`

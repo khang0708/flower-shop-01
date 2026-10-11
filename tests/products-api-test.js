@@ -31,7 +31,7 @@ async function test(name, fn) {
   }
 }
 
-async function startServer(port, products) {
+async function startServer(port, products, extraEnv = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flora-api-test-'));
   tempDirs.push(dir);
   fs.writeFileSync(path.join(dir, 'products.json'), typeof products === 'string' ? products : JSON.stringify(products));
@@ -45,7 +45,8 @@ async function startServer(port, products) {
       ADMIN_DEFAULT_PASSWORD: ADMIN_PASSWORD,
       DATABASE_URL: '',
       DEV_ALERT_TELEGRAM_TOKEN: '',
-      DEV_ALERT_TELEGRAM_CHAT_ID: ''
+      DEV_ALERT_TELEGRAM_CHAT_ID: '',
+      ...extraEnv
     },
     stdio: 'ignore'
   });
@@ -262,6 +263,155 @@ try {
     });
     assert.strictEqual(r.status, 200);
     assert.strictEqual(byId(await getList(), 'GHOST2').image, '');
+  });
+
+  // ----- Ảnh thu nhỏ (?w=) -----
+  const sharp = (await import('sharp')).default;
+  const svgArt = (w, h) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#fdf2f4"/><circle cx="${w / 2}" cy="${h / 2}" r="${h / 3}" fill="#e8998d"/><rect x="20" y="20" width="${w / 4}" height="${h / 6}" fill="#1b3b2b"/></svg>`);
+  // 1800x1200 (ngang) gắn EXIF orientation=6 => hiển thị thật là ảnh DỌC 1200x1800
+  const photoJpeg = await sharp(svgArt(1800, 1200)).jpeg({ quality: 98, chromaSubsampling: '4:4:4' }).withMetadata({ orientation: 6 }).toBuffer();
+  const smallPng = await sharp(svgArt(100, 80)).png().toBuffer();
+  const gifBytes = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+  const badBytes = crypto.randomBytes(5000);
+  const uri = (mime, buf) => `data:${mime};base64,${buf.toString('base64')}`;
+
+  const th = await startServer(3194, [
+    { id: 'PHOTO', name: 'Ảnh chụp', price: 1, image: uri('image/jpeg', photoJpeg) },
+    { id: 'SMALL', name: 'Ảnh nhỏ', price: 1, image: uri('image/png', smallPng) },
+    { id: 'GIF1', name: 'Gif', price: 1, image: uri('image/gif', gifBytes) },
+    { id: 'SVG1', name: 'Svg', price: 1, image: uri('image/svg+xml', svgArt(50, 50)) },
+    { id: 'BAD', name: 'Ảnh hỏng', price: 1, image: uri('image/jpeg', badBytes) },
+    { id: '../evil', name: 'Id nguy hiểm', price: 1, image: uri('image/jpeg', photoJpeg) }
+  ]);
+  const thAuth = { Authorization: `Bearer ${await adminToken(th.base)}`, 'Content-Type': 'application/json' };
+  const cacheDir = path.join(th.dir, 'image-cache');
+  const cacheFiles = () => (fs.existsSync(cacheDir) ? fs.readdirSync(cacheDir) : []);
+  const thList = async () => (await (await fetch(`${th.base}/api/products`)).json()).data;
+  const thUrl = async (id) => (await thList()).find((p) => p.id === id).image;
+  const getBuf = async (url, headers = {}) => {
+    const r = await fetch(`${th.base}${url}`, { headers });
+    return { r, buf: Buffer.from(await r.arrayBuffer()) };
+  };
+  const WEBP = { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' };
+
+  await test('?w=800 + Accept webp: trả WebP rộng 800, nhỏ hơn ảnh gốc, cache vô thời hạn, Vary: Accept', async () => {
+    const { r, buf } = await getBuf(`${await thUrl('PHOTO')}&w=800`, WEBP);
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.headers.get('content-type'), 'image/webp');
+    assert.match(r.headers.get('cache-control') || '', /immutable/);
+    assert.match(r.headers.get('vary') || '', /Accept/i);
+    const meta = await sharp(buf).metadata();
+    assert.strictEqual(meta.width, 800);
+    assert.ok(buf.length < photoJpeg.length / 2, `ảnh thu nhỏ ${buf.length} phải nhỏ hơn nửa ảnh gốc ${photoJpeg.length}`);
+  });
+
+  await test('Trình duyệt không hỗ trợ WebP (Accept không có webp): trả JPEG', async () => {
+    const { r, buf } = await getBuf(`${await thUrl('PHOTO')}&w=480`, { Accept: 'image/png,image/*;q=0.8' });
+    assert.strictEqual(r.headers.get('content-type'), 'image/jpeg');
+    assert.strictEqual((await sharp(buf).metadata()).width, 480);
+  });
+
+  await test('Áp dụng hướng xoay EXIF (ảnh chụp điện thoại) và KHÔNG giữ EXIF/GPS trong ảnh thu nhỏ', async () => {
+    const { buf } = await getBuf(`${await thUrl('PHOTO')}&w=800`, WEBP);
+    const meta = await sharp(buf).metadata();
+    assert.ok(meta.height > meta.width, `ảnh phải dọc sau khi xoay: ${meta.width}x${meta.height}`);
+    assert.strictEqual(meta.height, 1200);
+    assert.strictEqual(meta.exif, undefined);
+    const jpg = await getBuf(`${await thUrl('PHOTO')}&w=800`, { Accept: 'image/png' });
+    assert.strictEqual((await sharp(jpg.buf).metadata()).exif, undefined);
+  });
+
+  await test('Ảnh thu nhỏ có ETag và trả 304 khi gửi lại If-None-Match', async () => {
+    const url = `${await thUrl('PHOTO')}&w=800`;
+    const first = await fetch(`${th.base}${url}`, { headers: WEBP });
+    const etag = first.headers.get('etag');
+    assert.ok(etag, 'phải có ETag');
+    await first.arrayBuffer();
+    const status = await new Promise((resolve, reject) => {
+      http.get(`${th.base}${url}`, { headers: { ...WEBP, 'If-None-Match': etag } }, (res) => { res.resume(); resolve(res.statusCode); }).on('error', reject);
+    });
+    assert.strictEqual(status, 304);
+  });
+
+  await test('Ảnh nhỏ hơn cỡ yêu cầu không bị phóng to', async () => {
+    const { buf } = await getBuf(`${await thUrl('SMALL')}&w=800`, WEBP);
+    assert.strictEqual((await sharp(buf).metadata()).width, 100);
+  });
+
+  await test('Cỡ không nằm trong danh sách cho phép (w=7, 5000, abc) -> trả ảnh gốc, không tạo file cache', async () => {
+    const before = cacheFiles().length;
+    for (const w of ['7', '5000', 'abc', '-1']) {
+      const { r, buf } = await getBuf(`${await thUrl('PHOTO')}&w=${w}`, WEBP);
+      assert.strictEqual(r.status, 200, `w=${w}`);
+      assert.strictEqual(r.headers.get('content-type'), 'image/jpeg');
+      assert.strictEqual(Buffer.compare(buf, photoJpeg), 0, `w=${w} phải trả đúng ảnh gốc`);
+    }
+    assert.strictEqual(cacheFiles().length, before);
+  });
+
+  await test('GIF và SVG có ?w= -> vẫn trả ảnh gốc (không thu nhỏ)', async () => {
+    const gif = await getBuf(`${await thUrl('GIF1')}&w=480`, WEBP);
+    assert.strictEqual(gif.r.headers.get('content-type'), 'image/gif');
+    assert.strictEqual(Buffer.compare(gif.buf, gifBytes), 0);
+    const svg = await getBuf(`${await thUrl('SVG1')}&w=480`, WEBP);
+    assert.strictEqual(svg.r.headers.get('content-type'), 'image/svg+xml');
+  });
+
+  await test('Ảnh hỏng không làm sập API: ?w= tự trả ảnh gốc (200), không phải 500', async () => {
+    const { r, buf } = await getBuf(`${await thUrl('BAD')}&w=800`, WEBP);
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(Buffer.compare(buf, badBytes), 0);
+  });
+
+  await test('Id sản phẩm chứa ký tự nguy hiểm không ghi được file ra ngoài thư mục cache', async () => {
+    const url = (await thList()).find((p) => p.id === '../evil').image;
+    const r = await fetch(`${th.base}${url}&w=480`, { headers: WEBP });
+    assert.strictEqual(r.status, 200);
+    await r.arrayBuffer();
+    assert.ok(cacheFiles().some((f) => f.startsWith('___evil-')), 'file cache phải nằm trong image-cache với tên đã làm sạch');
+    assert.ok(!fs.readdirSync(th.dir).some((f) => f.includes('evil')), 'không được tạo file ngoài thư mục cache');
+    assert.ok(!fs.readdirSync(path.dirname(th.dir)).some((f) => f === 'evil' || f.startsWith('evil__')));
+  });
+
+  await test('Tải ảnh mới lên: ảnh thu nhỏ cũ bị dọn, bản mới được tạo sẵn ở nền', async () => {
+    const oldFiles = cacheFiles().filter((f) => f.startsWith('PHOTO-'));
+    assert.ok(oldFiles.length >= 2, 'phải có ảnh thu nhỏ của bản cũ');
+    const newPhoto = await sharp(svgArt(1500, 1000)).jpeg({ quality: 90 }).toBuffer();
+    const r = await fetch(`${th.base}/api/products/PHOTO`, { method: 'PUT', headers: thAuth, body: JSON.stringify({ image: uri('image/jpeg', newPhoto) }) });
+    assert.strictEqual(r.status, 200);
+    let fresh = [];
+    for (let i = 0; i < 40 && fresh.length < 2; i++) {
+      await new Promise((res) => setTimeout(res, 150));
+      fresh = cacheFiles().filter((f) => f.startsWith('PHOTO-') && !oldFiles.includes(f));
+    }
+    assert.ok(fresh.length >= 2, 'ảnh thu nhỏ bản mới phải được tạo sẵn (480 và 800)');
+    assert.ok(cacheFiles().filter((f) => oldFiles.includes(f)).length === 0, 'ảnh thu nhỏ của bản cũ phải bị xóa');
+    const { buf } = await getBuf(`${await thUrl('PHOTO')}&w=800`, WEBP);
+    assert.strictEqual((await sharp(buf).metadata()).width, 800);
+  });
+
+  await test('Thêm sản phẩm mới có ảnh: ảnh thu nhỏ được tạo sẵn; xóa sản phẩm thì dọn sạch cache của nó', async () => {
+    const pic = await sharp(svgArt(1200, 900)).jpeg({ quality: 90 }).toBuffer();
+    const r = await fetch(`${th.base}/api/products`, { method: 'POST', headers: thAuth, body: JSON.stringify({ id: 'WARM1', name: 'Tạo sẵn', price: 1, image: uri('image/jpeg', pic) }) });
+    assert.strictEqual(r.status, 201);
+    let mine = [];
+    for (let i = 0; i < 40 && mine.length < 2; i++) {
+      await new Promise((res) => setTimeout(res, 150));
+      mine = cacheFiles().filter((f) => f.startsWith('WARM1-'));
+    }
+    assert.ok(mine.length >= 2, 'phải có ảnh 480 và 800 tạo sẵn');
+    assert.strictEqual((await fetch(`${th.base}/api/products/WARM1`, { method: 'DELETE', headers: thAuth })).status, 200);
+    assert.strictEqual(cacheFiles().filter((f) => f.startsWith('WARM1-')).length, 0);
+  });
+
+  const off = await startServer(3195, [{ id: 'PHOTO', name: 'Ảnh', price: 1, image: uri('image/jpeg', photoJpeg) }], { IMAGE_THUMBNAILS: 'off' });
+  await test('Công tắc IMAGE_THUMBNAILS=off: ?w= trả ảnh gốc và không tạo thư mục cache', async () => {
+    const url = (await (await fetch(`${off.base}/api/products`)).json()).data[0].image;
+    const r = await fetch(`${off.base}${url}&w=800`, { headers: WEBP });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.headers.get('content-type'), 'image/jpeg');
+    assert.strictEqual(Buffer.compare(Buffer.from(await r.arrayBuffer()), photoJpeg), 0);
+    assert.ok(!fs.existsSync(path.join(off.dir, 'image-cache')));
   });
 } finally {
   children.forEach((c) => c.kill());
