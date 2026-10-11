@@ -182,6 +182,9 @@ const readJson = async (fileName) => {
     return data;
   } catch (err) {
     console.error(`Lỗi đọc file ${fileName}:`, err);
+    // File sản phẩm hỏng phải báo lỗi (HTTP 500), KHÔNG trả [] — nếu không trang khách bị xóa trắng,
+    // và thao tác thêm/sửa tiếp theo sẽ ghi đè file bằng danh sách gần như rỗng.
+    if (fileName === 'products.json') throw err;
     return fileName.includes('settings') ? {} : [];
   }
 };

@@ -148,6 +148,7 @@ export const ShopProvider = ({ children }) => {
 
   // true sau khi lần tải danh sách đầu tiên từ server kết thúc (thành công hoặc phải dùng dữ liệu mẫu dự phòng)
   const [productsLoaded, setProductsLoaded] = useState(false);
+  const productsLoadedRef = useRef(false);
   const productsRef = useRef(products);
 
   const updateProductsLocalAndBroadcast = useCallback((updater, broadcastAction = null) => {
@@ -622,6 +623,7 @@ export const ShopProvider = ({ children }) => {
       productsRef.current = FLOWERS_DATA;
       setProductsState(FLOWERS_DATA);
     }
+    productsLoadedRef.current = true;
     setProductsLoaded(true);
   }, []);
 
@@ -650,6 +652,7 @@ export const ShopProvider = ({ children }) => {
           return mp;
         });
         updateProductsLocalAndBroadcast(() => merged);
+        productsLoadedRef.current = true;
         setProductsLoaded(true);
 
         // Chỉ đẩy lại các sản phẩm server ĐÃ CÓ mà bản local sửa mới hơn. Không bao giờ đẩy sản phẩm server không có
@@ -771,6 +774,12 @@ export const ShopProvider = ({ children }) => {
 
     const timer = setTimeout(initDataFromApi, 60);
 
+    // Server phản hồi quá chậm (danh sách sản phẩm rất nặng, mạng yếu): sau 3s hiện tạm dữ liệu mẫu thay vì để
+    // khách nhìn "Đang tải" mãi. Không lưu cache, và sẽ bị thay bằng danh sách server ngay khi tải xong.
+    const slowLoadTimer = setTimeout(() => {
+      if (!productsLoadedRef.current) applyProductsFallback();
+    }, 3000);
+
     // ----------------------------------------------------
     // SMART BACKGROUND SYNC & TAB FOCUS LISTENER (HƯỚNG 2)
     // Tự động đồng bộ ngầm khi khách quay lại tab hoặc mỗi 30s
@@ -888,6 +897,7 @@ export const ShopProvider = ({ children }) => {
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(slowLoadTimer);
       if (eventSource) eventSource.close();
       cleanupTabListener();
       if (typeof document !== 'undefined') {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   X, 
@@ -108,6 +108,7 @@ const CheckoutModalContent = () => {
 
   // Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
@@ -157,7 +158,8 @@ const CheckoutModalContent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submittingRef.current) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     const computedSlot = deliveryType === 'express' 
@@ -180,6 +182,7 @@ const CheckoutModalContent = () => {
     } catch (err) {
       console.error('Lỗi khi gửi đơn hàng:', err);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
