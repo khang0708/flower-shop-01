@@ -92,6 +92,7 @@ const INITIAL_ORDERS = [
 // LOCAL-FIRST & CONFLICT RESOLUTION UTILITIES
 // Đồng bộ đa thiết bị và ngăn dữ liệu cũ ghi đè dữ liệu mới
 // ----------------------------------------------------
+import { isCustomProductImage } from '../utils/productImage';
 import {
   getDeletedProductIds,
   markProductDeletedLocal,
@@ -120,11 +121,11 @@ export const ShopProvider = ({ children }) => {
           return parsed.map(p => {
             const defaultItem = FLOWERS_DATA.find(f => f.id === p.id);
             let image = p.image;
-            if (defaultItem) {
+            if (defaultItem && !isCustomProductImage(image)) {
               if (
                 defaultItem.image && (
-                  defaultItem.image.startsWith('/products/') || 
-                  !image || 
+                  defaultItem.image.startsWith('/products/') ||
+                  !image ||
                   image.includes('wikimedia.org') || 
                   image.includes('photo-1599733589046-10c005739ef9')
                 )
@@ -645,7 +646,7 @@ export const ShopProvider = ({ children }) => {
         const merged = rawMerged.map(mp => {
           const canonical = FLOWERS_DATA.find(f => f.id === mp.id);
           if (canonical && canonical.image && canonical.image.startsWith('/products/')) {
-            if (!mp.image || !mp.image.startsWith('data:image/') || mp.image.includes('photo-1599733589046-10c005739ef9')) {
+            if (!mp.image || !isCustomProductImage(mp.image) || mp.image.includes('photo-1599733589046-10c005739ef9')) {
               return { ...mp, image: canonical.image, category: mp.category || canonical.category };
             }
           }

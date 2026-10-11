@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -351,12 +352,79 @@ app.post('/api/admin/change-password', requireAdminMiddleware, async (req, res) 
 // 1. PRODUCTS REST API (Quản Lý Sản Phẩm Mẫu Hoa)
 // ----------------------------------------------------
 
+// ----- Ảnh sản phẩm -----
+// Ảnh admin tải lên được lưu dạng data URI trong products.json (mỗi ảnh có thể 5-8MB). API KHÔNG nhét khối đó vào
+// danh sách/phản hồi mà trả đường dẫn /api/products/:id/image?v=<hash> để trình duyệt tải riêng, lazy và cache lâu.
+// Dữ liệu lưu trên đĩa giữ nguyên (không cần di chuyển dữ liệu, hoàn tác chỉ cần revert code).
+const OWN_IMAGE_URL_RE = /^\/api\/products\/[^/?#]+\/image(?:[?#]|$)/;
+const IMAGE_MIME_RE = /^image\/(jpeg|png|webp|gif|avif|bmp|svg\+xml)$/i;
+const imageVersionCache = new Map();
+
+const imageVersion = (id, src) => {
+  const cached = imageVersionCache.get(id);
+  if (cached && cached.src === src) return cached.v;
+  const v = crypto.createHash('sha1').update(src).digest('hex').slice(0, 12);
+  imageVersionCache.set(id, { src, v });
+  return v;
+};
+
+const toPublicProduct = (p) => {
+  if (!p || typeof p.image !== 'string' || !p.image.startsWith('data:')) return p;
+  return { ...p, image: `/api/products/${encodeURIComponent(p.id)}/image?v=${imageVersion(p.id, p.image)}` };
+};
+
+// Client gửi lại chính đường dẫn ảnh này khi lưu sản phẩm: bỏ đi để KHÔNG ghi đè ảnh thật đang lưu
+const stripOwnImageUrl = (body) => {
+  if (body && typeof body.image === 'string' && OWN_IMAGE_URL_RE.test(body.image)) {
+    const { image: _ownUrl, ...rest } = body;
+    return rest;
+  }
+  return body || {};
+};
+
+const parseImageDataUri = (uri) => {
+  if (typeof uri !== 'string' || !uri.startsWith('data:')) return null;
+  const comma = uri.indexOf(',');
+  if (comma === -1) return null;
+  const meta = uri.slice(5, comma);
+  const mime = (meta.split(';')[0] || '').toLowerCase();
+  if (!IMAGE_MIME_RE.test(mime)) return null;
+  const payload = uri.slice(comma + 1);
+  try {
+    const buffer = /;base64$/i.test(meta) ? Buffer.from(payload, 'base64') : Buffer.from(decodeURIComponent(payload), 'binary');
+    return buffer.length > 0 ? { mime, buffer } : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 // GET /api/products
 app.get('/api/products', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const products = await readJson('products.json');
-    res.json({ success: true, data: products, total: products.length });
+    res.json({ success: true, data: products.map(toPublicProduct), total: products.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/products/:id/image (ảnh sản phẩm tải lên; URL có ?v=<hash> nên cache được vô thời hạn)
+app.get('/api/products/:id/image', async (req, res) => {
+  try {
+    const products = (await readJson('products.json')) || [];
+    const product = products.find(p => p.id === req.params.id);
+    const parsed = product ? parseImageDataUri(product.image) : null;
+    if (!parsed) {
+      return res.status(404).json({ success: false, message: 'Sản phẩm không có ảnh tải lên' });
+    }
+    res.setHeader('Content-Type', parsed.mime);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (parsed.mime === 'image/svg+xml') {
+      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'");
+    }
+    res.setHeader('Cache-Control', req.query.v ? 'public, max-age=31536000, immutable' : 'public, max-age=300');
+    res.send(parsed.buffer);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -365,6 +433,7 @@ app.get('/api/products', async (req, res) => {
 // POST /api/products (Thêm mẫu hoa mới)
 app.post('/api/products', requireAdminMiddleware, async (req, res) => {
   try {
+    req.body = stripOwnImageUrl(req.body);
     const products = (await readJson('products.json')) || [];
     const newProduct = {
       id: req.body.id || `fl-${Date.now()}`,
@@ -389,9 +458,9 @@ app.post('/api/products', requireAdminMiddleware, async (req, res) => {
     products.unshift(newProduct);
     await writeJson('products.json', products);
 
-    broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: newProduct });
-    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: newProduct });
-    res.status(201).json({ success: true, data: newProduct });
+    broadcastAdminEvent({ type: 'PRODUCT_ADDED', product: toPublicProduct(newProduct) });
+    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: toPublicProduct(newProduct) });
+    res.status(201).json({ success: true, data: toPublicProduct(newProduct) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -400,6 +469,7 @@ app.post('/api/products', requireAdminMiddleware, async (req, res) => {
 // PUT /api/products/:id (Cập nhật mẫu hoa)
 app.put('/api/products/:id', requireAdminMiddleware, async (req, res) => {
   try {
+    req.body = stripOwnImageUrl(req.body);
     const { id } = req.params;
     let products = (await readJson('products.json')) || [];
     let index = products.findIndex(p => p.id === id);
@@ -438,9 +508,9 @@ app.put('/api/products/:id', requireAdminMiddleware, async (req, res) => {
       };
     }
 
-    await writeJson('products.json', products);
-    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
-    res.json({ success: true, data: products[index] });
+await writeJson('products.json', products);
+    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: toPublicProduct(products[index]) });
+    res.json({ success: true, data: toPublicProduct(products[index]) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -461,8 +531,8 @@ app.patch('/api/products/:id/toggle', requireAdminMiddleware, async (req, res) =
     products[index].updatedAt = new Date().toISOString();
     await writeJson('products.json', products);
 
-    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: products[index] });
-    res.json({ success: true, data: products[index] });
+    broadcastAdminEvent({ type: 'PRODUCT_UPDATED', product: toPublicProduct(products[index]) });
+    res.json({ success: true, data: toPublicProduct(products[index]) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -480,6 +550,7 @@ app.delete('/api/products/:id', requireAdminMiddleware, async (req, res) => {
     }
 
     await writeJson('products.json', filtered);
+    imageVersionCache.delete(id);
     broadcastAdminEvent({ type: 'PRODUCT_DELETED', productId: id });
     res.json({ success: true, message: 'Đã xóa mẫu hoa thành công' });
   } catch (error) {

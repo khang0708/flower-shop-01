@@ -19,6 +19,8 @@ const {
   RECENT_LOCAL_WINDOW_MS
 } = await import('../src/utils/conflictResolution.js');
 
+const { isCustomProductImage } = await import('../src/utils/productImage.js');
+
 console.log('\n====================================================');
 console.log('🔄 KIỂM THỬ ĐỒNG BỘ SẢN PHẨM: MÁY CHỦ LÀ NGUỒN SỰ THẬT');
 console.log('====================================================\n');
@@ -151,6 +153,20 @@ test('Dấu đã xóa kiểu cũ trong localStorage bị dọn, không còn ản
 test('Đầu vào không hợp lệ (null/undefined/phần tử rỗng) không làm hỏng hàm gộp', () => {
   assert.deepStrictEqual(merge(null, null, { now: NOW }), []);
   assert.deepStrictEqual(ids(merge([null, {}], [null, { id: 'A' }, {}], { now: NOW })), ['A']);
+});
+
+test('Nhận diện ảnh admin tải lên: data URI và đường dẫn ảnh riêng của server là ảnh tùy chỉnh', () => {
+  assert.strictEqual(isCustomProductImage('data:image/jpeg;base64,AAAA'), true);
+  assert.strictEqual(isCustomProductImage('/api/products/fl-06/image?v=4e10278e1ace'), true);
+  assert.strictEqual(isCustomProductImage('/api/products/fl-06/image'), true);
+});
+
+test('Ảnh mặc định, ảnh link ngoài hoặc rỗng KHÔNG phải ảnh tùy chỉnh (được phép thay bằng ảnh chuẩn)', () => {
+  assert.strictEqual(isCustomProductImage('/products/hoa-hong.jpg'), false);
+  assert.strictEqual(isCustomProductImage('https://images.unsplash.com/photo-1?w=800'), false);
+  assert.strictEqual(isCustomProductImage('/api/products/fl-06/other'), false);
+  assert.strictEqual(isCustomProductImage(''), false);
+  assert.strictEqual(isCustomProductImage(undefined), false);
 });
 
 console.log('\n====================================================');

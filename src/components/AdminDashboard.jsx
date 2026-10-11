@@ -24,6 +24,7 @@ import {
 import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { ConfirmDialog } from './ConfirmDialog';
+import { isCustomProductImage } from '../utils/productImage';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
 import { 
@@ -3483,7 +3484,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         <span>Đã nạp ảnh thành công</span>
                       </span>
                       <span className="text-[10px] text-gray-400 block truncate mt-0.5">
-                        {formData.image.startsWith('data:') ? 'Tệp ảnh từ máy tính (Data URI)' : formData.image}
+                        {isCustomProductImage(formData.image) ? 'Tệp ảnh từ máy tính' : formData.image}
                       </span>
                     </div>
                     <button
