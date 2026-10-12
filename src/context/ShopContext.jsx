@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { FLOWERS_DATA } from '../data/flowers';
 import { 
   fetchProductsApi, 
@@ -23,7 +23,9 @@ import {
   fetchReviewsApi,
   createReviewApi,
   toggleReviewApi,
-  deleteReviewApi
+  deleteReviewApi,
+  fetchSseTicketApi,
+  ADMIN_AUTH_EVENT
 } from '../api';
 import { playNewOrderChime } from '../services/soundService';
 import { 
@@ -90,38 +92,42 @@ const INITIAL_ORDERS = [
 
 // ----------------------------------------------------
 // LOCAL-FIRST & CONFLICT RESOLUTION UTILITIES
-// Ngăn stale server container Vercel ghi đè dữ liệu mới
+// Đồng bộ đa thiết bị và ngăn dữ liệu cũ ghi đè dữ liệu mới
 // ----------------------------------------------------
-import { 
-  getDeletedProductIds, 
-  markProductDeletedLocal, 
-  unmarkProductDeletedLocal, 
-  mergeProductsWithConflictResolution 
+import { isCustomProductImage } from '../utils/productImage';
+import {
+  getDeletedProductIds,
+  markProductDeletedLocal,
+  unmarkProductDeletedLocal,
+  purgeLegacyDeletedMarks,
+  mergeProductsWithConflictResolution
 } from '../utils/conflictResolution';
 
-export { 
-  getDeletedProductIds, 
-  markProductDeletedLocal, 
-  unmarkProductDeletedLocal, 
-  mergeProductsWithConflictResolution 
+export {
+  getDeletedProductIds,
+  markProductDeletedLocal,
+  unmarkProductDeletedLocal,
+  mergeProductsWithConflictResolution
 };
 
 export const ShopProvider = ({ children }) => {
-  // 1. Quản lý danh mục mẫu hoa (Ưu tiên cache LocalStorage để storefront cập nhật ngay, fallback FLOWERS_DATA)
+  // 1. Danh mục mẫu hoa: máy chủ là nguồn sự thật. Giá trị khởi tạo chỉ là cache LocalStorage (để hiện nhanh)
+  // hoặc rỗng; dữ liệu mẫu FLOWERS_DATA chỉ dùng khi không gọi được server và không có cache (không lưu cache).
   const [products, setProductsState] = useState(() => {
     try {
+      purgeLegacyDeletedMarks();
       const cached = localStorage.getItem('flora_products');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const migrated = parsed.map(p => {
+          return parsed.map(p => {
             const defaultItem = FLOWERS_DATA.find(f => f.id === p.id);
             let image = p.image;
-            if (defaultItem) {
+            if (defaultItem && !isCustomProductImage(image)) {
               if (
                 defaultItem.image && (
-                  defaultItem.image.startsWith('/products/') || 
-                  !image || 
+                  defaultItem.image.startsWith('/products/') ||
+                  !image ||
                   image.includes('wikimedia.org') || 
                   image.includes('photo-1599733589046-10c005739ef9')
                 )
@@ -135,24 +141,25 @@ export const ShopProvider = ({ children }) => {
               category: p.category || defaultItem?.category || 'flowers'
             };
           });
-          const existingIds = new Set(migrated.map(p => p.id));
-          const missingNewItems = FLOWERS_DATA.filter(item => !existingIds.has(item.id));
-          const merged = [...migrated, ...missingNewItems];
-          try {
-            localStorage.setItem('flora_products', JSON.stringify(merged));
-          } catch (_) {}
-          return merged;
         }
       }
     } catch (e) {
       console.warn('Lỗi đọc cache flora_products:', e);
     }
-    return FLOWERS_DATA;
+    return [];
   });
+
+  // true sau khi lần tải danh sách đầu tiên từ server kết thúc (thành công hoặc phải dùng dữ liệu mẫu dự phòng)
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  // true chỉ khi danh sách đã về từ SERVER (không tính cache cũ hay dữ liệu mẫu hiện tạm): admin chỉ được sửa khi đó
+  const [productsSynced, setProductsSynced] = useState(false);
+  const productsLoadedRef = useRef(false);
+  const productsRef = useRef(products);
 
   const updateProductsLocalAndBroadcast = useCallback((updater, broadcastAction = null) => {
     setProductsState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
+      productsRef.current = next;
       try {
         localStorage.setItem('flora_products', JSON.stringify(next));
       } catch (e) {
@@ -245,8 +252,8 @@ export const ShopProvider = ({ children }) => {
       standardFee: 35000,
       expressFee: 60000,
       freeShippingThreshold: 1000000,
-      isFreeShippingEnabled: true,
-      freeShippingNote: 'Shop sẽ kiểm tra địa chỉ & xác nhận phí giao hoa chính xác theo quãng đường thực tế qua Zalo/SĐT'
+      isFreeShippingEnabled: false,
+      freeShippingNote: ''
     };
   });
 
@@ -270,9 +277,9 @@ export const ShopProvider = ({ children }) => {
     } catch (e) {}
     return {
       pageId: 'tiemhoaflorabloom',
-      pageName: 'Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật',
+      pageName: 'Ngọc Flower - Hoa Tươi Buôn Ma Thuột',
       pageAccessToken: '',
-      verifyToken: 'flora_bloom_webhook_secret_2026',
+      verifyToken: '',
       adminRecipientId: '',
       isEnabled: true,
       welcomeMessage: 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn chọn mẫu hoa tươi ưng ý nhất.',
@@ -298,7 +305,7 @@ export const ShopProvider = ({ children }) => {
       standardFee = 35000, 
       expressFee = 60000, 
       freeShippingThreshold = 1000000, 
-      isFreeShippingEnabled = true 
+      isFreeShippingEnabled = false 
     } = shippingSettings;
 
     const isFreeship = isFreeShippingEnabled && subtotal >= freeShippingThreshold;
@@ -615,6 +622,16 @@ export const ShopProvider = ({ children }) => {
     }
   ]);
 
+  // Không gọi được server: nếu cũng không có cache thì dùng dữ liệu mẫu để trang không trống (KHÔNG lưu vào cache)
+  const applyProductsFallback = useCallback(() => {
+    if (productsRef.current.length === 0) {
+      productsRef.current = FLOWERS_DATA;
+      setProductsState(FLOWERS_DATA);
+    }
+    productsLoadedRef.current = true;
+    setProductsLoaded(true);
+  }, []);
+
   // Đồng bộ lại toàn bộ dữ liệu từ API Server (Dùng cho Focus, Polling & thủ công)
   const refreshShopData = useCallback(async (isSilent = true) => {
     try {
@@ -627,38 +644,36 @@ export const ShopProvider = ({ children }) => {
         fetchSettingsApi().catch(() => null)
       ]);
 
-      // 1. Đồng bộ Mẫu Hoa với Conflict Resolution & Auto-Rehydration
-      if (Array.isArray(apiProducts) && apiProducts.length > 0) {
-        const itemsToRehydrate = [];
-        updateProductsLocalAndBroadcast(currentProducts => {
-          const rawMerged = mergeProductsWithConflictResolution(currentProducts, apiProducts);
-          const merged = rawMerged.map(mp => {
-            const canonical = FLOWERS_DATA.find(f => f.id === mp.id);
-            if (canonical && canonical.image && canonical.image.startsWith('/products/')) {
-              if (!mp.image || !mp.image.startsWith('data:image/') || mp.image.includes('photo-1599733589046-10c005739ef9')) {
-                return { ...mp, image: canonical.image, category: mp.category || canonical.category };
-              }
+      // 1. Đồng bộ Mẫu Hoa: danh sách server (kể cả rỗng) là chuẩn
+      if (Array.isArray(apiProducts)) {
+        const rawMerged = mergeProductsWithConflictResolution(productsRef.current, apiProducts);
+        const merged = rawMerged.map(mp => {
+          const canonical = FLOWERS_DATA.find(f => f.id === mp.id);
+          if (canonical && canonical.image && canonical.image.startsWith('/products/')) {
+            if (!mp.image || !isCustomProductImage(mp.image) || mp.image.includes('photo-1599733589046-10c005739ef9')) {
+              return { ...mp, image: canonical.image, category: mp.category || canonical.category };
             }
-            return mp;
-          });
-          // Tìm các sản phẩm local có timestamp mới hơn server để re-push ngầm ngoài updater
-          merged.forEach(mp => {
-            const sp = apiProducts.find(p => p.id === mp.id);
-            const localTime = mp.updatedAt ? new Date(mp.updatedAt).getTime() : 0;
-            const serverTime = sp?.updatedAt ? new Date(sp.updatedAt).getTime() : 0;
-            if (localTime > 0 && localTime > serverTime) {
-              itemsToRehydrate.push(mp);
-            }
-          });
-          return merged;
+          }
+          return mp;
         });
+        updateProductsLocalAndBroadcast(() => merged);
+        productsLoadedRef.current = true;
+        setProductsLoaded(true);
+        setProductsSynced(true);
 
-        // Re-push ngoài render lifecycle của React
-        if (itemsToRehydrate.length > 0) {
-          itemsToRehydrate.forEach(mp => {
+        // Chỉ đẩy lại các sản phẩm server ĐÃ CÓ mà bản local sửa mới hơn. Không bao giờ đẩy sản phẩm server không có
+        // (nếu không sản phẩm đã xóa sẽ sống lại từ cache của một trình duyệt cũ).
+        const serverById = new Map(apiProducts.map(p => [p.id, p]));
+        merged.forEach(mp => {
+          const sp = serverById.get(mp.id);
+          const localTime = mp.updatedAt ? new Date(mp.updatedAt).getTime() : 0;
+          const serverTime = sp?.updatedAt ? new Date(sp.updatedAt).getTime() : 0;
+          if (sp && localTime > serverTime) {
             updateProductApi(mp.id, mp).catch(() => {});
-          });
-        }
+          }
+        });
+      } else {
+        applyProductsFallback();
       }
 
       // 2. Đồng bộ Đơn Hàng an toàn
@@ -745,7 +760,7 @@ export const ShopProvider = ({ children }) => {
       if (!isSilent) console.warn('Lỗi refreshShopData:', err);
       return false;
     }
-  }, [updateProductsLocalAndBroadcast, shippingSettings, facebookSettings]);
+  }, [updateProductsLocalAndBroadcast, applyProductsFallback, shippingSettings, facebookSettings]);
 
   // Khởi tạo và lắng nghe Real-time SSE & BroadcastChannel (trì hoãn sau first paint)
   useEffect(() => {
@@ -755,13 +770,21 @@ export const ShopProvider = ({ children }) => {
         if (health.status === 'ONLINE') {
           setIsApiConnected(true);
           await refreshShopData(true);
+        } else {
+          applyProductsFallback();
         }
       } catch (err) {
-        // Fallback local mode
+        applyProductsFallback();
       }
     };
 
     const timer = setTimeout(initDataFromApi, 60);
+
+    // Server phản hồi quá chậm (danh sách sản phẩm rất nặng, mạng yếu): sau 3s hiện tạm dữ liệu mẫu thay vì để
+    // khách nhìn "Đang tải" mãi. Không lưu cache, và sẽ bị thay bằng danh sách server ngay khi tải xong.
+    const slowLoadTimer = setTimeout(() => {
+      if (!productsLoadedRef.current) applyProductsFallback();
+    }, 3000);
 
     // ----------------------------------------------------
     // SMART BACKGROUND SYNC & TAB FOCUS LISTENER (HƯỚNG 2)
@@ -795,11 +818,11 @@ export const ShopProvider = ({ children }) => {
       }
     }, 30000);
 
-    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác
+    // Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time từ các thiết bị khác trên VPS.
+    // Admin đã đăng nhập đổi JWT lấy vé một lần để nhận cả sự kiện đơn hàng; khách chỉ nhận sự kiện sản phẩm.
     let eventSource = null;
-    try {
-      eventSource = new EventSource('/api/admin/events');
-      eventSource.onmessage = (e) => {
+    let sseDisposed = false;
+    const handleSseMessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
           if (payload.type === 'NEW_ORDER' && payload.order) {
@@ -834,8 +857,26 @@ export const ShopProvider = ({ children }) => {
             updateProductsLocalAndBroadcast(prev => prev.filter(p => p.id !== payload.productId));
           }
         } catch (err) {}
-      };
-    } catch (err) {}
+    };
+    const connectSse = async () => {
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      try {
+        if (typeof window === 'undefined' || !('EventSource' in window)) return;
+        let url = '/api/admin/events';
+        if (localStorage.getItem('flora_admin_token')) {
+          try {
+            url += `?ticket=${encodeURIComponent(await fetchSseTicketApi())}`;
+          } catch (err) {
+            // Token hết hạn/không hợp lệ: vẫn nghe luồng công khai
+          }
+        }
+        if (sseDisposed) return;
+        eventSource = new EventSource(url);
+        eventSource.onmessage = handleSseMessage;
+      } catch (err) {}
+    };
+    connectSse();
+    if (typeof window !== 'undefined') window.addEventListener(ADMIN_AUTH_EVENT, connectSse);
 
     // Lắng nghe sự kiện đa tab qua BroadcastChannel (Đơn mới, Cập nhật ảnh thật, Đồng bộ mẫu hoa)
     const cleanupTabListener = listenToCrossTabOrders(
@@ -876,6 +917,9 @@ export const ShopProvider = ({ children }) => {
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(slowLoadTimer);
+      sseDisposed = true;
+      if (typeof window !== 'undefined') window.removeEventListener(ADMIN_AUTH_EVENT, connectSse);
       if (eventSource) eventSource.close();
       cleanupTabListener();
       if (typeof document !== 'undefined') {
@@ -886,7 +930,7 @@ export const ShopProvider = ({ children }) => {
       }
       clearInterval(pollInterval);
     };
-  }, [triggerAdminOrderAlert, updateProductsLocalAndBroadcast, refreshShopData]);
+  }, [triggerAdminOrderAlert, updateProductsLocalAndBroadcast, refreshShopData, applyProductsFallback]);
 
 
   // CRUD SẢN PHẨM MẪU HOA
@@ -903,22 +947,19 @@ export const ShopProvider = ({ children }) => {
     };
     unmarkProductDeletedLocal(id);
 
-    let finalProduct = null;
+    // Không lưu được lên server thì báo lỗi cho admin (không giả vờ thành công rồi để sản phẩm tự biến mất)
+    let finalProduct;
     try {
       finalProduct = await createProductApi(productWithTimestamp);
     } catch (e) {
-      console.warn('Lỗi API createProduct, fallback local:', e);
-      finalProduct = productWithTimestamp;
+      throw new Error(e?.message || 'Không thể lưu sản phẩm lên máy chủ. Vui lòng thử lại.');
     }
-    if (finalProduct) {
-      const mergedProduct = { ...productWithTimestamp, ...finalProduct, updatedAt: now };
-      updateProductsLocalAndBroadcast(
-        prev => [mergedProduct, ...prev.filter(p => p.id !== mergedProduct.id)],
-        () => broadcastProductAddToTabs(mergedProduct)
-      );
-      return mergedProduct;
-    }
-    return finalProduct;
+    const mergedProduct = { ...productWithTimestamp, ...finalProduct, updatedAt: now };
+    updateProductsLocalAndBroadcast(
+      prev => [mergedProduct, ...prev.filter(p => p.id !== mergedProduct.id)],
+      () => broadcastProductAddToTabs(mergedProduct)
+    );
+    return mergedProduct;
   };
 
   const updateProduct = async (productId, updatedFields) => {
@@ -945,17 +986,29 @@ export const ShopProvider = ({ children }) => {
     return finalProduct;
   };
 
+  // Xóa sản phẩm: ẩn tạm trong lúc chờ server. Thành công -> xóa khỏi danh sách; thất bại -> hiện lại,
+  // tải lại danh sách từ server và trả lỗi cho nơi gọi (admin thấy thông báo), không nuốt lỗi.
   const deleteProduct = async (productId) => {
+    const removed = productsRef.current.find(p => p.id === productId);
     markProductDeletedLocal(productId);
+    updateProductsLocalAndBroadcast(prev => prev.filter(p => p.id !== productId));
     try {
       await deleteProductApi(productId);
+      updateProductsLocalAndBroadcast(
+        prev => prev.filter(p => p.id !== productId),
+        () => broadcastProductDeleteToTabs(productId)
+      );
+      // Giữ dấu ẩn thêm vài giây để một lần tải danh sách đang bay (đã gửi trước khi xóa) không làm sản phẩm hiện lại
+      setTimeout(() => unmarkProductDeletedLocal(productId), 5000);
+      return { success: true };
     } catch (e) {
-      console.warn('Lỗi API deleteProduct, fallback local:', e);
+      unmarkProductDeletedLocal(productId);
+      if (removed) {
+        updateProductsLocalAndBroadcast(prev => (prev.some(p => p.id === productId) ? prev : [removed, ...prev]));
+      }
+      await refreshShopData(true);
+      return { success: false, message: e?.message || 'Không thể xóa sản phẩm trên máy chủ.' };
     }
-    updateProductsLocalAndBroadcast(
-      prev => prev.filter(p => p.id !== productId),
-      () => broadcastProductDeleteToTabs(productId)
-    );
   };
 
   const toggleProductAvailability = async (productId) => {
@@ -1348,6 +1401,8 @@ export const ShopProvider = ({ children }) => {
         addProduct,
         updateProduct,
         deleteProduct,
+        productsLoaded,
+        productsSynced,
         toggleProductAvailability,
         shopZaloPhone,
         setShopZaloPhone,

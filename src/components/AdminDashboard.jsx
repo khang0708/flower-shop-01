@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   SHOP_CATEGORIES, 
@@ -21,8 +21,11 @@ import {
   requestBrowserNotificationPermission, 
   getBrowserNotificationPermission 
 } from '../services/notificationService';
-import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi } from '../api';
+import { sendTelegramTestApi, getTelegramChatIdAutoApi, sendFacebookTestApi, adminChangePasswordApi } from '../api';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
+import { ConfirmDialog } from './ConfirmDialog';
+import { isCustomProductImage, productImageUrl } from '../utils/productImage';
+import { compressImageToDataUrl } from '../utils/imageCompress';
 import { SalesAnalyticsView } from './SalesAnalyticsView';
 import { NgocFlowerEmblem } from './BrandLogo';
 import { 
@@ -69,8 +72,160 @@ import {
   Image as ImageIcon,
   Truck,
   Menu,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  KeyRound
 } from 'lucide-react';
+
+const AdminChangePasswordForm = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ type: '', text: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMsg({ type: '', text: '' });
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setMsg({ type: 'error', text: 'Vui lòng điền đầy đủ các trường thông tin.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMsg({ type: 'error', text: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMsg({ type: 'error', text: 'Mật khẩu mới và mật khẩu xác nhận không khớp nhau.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await adminChangePasswordApi(currentPassword, newPassword);
+      if (res.success) {
+        setMsg({ type: 'success', text: 'Đổi mật khẩu quản trị thành công! Hãy ghi nhớ mật khẩu mới của bạn.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        throw new Error(res.message || 'Không thể đổi mật khẩu.');
+      }
+    } catch (err) {
+      setMsg({ type: 'error', text: err.message || 'Mật khẩu hiện tại không chính xác.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-5">
+      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <h4 className="font-bold text-sm text-[#1B3B2B] flex items-center gap-2">
+            <Lock className="w-4 h-4 text-emerald-600" />
+            <span>Đổi Mật Khẩu Quản Trị Viên</span>
+          </h4>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            Mật khẩu mới sẽ có hiệu lực ngay lập tức và được mã hóa chuẩn PBKDF2 trên máy chủ.
+          </p>
+        </div>
+      </div>
+
+      {msg.text && (
+        <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border animate-fade-in ${
+          msg.type === 'success' 
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+            : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
+          <span>{msg.text}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Mật khẩu hiện tại:
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Nhập mật khẩu hiện tại..."
+            required
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Mật khẩu mới (tối thiểu 6 ký tự):
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nhập mật khẩu mới..."
+            required
+            minLength={6}
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Xác nhận mật khẩu mới:
+          </label>
+          <input
+            type={showPass ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Nhập lại mật khẩu mới..."
+            required
+            minLength={6}
+            className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-gray-200 rounded-xl text-xs font-mono focus:border-[#1B3B2B] focus:bg-white focus:outline-hidden"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="showPassToggle"
+            checked={showPass}
+            onChange={(e) => setShowPass(e.target.checked)}
+            className="w-3.5 h-3.5 text-[#1B3B2B] rounded border-gray-300 focus:ring-0 cursor-pointer"
+          />
+          <label htmlFor="showPassToggle" className="text-xs text-gray-600 cursor-pointer select-none">
+            Hiển thị mật khẩu rõ ràng
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-[#1B3B2B] hover:bg-[#234d38] text-white font-bold text-xs py-3 px-6 rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <span>Đang lưu mật khẩu...</span>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="w-4 h-4" />
+              <span>Lưu Mật Khẩu Mới</span>
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
 
 
 export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
@@ -83,6 +238,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     restockInventoryItem,
     deleteInventoryItem,
     products, 
+    productsSynced,
     addProduct, 
     updateProduct, 
     deleteProduct, 
@@ -211,11 +367,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       { name: 'Hộp Hoa Vintage Garden', url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80' }
     ],
     weddings: [
-      { name: 'Rạp Cưới Versailles', url: '/products/rap_cuoi_versailles.jpg' },
-      { name: 'Gia Tiên Song Hỷ', url: '/products/gia_tien_song_hy.jpg' },
-      { name: 'Cổng Hoa Cưới Hàn Quốc', url: '/products/cong_hoa_cuoi.jpg' },
       { name: 'Tráp Cưới Rồng Phụng', url: '/products/trap_cuoi_rong_phung.jpg' },
-      { name: 'Combo Cưới Hỏi VIP', url: '/products/combo_cuoi_hoi_vip.jpg' }
+      { name: 'Tráp Cưới Sơn Mài', url: '/products/trap_cuoi_rong_phung.jpg' },
+      { name: 'Tráp Dạm Ngõ', url: '/products/trap_cuoi_rong_phung.jpg' },
+      { name: 'Cặp Rồng Phụng VIP', url: '/products/trap_cuoi_rong_phung.jpg' }
     ],
     fruits: [
       { name: 'Giỏ Phú Quý Đại Cát', url: '/products/gio_trai_cay_phu_quy.jpg' },
@@ -226,21 +381,24 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     ]
   };
 
-  const handleImageFileUpload = (e) => {
+  const handleImageFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn một file hình ảnh (JPG, PNG, WEBP,...)');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64Data = uploadEvent.target?.result;
-      if (base64Data) {
-        setFormData(prev => ({ ...prev, image: base64Data }));
-      }
-    };
-    reader.readAsDataURL(file);
+    processingImageRef.current = true;
+    setIsProcessingImage(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      if (dataUrl) setFormData(prev => ({ ...prev, image: dataUrl }));
+    } catch (err) {
+      alert('Không đọc được file ảnh này. Vui lòng chọn ảnh khác.');
+    } finally {
+      processingImageRef.current = false;
+      setIsProcessingImage(false);
+    }
   };
 
   // State Modal Thêm Voucher
@@ -268,7 +426,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     originalPrice: 850000,
     occasion: 'love',
     colorTone: 'pastel',
-    weddingType: 'rapcuoi',
+    weddingType: 'trapcuoi',
     scale: '',
     setupTime: '',
     includedItems: '',
@@ -291,6 +449,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [isDetectingChatId, setIsDetectingChatId] = useState(false);
   const [autoDetectMsg, setAutoDetectMsg] = useState(null);
   const [copyToast, setCopyToast] = useState('');
+  const [errorToast, setErrorToast] = useState('');
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const savingProductRef = useRef(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const processingImageRef = useRef(false);
+  const [productPendingDelete, setProductPendingDelete] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
 
@@ -298,7 +463,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   const [inputFbPageId, setInputFbPageId] = useState(facebookSettings?.pageId || 'tiemhoaflorabloom');
   const [inputFbPageName, setInputFbPageName] = useState(facebookSettings?.pageName || 'Ngọc Flower - Tiệm Hoa Tươi');
   const [inputFbToken, setInputFbToken] = useState(facebookSettings?.pageAccessToken || '');
-  const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || 'flora_bloom_webhook_secret_2026');
+  const [inputFbVerifyToken, setInputFbVerifyToken] = useState(facebookSettings?.verifyToken || '');
   const [inputFbRecipientId, setInputFbRecipientId] = useState(facebookSettings?.adminRecipientId || '');
   const [inputFbEnabled, setInputFbEnabled] = useState(facebookSettings?.isEnabled !== false);
   const [inputFbWelcomeMsg, setInputFbWelcomeMsg] = useState(facebookSettings?.welcomeMessage || 'Chào bạn! Ngọc Flower Studio rất vui được hỗ trợ bạn.');
@@ -353,20 +518,20 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       originalPrice: cat === 'weddings' ? 7800000 : cat === 'fruits' ? 1450000 : 850000,
       occasion: 'love',
       colorTone: 'pastel',
-      weddingType: 'rapcuoi',
-      scale: cat === 'weddings' ? 'Quy mô: 10 - 20 bàn tiệc' : '',
-      setupTime: cat === 'weddings' ? 'Thi công: 24h trước ngày lễ' : '',
-      includedItems: cat === 'weddings' ? 'Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu yêu cầu\nĐèn led chiếu sáng & fairy light trang trí\nMiễn phí vận chuyển & thu dọn hoàn thiện' : '',
+      weddingType: 'trapcuoi',
+      scale: cat === 'weddings' ? 'Quy mô: Bộ 6 - 8 tráp' : '',
+      setupTime: cat === 'weddings' ? 'Bàn giao: Sáng sớm ngày làm lễ' : '',
+      includedItems: cat === 'weddings' ? 'Bộ 6 - 8 tráp sơn mài cao cấp\nTráp rồng phượng kết hoa tươi nhập khẩu\nTráp trầu cau, rượu ngoại & bánh gia truyền\nMiễn phí vận chuyển & bàn giao tận nơi' : '',
       fruitOccasion: 'gift_vip',
       fruitTypes: cat === 'fruits' ? 'Nho Mẫu Đơn Nhật, Táo Envy, Lê Hàn Quốc, Kiwi Vàng' : '',
       image: cat === 'weddings' 
-        ? '/products/rap_cuoi_versailles.jpg' 
+        ? '/products/trap_cuoi_rong_phung.jpg' 
         : cat === 'fruits' 
         ? '/products/gio_trai_cay_phu_quy.jpg' 
         : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
       tags: ['Mẫu Mới'],
       meaning: cat === 'weddings' 
-        ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' 
+        ? 'Long Phụng sum vầy, phú quý viên mãn cho đôi uyên ương trăm năm hạnh phúc.' 
         : cat === 'fruits' 
         ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' 
         : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.',
@@ -377,6 +542,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
   };
 
   const handleOpenEditModal = (prod) => {
+    if (!productsSynced) return;
     setEditingProductId(prod.id);
     const cat = prod.category || 'flowers';
     setFormData({
@@ -387,7 +553,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
       originalPrice: prod.originalPrice || prod.price || 0,
       occasion: prod.occasion || 'love',
       colorTone: prod.colorTone || 'pastel',
-      weddingType: prod.weddingType || 'rapcuoi',
+      weddingType: prod.weddingType || 'trapcuoi',
       scale: prod.scale || '',
       setupTime: prod.setupTime || '',
       includedItems: Array.isArray(prod.includedItems) ? prod.includedItems.join('\n') : (prod.includedItems || ''),
@@ -402,8 +568,38 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     setIsProductModalOpen(true);
   };
 
+  const showErrorToast = (message) => {
+    setErrorToast(message);
+    setTimeout(() => setErrorToast(''), 6000);
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!productPendingDelete || isDeletingProduct) return;
+    const { id, name } = productPendingDelete;
+    setIsDeletingProduct(true);
+    const result = await deleteProduct(id);
+    setIsDeletingProduct(false);
+    setProductPendingDelete(null);
+    if (result?.success) {
+      setCopyToast(`Đã xóa "${name}".`);
+      setTimeout(() => setCopyToast(''), 3000);
+    } else {
+      showErrorToast(`Không xóa được "${name}": ${String(result?.message || 'lỗi không xác định').replace(/[.\s]+$/, '')}. Danh sách đã được tải lại từ máy chủ.`);
+    }
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+    // Chặn bấm đúp / bấm lại khi đang lưu (ref chặn ngay trong cùng tick, state để khóa nút)
+    // và chưa cho lưu khi ảnh vừa chọn còn đang được nén (nếu không sẽ lưu nhầm ảnh cũ/ảnh mặc định)
+    if (savingProductRef.current || processingImageRef.current) return;
+    if (editingProductId && !productsSynced) {
+      showErrorToast('Danh sách sản phẩm chưa tải xong từ máy chủ nên chưa thể lưu thay đổi. Vui lòng đợi vài giây rồi thử lại.');
+      return;
+    }
+    savingProductRef.current = true;
+    setIsSavingProduct(true);
+    try {
     const cat = formData.category || 'flowers';
     const now = new Date().toISOString();
 
@@ -443,6 +639,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     }
     setIsProductModalOpen(false);
     setEditingProductId(null);
+    } catch (err) {
+      showErrorToast(err?.message || 'Không lưu được sản phẩm. Vui lòng thử lại.');
+    } finally {
+      savingProductRef.current = false;
+      setIsSavingProduct(false);
+    }
   };
 
 
@@ -648,6 +850,22 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
     <div className="min-h-screen bg-[#F4F7F5] text-[#222523] font-sans">
       
       {/* Toast thông báo copy tin nhắn */}
+      {errorToast && (
+        <div role="alert" className="fixed top-20 right-6 z-[110] max-w-sm bg-red-700 text-white px-4 py-3 rounded-2xl shadow-2xl border border-red-300 text-xs flex items-start gap-2 animate-fade-in">
+          <span className="flex-shrink-0">⚠️</span>
+          <span>{errorToast}</span>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(productPendingDelete)}
+        title="Xóa sản phẩm này?"
+        itemName={productPendingDelete?.name}
+        busy={isDeletingProduct}
+        onConfirm={handleConfirmDeleteProduct}
+        onCancel={() => setProductPendingDelete(null)}
+      />
+
       {copyToast && (
         <div className="fixed top-20 right-6 z-50 bg-[#1B3B2B] text-white px-4 py-3 rounded-2xl shadow-2xl border border-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -774,7 +992,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 groupTitle: 'CÀI ĐẶT CỬA HÀNG',
                 items: [
                   { id: 'shipping_config', label: 'Phí Giao Hoa & Freeship', icon: Truck },
-                  { id: 'zalo_config', label: 'Cấu Hình Kênh Chat & MXH', icon: Smartphone }
+                  { id: 'zalo_config', label: 'Cấu Hình Kênh Chat & MXH', icon: Smartphone },
+                  { id: 'security', label: 'Bảo Mật & Mật Khẩu', icon: Lock }
                 ]
               }
             ].map((group, gIdx) => (
@@ -886,12 +1105,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <h1 className="font-serif text-base sm:text-lg font-bold text-[#1B3B2B] leading-tight">
                   {activeTab === 'orders' && '🛍️ Quản Lý Đơn Hàng & Cắm Mẫu'}
                   {activeTab === 'inventory' && '🌿 Quản Lý Kho Hoa Tươi & Định Lượng'}
-                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Sản Phẩm (Hoa • Rạp Cưới • Trái Cây)'}
+                  {activeTab === 'products_cms' && '💐 Quản Lý Danh Mục Sản Phẩm (Hoa • Tráp Cưới • Trái Cây)'}
                   {activeTab === 'discounts' && '🎟️ Quản Lý Voucher & Khuyến Mãi'}
                   {activeTab === 'reviews' && '⭐ Quản Lý Đánh Giá & Feedback Khách Hàng'}
                   {activeTab === 'analytics' && '📊 Báo Cáo Phân Tích Doanh Thu & Hiệu Suất'}
                   {activeTab === 'shipping_config' && '🚚 Cấu Hình Phí Giao Hoa & Freeship'}
                   {activeTab === 'zalo_config' && '💬 Cấu Hình Kênh Chat & MXH (Zalo, Telegram, Messenger)'}
+                  {activeTab === 'security' && '🔐 Cấu Hình Bảo Mật & Đổi Mật Khẩu Admin'}
                 </h1>
                 <span className="text-[10px] text-gray-400 hidden sm:block">Ngọc Flower • Bảng Điều Hành Trung Tâm</span>
               </div>
@@ -1325,7 +1545,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     Quản Lý Danh Mục Sản Phẩm (CMS)
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Quản lý toàn diện 3 trụ cột: Hoa tươi nghệ thuật, Rạp cưới hỏi gia tiên và Giỏ trái cây quà tặng.
+                    Quản lý toàn diện 3 danh mục: Hoa tươi, Tráp cưới và Giỏ trái cây.
                   </p>
                 </div>
 
@@ -1337,7 +1557,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                     <Plus className="w-4 h-4 text-[#F5D6CE]" />
                     <span>
                       {adminCategoryFilter === 'weddings' 
-                        ? 'Thêm Gói Cưới Hỏi' 
+                        ? 'Thêm Gói Tráp Cưới' 
                         : adminCategoryFilter === 'fruits' 
                         ? 'Thêm Giỏ Trái Cây' 
                         : 'Thêm Sản Phẩm Mới'}
@@ -1345,6 +1565,16 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   </button>
                 </div>
               </div>
+
+              {!productsSynced && (
+                <div role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                  <span className="flex-shrink-0">⏳</span>
+                  <span>
+                    <strong>Đang tải danh sách mới nhất từ máy chủ.</strong> Các nút Sửa, Ẩn/Hiện và Xóa sẽ mở khi tải xong, để tránh
+                    lưu nhầm ảnh hoặc nội dung cũ đè lên dữ liệu thật. Nếu chờ quá lâu, hãy kiểm tra kết nối mạng.
+                  </span>
+                </div>
+              )}
 
               {/* Thanh Điều Khiển: Bộ Lọc Danh Mục & Ô Tìm Kiếm */}
               <div className="bg-white p-4 rounded-2xl border border-[#E8EFEA] shadow-xs flex flex-wrap items-center justify-between gap-3">
@@ -1379,8 +1609,8 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         : 'text-gray-500 hover:text-black'
                     }`}
                   >
-                    <span>🎪</span>
-                    <span>Rạp Cưới Hỏi ({weddingCount})</span>
+                    <span>🧧</span>
+                    <span>Tráp Cưới Hỏi ({weddingCount})</span>
                   </button>
                   <button
                     onClick={() => setAdminCategoryFilter('fruits')}
@@ -1462,7 +1692,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                       >
                         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                           <img
-                            src={prod.image}
+                            src={productImageUrl(prod.image, 480)}
                             alt={prod.name}
                             className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           />
@@ -1476,10 +1706,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                 ? 'bg-amber-800 text-white'
                                 : 'bg-[#1B3B2B] text-white'
                             }`}>
-                              <span>{isWedding ? '🎪' : isFruit ? '🍇' : '🌸'}</span>
+                              <span>{isWedding ? '🧧' : isFruit ? '🍇' : '🌸'}</span>
                               <span>
                                 {isWedding 
-                                  ? (WEDDING_TYPES.find(w => w.id === prod.weddingType)?.label || 'Rạp Cưới')
+                                  ? (WEDDING_TYPES.find(w => w.id === prod.weddingType)?.label || 'Tráp Cưới')
                                   : isFruit 
                                   ? (FRUIT_OCCASIONS.find(f => f.id === prod.fruitOccasion)?.label || 'Giỏ Trái Cây')
                                   : (OCCASIONS.find(o => o.id === prod.occasion)?.label || prod.occasion || 'Hoa Tươi')}
@@ -1498,12 +1728,13 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           <div className="absolute top-3 right-3">
                             <button
                               onClick={() => toggleProductAvailability(prod.id)}
-                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all ${
+                              disabled={!productsSynced}
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                 prod.isAvailable !== false
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                   : 'bg-red-100 text-red-800 border border-red-300 hover:bg-red-200'
                               }`}
-                              title={prod.isAvailable !== false ? 'Bấm để ẩn khỏi web' : 'Bấm để hiển thị lên web'}
+                              title={!productsSynced ? 'Đang tải danh sách từ máy chủ...' : prod.isAvailable !== false ? 'Bấm để ẩn khỏi web' : 'Bấm để hiển thị lên web'}
                             >
                               {prod.isAvailable !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                               <span>{prod.isAvailable !== false ? 'Đang hiển thị' : 'Đã ẩn'}</span>
@@ -1521,7 +1752,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                                   ? 'bg-amber-50 text-amber-700'
                                   : 'bg-emerald-50 text-emerald-700'
                               }`}>
-                                {isWedding ? 'Rạp Cưới Hỏi' : isFruit ? 'Giỏ Trái Cây' : 'Hoa Tươi'}
+                                {isWedding ? 'Tráp Cưới Hỏi' : isFruit ? 'Giỏ Trái Cây' : 'Hoa Tươi'}
                               </span>
                             </div>
 
@@ -1596,19 +1827,17 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                             <div className="flex gap-1.5">
                               <button
                                 onClick={() => handleOpenEditModal(prod)}
-                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                                title="Chỉnh sửa sản phẩm này"
+                                disabled={!productsSynced}
+                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={productsSynced ? 'Chỉnh sửa sản phẩm này' : 'Đang tải danh sách từ máy chủ...'}
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => {
-                                  if (window.confirm(`Bạn có chắc chắn muốn xóa "${prod.name}" không?`)) {
-                                    deleteProduct(prod.id);
-                                  }
-                                }}
-                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                                title="Xóa sản phẩm"
+                                onClick={() => setProductPendingDelete({ id: prod.id, name: prod.name })}
+                                disabled={!productsSynced}
+                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={productsSynced ? 'Xóa sản phẩm' : 'Đang tải danh sách từ máy chủ...'}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -2309,7 +2538,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
                       >
                         <MessageSquareShare className="w-3.5 h-3.5" />
-                        <span>Gửi Thử Tin Nhắn Tới Telegram Của Bạn</span>
+                        <span>Gửi Thử Tin Nhắn Đơn Hàng Tới Telegram Của Tiệm</span>
                       </button>
                     </div>
 
@@ -2393,10 +2622,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                             <div className="space-y-1">
                               <span><strong>Cấu hình Webhook trên Meta for Developers:</strong></span>
                               <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
-                                🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://tiemhoaflorabloom.vn/api/facebook/webhook'}</span>
+                                🌐 Callback URL: <span className="font-bold text-blue-700">{typeof window !== 'undefined' ? `${window.location.origin}/api/facebook/webhook` : 'https://hoatuoibmt.vn/api/facebook/webhook'}</span>
                               </p>
                               <p className="text-blue-950 bg-white/80 p-2 rounded-lg border border-blue-200 font-mono text-[10px]">
-                                🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || 'flora_bloom_webhook_secret_2026'}</span>
+                                🔑 Verify Token: <span className="font-bold text-blue-700">{inputFbVerifyToken || '(chưa đặt)'}</span>
                               </p>
                               <span className="text-gray-600 block text-[10px]">Trường sự kiện cần tick: <code>messages</code>, <code>messaging_postbacks</code></span>
                             </div>
@@ -2433,7 +2662,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           type="text"
                           value={inputFbPageName}
                           onChange={(e) => setInputFbPageName(e.target.value)}
-                          placeholder="VD: Ngọc Flower - Tiệm Hoa Tươi Nghệ Thuật"
+                          placeholder="VD: Ngọc Flower - Hoa Tươi Buôn Ma Thuột"
                           className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#0084FF] text-[11px]"
                         />
                       </div>
@@ -2446,7 +2675,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                           type="text"
                           value={inputFbVerifyToken}
                           onChange={(e) => setInputFbVerifyToken(e.target.value)}
-                          placeholder="flora_bloom_webhook_secret_2026"
+                          placeholder="Chuỗi bí mật ngẫu nhiên tự đặt"
                           className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none font-mono text-[11px]"
                         />
                       </div>
@@ -2625,6 +2854,54 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
 
             </div>
 
+          </div>
+        )}
+
+        {/* TAB: BẢO MẬT & ĐỔI MẬT KHẨU ADMIN */}
+        {activeTab === 'security' && (
+          <div className="max-w-4xl space-y-6 animate-fade-in">
+            {/* Header Card */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1B3B2B] flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                  <span>Bảo Mật Hệ Thống & Tài Khoản Quản Trị</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Quản lý phiên đăng nhập an toàn (JWT HMAC-SHA256) và đổi mật khẩu quản trị viên tiệm hoa.
+                </p>
+              </div>
+            </div>
+
+            {/* Thông tin tài khoản hiện tại */}
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EFEA] shadow-sm space-y-4">
+              <h4 className="font-bold text-sm text-[#1B3B2B] flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-emerald-600" />
+                <span>Phiên Làm Việc Hiện Tại</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Tài khoản:</span>
+                  <span className="font-bold font-mono text-[#1B3B2B] text-sm">{adminUser?.username || 'admin'}</span>
+                </div>
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Quyền hạn:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full inline-block">
+                    {adminUser?.role || 'SUPER_ADMIN'}
+                  </span>
+                </div>
+                <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-gray-100">
+                  <span className="text-gray-400 block text-[11px] mb-1">Trạng thái phiên:</span>
+                  <span className="font-bold text-emerald-600 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Đã xác thực JWT
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Đổi Mật Khẩu */}
+            <AdminChangePasswordForm />
           </div>
         )}
 
@@ -2825,7 +3102,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 {editingProductId 
                   ? '✏️ Chỉnh Sửa Sản Phẩm' 
                   : (formData.category === 'weddings' 
-                      ? '🎪 Thêm Gói Rạp / Cưới Hỏi Mới' 
+                      ? '🧧 Thêm Gói Tráp / Cưới Hỏi Mới' 
                       : (formData.category === 'fruits' 
                           ? '🍇 Thêm Mẫu Giỏ Trái Cây Mới' 
                           : '🌸 Thêm Mẫu Bó Hoa Tươi Mới'))}
@@ -2842,7 +3119,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-2xl">
                   {[
                     { id: 'flowers', label: 'Hoa Tươi', icon: '🌸' },
-                    { id: 'weddings', label: 'Rạp Cưới Hỏi', icon: '🎪' },
+                    { id: 'weddings', label: 'Tráp Cưới Hỏi', icon: '🧧' },
                     { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇' }
                   ].map((cat) => {
                     const isSelected = (formData.category || 'flowers') === cat.id;
@@ -2862,7 +3139,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                               ? (newCat === 'weddings' ? 7800000 : newCat === 'fruits' ? 1450000 : 850000)
                               : prev.originalPrice,
                             image: !editingProductId && (!prev.image || prev.image.includes('unsplash') || prev.image.includes('/products/'))
-                              ? (newCat === 'weddings' ? '/products/rap_cuoi_versailles.jpg' : newCat === 'fruits' ? '/products/gio_trai_cay_phu_quy.jpg' : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80')
+                              ? (newCat === 'weddings' ? '/products/trap_cuoi_rong_phung.jpg' : newCat === 'fruits' ? '/products/gio_trai_cay_phu_quy.jpg' : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80')
                               : prev.image,
                             meaning: !editingProductId && (!prev.meaning || prev.meaning.includes('Gửi gắm') || prev.meaning.includes('trọng đại') || prev.meaning.includes('thượng hạng'))
                               ? (newCat === 'weddings' ? 'Không gian ngày hạnh phúc trọn vẹn, trang trọng và tinh tế.' : newCat === 'fruits' ? 'Món quà sức khỏe thượng hạng, trao gửi thành ý và sự thịnh vượng.' : 'Gửi gắm tình cảm chân thành và sự ngọt ngào.')
@@ -2887,7 +3164,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
                   {formData.category === 'weddings' 
-                    ? 'Tên gói dịch vụ / rạp cưới *' 
+                    ? 'Tên gói dịch vụ / tráp cưới *' 
                     : (formData.category === 'fruits' 
                         ? 'Tên giỏ trái cây quà tặng *' 
                         : 'Tên mẫu hoa tươi *')}
@@ -2899,7 +3176,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={
                     formData.category === 'weddings'
-                      ? 'VD: Gói Rạp Cưới Hoàng Gia "Versailles Palace"'
+                      ? 'VD: Bộ 8 Tráp Cưới Long Phụng Hoàng Gia'
                       : (formData.category === 'fruits'
                           ? 'VD: Giỏ Trái Cây Hoàng Kim "Phú Quý Đại Cát"'
                           : 'VD: Bó Hoa Juliet Hoàng Hôn')
@@ -2917,7 +3194,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                   placeholder={
                     formData.category === 'weddings'
-                      ? 'VD: Khung rạp nhôm kiên cố, voan lụa trần 2 lớp, bàn ghế Tiffany...'
+                      ? 'VD: Kết rồng phượng 3D cau bắp hoa tươi, tráp mâm sơn mài thượng hạng...'
                       : (formData.category === 'fruits'
                           ? 'VD: Nho Mẫu Đơn Nhật, Táo Envy New Zealand kết hoa tươi sang trọng...'
                           : 'VD: Hoa hồng cam spirit phối cùng baby trắng...')
@@ -3012,12 +3289,12 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               {formData.category === 'weddings' && (
                 <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100 space-y-3">
                   <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs pb-1 border-b border-rose-100">
-                    <span>🎪</span>
-                    <span>Thông Số Chuyên Biệt: Rạp Cưới Hỏi & Gia Tiên</span>
+                    <span>🧧</span>
+                    <span>Thông Số Chuyên Biệt: Tráp Cưới</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-gray-700 mb-1">Phân loại dịch vụ cưới *</label>
+                      <label className="block font-bold text-gray-700 mb-1">Phân loại mẫu tráp cưới *</label>
                       <select
                         value={formData.weddingType}
                         onChange={(e) => setFormData({ ...formData, weddingType: e.target.value })}
@@ -3034,32 +3311,32 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         type="text"
                         value={formData.scale}
                         onChange={(e) => setFormData({ ...formData, scale: e.target.value })}
-                        placeholder="VD: 10 - 20 bàn tiệc hoặc Tư gia 12 - 24 người"
+                        placeholder="VD: Bộ 6 tráp, Bộ 8 tráp hoặc Tư gia 12 - 24 người"
                         className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Thời gian khảo sát / thi công</label>
+                    <label className="block font-bold text-gray-700 mb-1">Thời gian chuẩn bị / bàn giao</label>
                     <input
                       type="text"
                       value={formData.setupTime}
                       onChange={(e) => setFormData({ ...formData, setupTime: e.target.value })}
-                      placeholder="VD: Hoàn thiện trước ngày cưới 24 - 36 giờ"
+                      placeholder="VD: Bàn giao sáng sớm ngày đón dâu"
                       className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs"
                     />
                   </div>
 
                   <div>
                     <label className="block font-bold text-gray-700 mb-1">
-                      Các hạng mục thi công bao gồm (mỗi dòng một hạng mục):
+                      Các lễ vật / hạng mục bao gồm (mỗi dòng một mục):
                     </label>
                     <textarea
                       rows={3}
                       value={formData.includedItems}
                       onChange={(e) => setFormData({ ...formData, includedItems: e.target.value })}
-                      placeholder={"Khung rạp nhôm kiên cố che nắng mưa\nBàn ghế bọc nơ hoa theo tone màu\nĐèn led fairy light & âm thanh cơ bản\nMiễn phí dọn dẹp mặt bằng 100%"}
+                      placeholder={"Tráp Trầu Cau kết phụng hoa tươi\nTráp Rồng hoa quả kết nho Mẫu Đơn\nTráp Rượu Vang & Trà thượng hạng\nMiễn phí vận chuyển tận nhà"}
                       className="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none bg-white text-xs font-mono"
                     />
                   </div>
@@ -3223,7 +3500,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                 {formData.image ? (
                   <div className="flex items-center gap-3 p-2.5 bg-white rounded-2xl border border-[#E8EFEA] shadow-xs">
                     <img
-                      src={formData.image}
+                      src={productImageUrl(formData.image, 240)}
                       alt="Xem trước ảnh mẫu sản phẩm"
                       className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
                     />
@@ -3233,7 +3510,7 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
                         <span>Đã nạp ảnh thành công</span>
                       </span>
                       <span className="text-[10px] text-gray-400 block truncate mt-0.5">
-                        {formData.image.startsWith('data:') ? 'Tệp ảnh từ máy tính (Data URI)' : formData.image}
+                        {isCustomProductImage(formData.image) ? 'Tệp ảnh từ máy tính' : formData.image}
                       </span>
                     </div>
                     <button
@@ -3255,9 +3532,10 @@ export const AdminDashboard = ({ onBackToStore, adminUser, onLogout }) => {
               <div className="pt-4 border-t border-gray-200 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98"
+                  disabled={isSavingProduct || isProcessingImage}
+                  className="flex-1 bg-[#1B3B2B] hover:bg-[#264A37] text-white font-bold py-3 rounded-full shadow-md transition-all active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
+                  {isSavingProduct ? 'Đang lưu...' : isProcessingImage ? 'Đang xử lý ảnh...' : editingProductId ? 'Lưu Thay Đổi' : '+ Đăng Bán Lên Cửa Hàng'}
                 </button>
                 <button
                   type="button"

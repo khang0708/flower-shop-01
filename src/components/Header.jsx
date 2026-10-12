@@ -8,7 +8,8 @@ import {
   Phone, 
   PackageCheck,
   Menu,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
@@ -45,38 +46,6 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#E8EFEA]">
-      {/* Top Banner Thông Báo Khách Hàng - Responsive Toàn Diện */}
-      <div className="bg-[#1B3B2B] text-[#E8EFEA] text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          
-          {/* Thông tin Freeship & Cam kết */}
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <span className="flex items-center gap-1 truncate font-medium">
-              <span className="flex-shrink-0">🚚</span>
-              <strong className="font-bold hidden xs:inline">Freeship 4km</strong>
-              <span className="hidden xs:inline">từ 600k</span>
-              <span className="xs:hidden font-semibold truncate">Freeship 4km từ 600k</span>
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-emerald-200">
-              📸 <strong>Chụp ảnh hoa thật</strong> gửi duyệt trước khi ship
-            </span>
-          </div>
-
-          {/* Hotline & Zalo Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <a 
-              href={`tel:${shopZaloPhone.replace(/\s+/g, '')}`} 
-              className="hover:text-white font-semibold flex items-center gap-1 text-[11px] sm:text-xs whitespace-nowrap bg-white/10 sm:bg-transparent px-2 sm:px-0 py-0.5 sm:py-0 rounded-full"
-              title={`Hotline / Zalo: ${shopZaloPhone}`}
-            >
-              <span className="hidden xs:inline">Hotline/Zalo:</span>
-              <span className="xs:hidden">📞</span>
-              <strong>{shopZaloPhone}</strong>
-            </a>
-          </div>
-
-        </div>
-      </div>
 
       {/* Main Header Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
@@ -104,7 +73,7 @@ export const Header = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm hoa tươi, rạp cưới hỏi, giỏ trái cây..."
+              placeholder="Tìm hoa tươi, tráp cưới hỏi, giỏ trái cây..."
               aria-label="Tìm kiếm sản phẩm hoặc dịch vụ"
               className="w-full pl-10 pr-4 py-2 text-xs rounded-full bg-white border border-[#D1DFD6] focus:outline-none focus:border-[#1B3B2B] focus:ring-1 focus:ring-[#1B3B2B] transition-all"
             />
@@ -164,9 +133,9 @@ export const Header = () => {
             Danh mục:
           </span>
           {[
-            { id: 'flowers', label: 'Hoa Tươi Nghệ Thuật', icon: '🌸', badge: 'Cắm mới mỗi ngày' },
-            { id: 'weddings', label: 'Rạp Cưới Hỏi & Gia Tiên', icon: '🎪', badge: 'Khảo sát 0đ' },
-            { id: 'fruits', label: 'Giỏ Trái Cây & Quà Tặng', icon: '🍇', badge: '100% Nhập khẩu' },
+            { id: 'flowers', label: 'Hoa Tươi', icon: '🌸' },
+            { id: 'weddings', label: 'Tráp Cưới', icon: '🧧' },
+            { id: 'fruits', label: 'Giỏ Trái Cây', icon: '🍇' },
           ].map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
@@ -175,7 +144,7 @@ export const Header = () => {
                 href="#catalog"
                 data-active={isActive ? 'true' : 'false'}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-[#1B3B2B] text-white shadow-xs'
                     : 'text-gray-600 hover:text-[#1B3B2B] hover:bg-gray-100/80 bg-gray-50/70 border border-transparent'
@@ -183,11 +152,6 @@ export const Header = () => {
               >
                 <span className="shrink-0">{cat.icon}</span>
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-normal hidden md:inline shrink-0 ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {cat.badge}
-                </span>
               </a>
             );
           })}
@@ -239,12 +203,12 @@ export const Header = () => {
                 setActiveCategory('flowers');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'flowers' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🌸 Hoa Tươi Nghệ Thuật</span>
-              <span className="text-[11px] opacity-70">Cắm mới mỗi ngày</span>
+              <span>🌸 Hoa Tươi Buôn Ma Thuột</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#catalog" 
@@ -252,12 +216,12 @@ export const Header = () => {
                 setActiveCategory('weddings');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'weddings' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🎪 Rạp Cưới Hỏi & Gia Tiên</span>
-              <span className="text-[11px] opacity-70">Khảo sát 0đ</span>
+              <span>🧧 Tráp Cưới</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#catalog" 
@@ -265,12 +229,12 @@ export const Header = () => {
                 setActiveCategory('fruits');
                 setMobileMenuOpen(false);
               }} 
-              className={`py-2 px-2 rounded-lg flex items-center justify-between ${
+              className={`py-2 px-2.5 rounded-lg flex items-center justify-between ${
                 activeCategory === 'fruits' ? 'bg-[#1B3B2B] text-white font-bold' : 'hover:bg-gray-50'
               }`}
             >
-              <span>🍇 Giỏ Trái Cây & Quà Tặng</span>
-              <span className="text-[11px] opacity-70">100% Nhập khẩu</span>
+              <span>🍇 Giỏ Trái Cây</span>
+              <span className="text-gray-400">→</span>
             </a>
             <a 
               href="#reviews-section" 
@@ -280,6 +244,20 @@ export const Header = () => {
               <span>⭐ Cảm nhận khách hàng thực tế</span>
               <span className="text-gray-400">→</span>
             </a>
+            <button 
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                window.location.hash = 'admin';
+              }} 
+              className="w-full py-2.5 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between mt-1 text-gray-500 hover:text-[#1B3B2B] text-xs cursor-pointer border-t border-gray-100"
+            >
+              <span className="flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Cổng Quản Trị / Nội Bộ</span>
+              </span>
+              <span className="text-gray-400">🔒</span>
+            </button>
           </div>
         </div>
       )}

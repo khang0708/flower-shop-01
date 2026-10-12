@@ -1,11 +1,11 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ShopProvider } from './context/ShopContext';
 import { Header } from './components/Header';
-import { HeroSection } from './components/HeroSection';
 import { OccasionFilter } from './components/OccasionFilter';
 import { FlowerGrid } from './components/FlowerGrid';
 import { SocialChatHubFloatingButton } from './components/SocialChatHubFloatingButton';
 import { Footer } from './components/Footer';
+import { adminVerifyApi, adminLogoutApi } from './api';
 
 // Code-splitting lazy load các thành phần nặng không cần tải ở màn hình ban đầu
 const ReviewsSection = lazy(() => import('./components/ReviewsSection').then(m => ({ default: m.ReviewsSection })));
@@ -25,10 +25,26 @@ function AppContent() {
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const cached = localStorage.getItem('flora_admin_user');
-      if (cached) return JSON.parse(cached);
+      const token = localStorage.getItem('flora_admin_token');
+      if (cached && token) return JSON.parse(cached);
     } catch (e) {}
     return null;
   });
+
+  // Xác thực token với máy chủ khi khởi động
+  useEffect(() => {
+    const token = localStorage.getItem('flora_admin_token');
+    if (token) {
+      adminVerifyApi().then(user => {
+        if (user) {
+          setAdminUser(user);
+        } else {
+          setAdminUser(null);
+          adminLogoutApi();
+        }
+      });
+    }
+  }, []);
 
   const isAdminAuthenticated = Boolean(adminUser);
 
@@ -66,6 +82,23 @@ function AppContent() {
     };
   }, [isAdminAuthenticated]);
 
+  // Điều hướng tự động khi người dùng truy cập trực tiếp URL SEO (/catalog, /reviews)
+  useEffect(() => {
+    const handlePathScroll = () => {
+      const path = (window.location.pathname || '').replace(/\/+$/, '');
+      if (path === '/catalog') {
+        const el = document.getElementById('catalog');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else if (path === '/reviews') {
+        const el = document.getElementById('reviews') || document.getElementById('reviews-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    const timer = setTimeout(handlePathScroll, 350);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLoginSuccess = (userData) => {
     setAdminUser(userData);
     setIsAdminLoginOpen(false);
@@ -79,7 +112,7 @@ function AppContent() {
   };
 
   const handleLogoutAdmin = () => {
-    localStorage.removeItem('flora_admin_user');
+    adminLogoutApi();
     setAdminUser(null);
     setIsAdminView(false);
     window.location.hash = '';
@@ -109,7 +142,6 @@ function AppContent() {
 
       {/* Nội dung chính Storefront */}
       <main className="flex-grow">
-        <HeroSection />
         <OccasionFilter />
         <FlowerGrid />
         <Suspense fallback={<div className="py-12 text-center text-xs text-gray-400">Đang tải đánh giá khách hàng...</div>}>

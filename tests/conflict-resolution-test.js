@@ -37,7 +37,7 @@ function test(name, fn) {
   }
 }
 
-// 1. Kiểm tra khi sản phẩm local mới hơn sản phẩm server (Case người dùng vừa sửa trên Vercel)
+// 1. Kiểm tra khi sản phẩm local mới hơn sản phẩm server (Case người dùng vừa sửa trên thiết bị)
 test('Local-First: Bản local mới hơn (updatedAt lớn hơn) KHÔNG BỊ server cũ ghi đè text', () => {
   const localProducts = [
     {

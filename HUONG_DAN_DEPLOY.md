@@ -138,7 +138,7 @@ certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 ## Bước 6: Sử dụng script `deploy.sh` để cập nhật tự động
 
-Khi muốn triển khai lần đầu hoặc mỗi khi có code mới trên nhánh `development`:
+Khi muốn triển khai lần đầu hoặc mỗi khi có code mới trên nhánh `main`:
 
 ```bash
 # Cấp quyền thực thi (chỉ cần làm lần đầu)

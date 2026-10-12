@@ -29,16 +29,16 @@ export const HeroSection = () => {
             <div className="inline-flex items-center gap-2 bg-white/95 border border-[#D1DFD6] px-3.5 py-1.5 rounded-full shadow-xs">
               <span className="w-2 h-2 rounded-full bg-[#5C8A70] animate-pulse" />
               <span className="text-[11px] font-semibold text-[#1B3B2B] uppercase tracking-wider">
-                Tiệm Hoa Tươi • Rạp Cưới Hỏi & Gia Tiên • Giỏ Trái Cây Nhập Khẩu
+                Tiệm Hoa Tươi • Tráp Cưới • Giỏ Trái Cây Nhập Khẩu
               </span>
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#1B3B2B] leading-[1.15] tracking-tight">
-              Trọn vẹn mọi khoảnh khắc với <span className="italic text-[#C4685A] font-normal">hoa nghệ thuật & cưới hỏi trọn gói</span>
+              Trọn vẹn mọi khoảnh khắc với <span className="italic text-[#C4685A] font-normal">hoa nghệ thuật & tráp cưới trọn gói</span>
             </h1>
 
             <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-sans font-light">
-              <strong>Ngọc Flower</strong> cung cấp hoa tươi thiết kế thủ công độc bản, dịch vụ thi công rạp cưới hỏi & bàn thờ gia tiên khảo sát tận nơi 0đ, cùng giỏ trái cây nhập khẩu cao cấp kết hoa tươi trao trọn tình cảm.
+              <strong>Ngọc Flower</strong> cung cấp hoa tươi thiết kế thủ công độc bản, dịch vụ kết tráp cưới hỏi nghệ thuật tư vấn tận nơi 0đ, cùng giỏ trái cây nhập khẩu cao cấp kết hoa tươi trao trọn tình cảm.
             </p>
 
             {/* 3 Trụ cột danh mục nhanh (Interactive Pillar Selector) */}
@@ -87,7 +87,7 @@ export const HeroSection = () => {
 
               <button
                 type="button"
-                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn nhận báo giá dịch vụ (Hoa tươi / Rạp cưới / Giỏ trái cây)!')}
+                onClick={() => openPersonalZaloChat(shopZaloPhone, 'Chào shop Ngọc Flower, tôi muốn nhận báo giá dịch vụ (Hoa tươi / Tráp cưới / Giỏ trái cây)!')}
                 className="bg-white hover:bg-[#FAF4F0] text-[#1B3B2B] border border-[#D1DFD6] hover:border-[#1B3B2B] text-xs sm:text-sm font-semibold px-5 py-3.5 rounded-full shadow-xs transition-all flex items-center gap-2 active:scale-95 group"
               >
                 <MessageCircle className="w-4 h-4 text-[#0068FF]" />
@@ -103,7 +103,7 @@ export const HeroSection = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-[#1B3B2B]">Giao Nhanh & Đúng Giờ</h4>
-                  <p className="text-[11px] text-gray-500">Hoa tươi 60p • Rạp cưới đúng hẹn</p>
+                  <p className="text-[11px] text-gray-500">Hoa tươi 60p • Tráp cưới đúng hẹn</p>
                 </div>
               </div>
 
@@ -112,8 +112,8 @@ export const HeroSection = () => {
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[#1B3B2B]">Duyệt Ảnh & Khảo Sát 0đ</h4>
-                  <p className="text-[11px] text-gray-500">Khảo sát rạp tận nơi miễn phí</p>
+                  <h4 className="text-xs font-bold text-[#1B3B2B]">Duyệt Ảnh & Tư Vấn 0đ</h4>
+                  <p className="text-[11px] text-gray-500">Tư vấn tráp cưới tận nơi miễn phí</p>
                 </div>
               </div>
 
@@ -139,14 +139,14 @@ export const HeroSection = () => {
                 <img
                   src={
                     activeCategory === 'weddings'
-                      ? '/products/rap_cuoi_versailles.jpg'
+                      ? '/products/trap_cuoi_rong_phung.jpg'
                       : activeCategory === 'fruits'
                       ? '/products/gio_trai_cay_phu_quy.jpg'
                       : 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80'
                   }
                   alt={
                     activeCategory === 'weddings'
-                      ? 'Rạp cưới hỏi cao cấp Ngọc Flower'
+                      ? 'Tráp cưới hỏi cao cấp Ngọc Flower'
                       : activeCategory === 'fruits'
                       ? 'Giỏ trái cây nhập khẩu kết hoa tươi Ngọc Flower'
                       : 'Bó hoa nghệ thuật Juliet Nắng Ban Mai - Ngọc Flower'
@@ -163,10 +163,10 @@ export const HeroSection = () => {
                     {activeCategory === 'weddings' ? 'Gói Cưới Hỏi Nổi Bật' : activeCategory === 'fruits' ? 'Giỏ Trái Cây Thượng Hạng' : 'Mẫu Hoa Nổi Bật Tuần Này'}
                   </span>
                   <h3 className="font-serif text-2xl font-bold">
-                    {activeCategory === 'weddings' ? 'Rạp Cưới Versailles Hoàng Gia' : activeCategory === 'fruits' ? 'Giỏ Phú Quý Đại Cát' : 'Juliet Nắng Ban Mai'}
+                    {activeCategory === 'weddings' ? 'Bộ 8 Tráp Long Phụng Hoàng Gia' : activeCategory === 'fruits' ? 'Giỏ Phú Quý Đại Cát' : 'Juliet Nắng Ban Mai'}
                   </h3>
                   <p className="text-xs text-gray-200 mt-1">
-                    {activeCategory === 'weddings' ? 'Khảo sát không gian tận nơi miễn phí 100%' : activeCategory === 'fruits' ? '100% Trái cây nhập khẩu phối hoa Juliet tươi' : 'Phối từ 18 cành hoa hồng Juliet nhập khẩu'}
+                    {activeCategory === 'weddings' ? 'Kết rồng phụng 3D, hoa tươi nhập khẩu cao cấp' : activeCategory === 'fruits' ? '100% Trái cây nhập khẩu phối hoa Juliet tươi' : 'Phối từ 18 cành hoa hồng Juliet nhập khẩu'}
                   </p>
                 </div>
               </div>

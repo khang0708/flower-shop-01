@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
+import { productImageUrl } from '../utils/productImage';
 import { 
   X, 
   Clock, 
@@ -66,9 +67,15 @@ const getDynamicDeliveryDates = () => {
 };
 
 export const CheckoutModal = () => {
-  const { 
-    isCheckoutOpen, 
-    setIsCheckoutOpen, 
+  const { isCheckoutOpen } = useShop();
+  if (!isCheckoutOpen) return null;
+  return <CheckoutModalContent />;
+};
+
+const CheckoutModalContent = () => {
+  const {
+    isCheckoutOpen,
+    setIsCheckoutOpen,
     cart, 
     cartTotal, 
     appliedCoupon,
@@ -80,8 +87,6 @@ export const CheckoutModal = () => {
     submitOrder,
     shopZaloPhone
   } = useShop();
-
-  if (!isCheckoutOpen) return null;
 
   // Coupon state in Checkout
   const [couponInput, setCouponInput] = useState('');
@@ -104,6 +109,7 @@ export const CheckoutModal = () => {
 
   // Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [senderName, setSenderName] = useState('Nguyễn Hoàng Nam');
   const [senderPhone, setSenderPhone] = useState('0909 123 456');
   const [receiverName, setReceiverName] = useState('Trần Ngọc Bích');
@@ -153,7 +159,8 @@ export const CheckoutModal = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submittingRef.current) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     const computedSlot = deliveryType === 'express' 
@@ -176,6 +183,7 @@ export const CheckoutModal = () => {
     } catch (err) {
       console.error('Lỗi khi gửi đơn hàng:', err);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -346,7 +354,7 @@ export const CheckoutModal = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold">📅 Khung giờ chọn trước</span>
                     <span className={`text-[11px] font-mono font-bold ${isFreeshipEligible ? 'text-emerald-700' : 'text-gray-700'}`}>
-                      {getShippingFee('timeslot', cartTotal) === 0 ? 'Freeship (0đ)' : `${getShippingFee('timeslot', cartTotal).toLocaleString('vi-VN')}đ`}
+                      {getShippingFee('timeslot', cartTotal) === 0 ? (shippingSettings?.shippingMode === 'admin_confirm' ? 'Báo phí sau' : 'Miễn phí (0đ)') : `${getShippingFee('timeslot', cartTotal).toLocaleString('vi-VN')}đ`}
                     </span>
                   </div>
                   <span className="text-[11px] text-gray-500 block mt-0.5">Giao đúng giờ hẹn bất ngờ</span>
@@ -482,7 +490,7 @@ export const CheckoutModal = () => {
               <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                 {cart.map((item) => (
                   <div key={item.cartItemId || item.id} className="flex gap-2.5 text-xs pb-2 border-b border-gray-100">
-                    <img src={item.image} alt={item.name} className="w-12 h-14 object-cover rounded-lg border flex-shrink-0" />
+                    <img src={productImageUrl(item.image, 240)} alt={item.name} className="w-12 h-12 object-contain bg-white rounded-lg border flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <h5 className="font-serif font-bold text-[#1B3B2B] truncate">{item.name}</h5>
                       <span className="text-[10px] text-gray-500">{item.size?.name || 'Tiêu chuẩn'} × {item.quantity}</span>
@@ -555,7 +563,7 @@ export const CheckoutModal = () => {
                   <span>Phí giao hoa tận tay:</span>
                   <span className="font-semibold text-gray-900">
                     {isFreeshipEligible ? (
-                      <span className="text-emerald-700 font-bold">Freeship (0đ)</span>
+                      <span className="text-emerald-700 font-bold">Miễn phí giao (0đ)</span>
                     ) : shippingSettings?.shippingMode === 'admin_confirm' ? (
                       <span className="text-[#C4685A] font-bold text-[11px]">Tiệm báo sau khi nhận địa chỉ (0đ)</span>
                     ) : (
