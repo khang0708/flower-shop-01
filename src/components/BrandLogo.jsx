@@ -90,21 +90,26 @@ export const BrandLogo = ({
   const flowerColor = isLight ? 'text-[#E8998D]' : 'text-[#D97769]';
   const taglineColor = isLight ? 'text-emerald-200/80' : 'text-[#607D6E]';
 
-  // Hiển thị trực tiếp ảnh PNG gốc nếu yêu cầu (chỉ trên nền sáng)
-  if ((variant === 'image' || useImage) && !isLight) {
+  // Logo thương hiệu mới (ảnh nền trong suốt, chữ xanh đậm). Trên nền tối đặt trong thẻ kem để vẫn đọc được.
+  if (variant === 'image' || useImage) {
     const imgHeights = {
-      sm: 'h-8',
-      md: 'h-10 sm:h-11',
-      lg: 'h-12 sm:h-14',
-      xl: 'h-16'
+      sm: 'h-10',
+      md: 'h-14 sm:h-16',
+      lg: 'h-16 sm:h-20',
+      xl: 'h-24'
     };
-    return (
+    const img = (
       <img
         src="/logo.png"
-        alt="Ngọc Flower Botanical Atelier"
-        className={`${imgHeights[size] || 'h-10'} w-auto object-contain select-none ${className}`}
+        alt="Ngọc Flower - Hoa tươi, Tráp cưới, Giỏ trái cây"
+        width="640"
+        height="525"
+        className={`${imgHeights[size] || 'h-12'} w-auto object-contain select-none ${isLight ? '' : className}`}
       />
     );
+    return isLight ? (
+      <span className={`inline-flex rounded-2xl bg-[#FAF8F5] px-3 py-2 ${className}`}>{img}</span>
+    ) : img;
   }
 
   if (variant === 'icon') {

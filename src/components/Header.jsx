@@ -61,7 +61,7 @@ export const Header = () => {
           </button>
           
           <a href="#" aria-label="Trang chủ Ngọc Flower" className="group">
-            <BrandLogo variant="horizontal" size="md" theme="dark" />
+            <BrandLogo variant="image" size="md" theme="dark" />
           </a>
         </div>
 

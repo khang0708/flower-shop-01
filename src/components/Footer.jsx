@@ -15,7 +15,7 @@ export const Footer = ({ onOpenAdminLogin }) => {
           
           {/* Cột 1: Brand Info */}
           <div className="space-y-4">
-            <BrandLogo variant="horizontal" size="lg" theme="light" />
+            <BrandLogo variant="image" size="md" theme="light" />
             <p className="text-xs text-gray-300 leading-relaxed font-light">
               Tiệm hoa tươi thủ công cao cấp. Chúng tôi chăm chút từng cành hoa, từng dòng chữ trên thiệp để món quà của bạn trở thành khoảnh khắc đáng nhớ nhất.
             </p>
